@@ -571,6 +571,7 @@ button{
 /* Mobile */
 
 @media(max-width:600px){
+
     .container{
         width:min(100% - 18px,850px);
         padding-top:12px;
@@ -617,270 +618,371 @@ button{
 
 <div class="container">
 
-    <!-- Header -->
-    <header class="header">
-        <div class="brand">
-            <div class="logo">∑</div>
-            <div class="brand-text">
-                <h1>آزمون آنلاین ریاضی</h1>
-                <span>آزمون هوشمند و زمان‌دار</span>
-            </div>
-        </div>
-    </header>
+<header class="header">
+    <div class="brand">
+        <div class="logo">∑</div>
 
-    <!-- Steps -->
-    <div class="steps">
-        <div class="step active">
-            <div class="step-circle">۱</div>
-            <span>اطلاعات</span>
-        </div>
-
-        <div class="step-line"></div>
-
-        <div class="step">
-            <div class="step-circle">۲</div>
-            <span>پرداخت</span>
-        </div>
-
-        <div class="step-line"></div>
-
-        <div class="step">
-            <div class="step-circle">۳</div>
-            <span>قوانین</span>
-        </div>
-
-        <div class="step-line"></div>
-
-        <div class="step">
-            <div class="step-circle">۴</div>
-            <span>آزمون</span>
+        <div class="brand-text">
+            <h1>آزمون آنلاین ریاضی</h1>
+            <span>آزمون هوشمند و زمان‌دار</span>
         </div>
     </div>
+</header>
 
 
-    <!-- اطلاعات -->
-    <section class="card" id="startCard">
+<div class="steps">
 
-        <div class="card-title">
-            <div class="card-title-icon">👤</div>
-            <h2>شروع آزمون</h2>
-        </div>
+    <div class="step active">
+        <div class="step-circle">۱</div>
+        <span>اطلاعات</span>
+    </div>
 
-        <p class="subtitle">
-            برای شرکت در آزمون، نام و شماره موبایل خود را وارد کنید.
-        </p>
+    <div class="step-line"></div>
 
-        <div id="examInfo"></div>
+    <div class="step">
+        <div class="step-circle">۲</div>
+        <span>پرداخت</span>
+    </div>
 
-        <div class="field">
-            <label>نام و نام خانوادگی</label>
+    <div class="step-line"></div>
 
-            <div class="input-wrap">
-                <span class="input-icon">👤</span>
-                <input
-                    id="nameInput"
-                    type="text"
-                    placeholder="مثلاً حسین خراسانی"
-                    autocomplete="name"
-                >
-            </div>
+    <div class="step">
+        <div class="step-circle">۳</div>
+        <span>قوانین</span>
+    </div>
 
-            <span class="hint">
-                لطفاً صفحه‌کلید فارسی را فعال کنید.
-            </span>
-        </div>
+    <div class="step-line"></div>
 
-        <div class="field">
-            <label>شماره موبایل</label>
-
-            <div class="input-wrap">
-                <span class="input-icon">📱</span>
-                <input
-                    id="phoneInput"
-                    type="tel"
-                    inputmode="numeric"
-                    placeholder="09123456789"
-                    autocomplete="tel"
-                >
-            </div>
-
-            <span class="hint">
-                اعداد فارسی و انگلیسی قابل قبول است.
-            </span>
-        </div>
-
-        <div id="startError"></div>
-
-        <button id="startButton" class="primary-btn">
-            ادامه و ثبت اطلاعات
-        </button>
-
-    </section>
-
-
-    <!-- پرداخت -->
-    <section class="card" id="paymentCard" style="display:none">
-
-        <div class="card-title">
-            <div class="card-title-icon">💳</div>
-            <h2>پرداخت آزمون</h2>
-        </div>
-
-        <p class="subtitle">
-            پس از پرداخت، دسترسی شما به آزمون فعال می‌شود.
-        </p>
-
-        <div class="price-box">
-            <div>
-                <div class="price-label">هزینه شرکت در آزمون</div>
-                <div style="margin-top:5px;font-size:12px;color:#6b7280">
-                    آزمون ریاضی
-                </div>
-            </div>
-
-            <div class="price" id="paymentInfo">
-                —
-            </div>
-        </div>
-
-        <div class="payment-status">
-            🔒 پرداخت امن و ثبت سفارش
-        </div>
-
-        <button id="payButton" class="primary-btn">
-            پرداخت و ادامه
-        </button>
-
-        <div id="paymentError"></div>
-
-    </section>
-
-
-    <!-- قوانین -->
-    <section class="card" id="rulesCard" style="display:none">
-
-        <div class="card-title">
-            <div class="card-title-icon">📋</div>
-            <h2>قوانین آزمون</h2>
-        </div>
-
-        <p class="subtitle">
-            قبل از شروع آزمون، قوانین را با دقت مطالعه کنید.
-        </p>
-
-        <div class="rules">
-
-            <div class="rule">
-                <div class="rule-icon">✓</div>
-                <div>
-                    هر سؤال زمان مشخصی دارد و پس از پایان زمان، سؤال به‌صورت خودکار بسته می‌شود.
-                </div>
-            </div>
-
-            <div class="rule">
-                <div class="rule-icon">✓</div>
-                <div>
-                    پس از عبور از هر سؤال، امکان بازگشت به سؤال قبلی وجود ندارد.
-                </div>
-            </div>
-
-            <div class="rule">
-                <div class="rule-icon">✓</div>
-                <div>
-                    پاسخ‌ها به‌صورت خودکار در سامانه ثبت می‌شوند.
-                </div>
-            </div>
-
-            <div class="rule">
-                <div class="rule-icon">✓</div>
-                <div>
-                    در پایان آزمون، نتیجه و پاسخنامه شما نمایش داده خواهد شد.
-                </div>
-            </div>
-
-        </div>
-
-        <button id="beginExamButton" class="primary-btn">
-            شروع آزمون
-        </button>
-
-    </section>
-
-
-    <!-- آزمون -->
-    <section class="card" id="examCard" style="display:none">
-
-        <div class="exam-top">
-
-            <div>
-                <div class="exam-label">آزمون ریاضی</div>
-                <div class="exam-number" id="progress">
-                    سؤال ۱
-                </div>
-            </div>
-
-            <div class="timer">
-                <span id="timer">۳۰</span>
-                <small>ثانیه</small>
-            </div>
-
-        </div>
-
-        <div class="progress-container">
-
-            <div class="progress-info">
-                <span id="progressText">در حال پاسخگویی</span>
-                <span id="progressPercent">۰٪</span>
-            </div>
-
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-
-        </div>
-
-        <div class="question-box" id="questionBox"></div>
-
-        <div id="examError"></div>
-
-    </section>
-
-
-    <!-- نتیجه -->
-    <section class="card" id="resultCard" style="display:none">
-
-        <div class="result-hero">
-
-            <div class="result-icon">✓</div>
-
-            <h2>آزمون به پایان رسید</h2>
-
-            <p>
-                نتیجه عملکرد شما در این آزمون
-            </p>
-
-        </div>
-
-        <div id="resultSummary"></div>
-
-        <h3 style="font-size:16px;margin-top:25px">
-            پاسخنامه
-        </h3>
-
-        <div id="answerSheet" class="answer-sheet"></div>
-
-    </section>
-
-
-    <div class="footer">
-        سامانه آزمون آنلاین ریاضی
+    <div class="step">
+        <div class="step-circle">۴</div>
+        <span>آزمون</span>
     </div>
 
 </div>
 
 
+<!-- شروع -->
+
+<section class="card" id="startCard">
+
+    <div class="card-title">
+
+        <div class="card-title-icon">👤</div>
+
+        <h2>شروع آزمون</h2>
+
+    </div>
+
+    <p class="subtitle">
+        برای شرکت در آزمون، نام و شماره موبایل خود را وارد کنید.
+    </p>
+
+    <div id="examInfo"></div>
+
+
+    <div class="field">
+
+        <label>نام و نام خانوادگی</label>
+
+        <div class="input-wrap">
+
+            <span class="input-icon">👤</span>
+
+            <input
+                id="nameInput"
+                type="text"
+                placeholder="مثلاً حسین خراسانی"
+                autocomplete="name"
+            >
+
+        </div>
+
+        <span class="hint">
+            لطفاً صفحه‌کلید فارسی را فعال کنید.
+        </span>
+
+    </div>
+
+
+    <div class="field">
+
+        <label>شماره موبایل</label>
+
+        <div class="input-wrap">
+
+            <span class="input-icon">📱</span>
+
+            <input
+                id="phoneInput"
+                type="tel"
+                inputmode="numeric"
+                placeholder="09123456789"
+                autocomplete="tel"
+            >
+
+        </div>
+
+        <span class="hint">
+            اعداد فارسی و انگلیسی قابل قبول است.
+        </span>
+
+    </div>
+
+
+    <div id="startError"></div>
+
+
+    <button id="startButton" class="primary-btn">
+        ادامه و ثبت اطلاعات
+    </button>
+
+</section>
+
+
+<!-- پرداخت -->
+
+<section class="card" id="paymentCard" style="display:none">
+
+    <div class="card-title">
+
+        <div class="card-title-icon">💳</div>
+
+        <h2>پرداخت آزمون</h2>
+
+    </div>
+
+    <p class="subtitle">
+        پس از پرداخت، دسترسی شما به آزمون فعال می‌شود.
+    </p>
+
+
+    <div class="price-box">
+
+        <div>
+
+            <div class="price-label">
+                هزینه شرکت در آزمون
+            </div>
+
+            <div style="margin-top:5px;font-size:12px;color:#6b7280">
+                آزمون ریاضی
+            </div>
+
+        </div>
+
+        <div class="price" id="paymentInfo">
+            —
+        </div>
+
+    </div>
+
+
+    <div class="payment-status">
+        🔒 پرداخت امن و ثبت سفارش
+    </div>
+
+
+    <button id="payButton" class="primary-btn">
+        پرداخت و ادامه
+    </button>
+
+
+    <div id="paymentError"></div>
+
+</section>
+
+
+<!-- قوانین -->
+
+<section class="card" id="rulesCard" style="display:none">
+
+    <div class="card-title">
+
+        <div class="card-title-icon">📋</div>
+
+        <h2>قوانین آزمون</h2>
+
+    </div>
+
+    <p class="subtitle">
+        قبل از شروع آزمون، قوانین را با دقت مطالعه کنید.
+    </p>
+
+
+    <div class="rules">
+
+        <div class="rule">
+
+            <div class="rule-icon">✓</div>
+
+            <div>
+                هر سؤال زمان مشخصی دارد و پس از پایان زمان، سؤال به‌صورت خودکار بسته می‌شود.
+            </div>
+
+        </div>
+
+
+        <div class="rule">
+
+            <div class="rule-icon">✓</div>
+
+            <div>
+                پس از عبور از هر سؤال، امکان بازگشت به سؤال قبلی وجود ندارد.
+            </div>
+
+        </div>
+
+
+        <div class="rule">
+
+            <div class="rule-icon">✓</div>
+
+            <div>
+                پاسخ‌ها به‌صورت خودکار در سامانه ثبت می‌شوند.
+            </div>
+
+        </div>
+
+
+        <div class="rule">
+
+            <div class="rule-icon">✓</div>
+
+            <div>
+                در پایان آزمون، نتیجه و پاسخنامه شما نمایش داده خواهد شد.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <button id="beginExamButton" class="primary-btn">
+        شروع آزمون
+    </button>
+
+</section>
+
+
+<!-- آزمون -->
+
+<section class="card" id="examCard" style="display:none">
+
+    <div class="exam-top">
+
+        <div>
+
+            <div class="exam-label">
+                آزمون ریاضی
+            </div>
+
+            <div class="exam-number" id="progress">
+                سؤال ۱
+            </div>
+
+        </div>
+
+
+        <div class="timer">
+
+            <span id="timer">۳۰</span>
+
+            <small>
+                ثانیه
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="progress-container">
+
+        <div class="progress-info">
+
+            <span id="progressText">
+                در حال پاسخگویی
+            </span>
+
+            <span id="progressPercent">
+                ۰٪
+            </span>
+
+        </div>
+
+
+        <div class="progress-bar">
+
+            <div
+                class="progress-fill"
+                id="progressFill"
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="question-box"
+        id="questionBox"
+    ></div>
+
+
+    <div id="examError"></div>
+
+</section>
+
+
+<!-- نتیجه -->
+
+<section class="card" id="resultCard" style="display:none">
+
+    <div class="result-hero">
+
+        <div class="result-icon">
+            ✓
+        </div>
+
+        <h2>
+            آزمون به پایان رسید
+        </h2>
+
+        <p>
+            نتیجه عملکرد شما در این آزمون
+        </p>
+
+    </div>
+
+
+    <div id="resultSummary"></div>
+
+
+    <h3 style="font-size:16px;margin-top:25px">
+        پاسخنامه
+    </h3>
+
+
+    <div
+        id="answerSheet"
+        class="answer-sheet"
+    ></div>
+
+</section>
+
+
+<div class="footer">
+    سامانه آزمون آنلاین ریاضی
+</div>
+
+</div>
+
+
 <script>
-const API = "https://azmon.hosseinkhorasani1.workers.dev";
+
+const API =
+    "https://azmon.hosseinkhorasani1.workers.dev";
+
 const EXAM_ID = 1;
 
 let orderId = null;
@@ -889,72 +991,128 @@ let currentQuestion = null;
 let timerInterval = null;
 let secondsLeft = 30;
 let examQuestionsCount = 0;
+let submitting = false;
 
 
-/* -------------------------
+/* =========================
    ابزارها
-------------------------- */
+========================= */
 
 function toEnglishDigits(value){
+
     return String(value || "")
-        .replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
-        .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+        .replace(/[۰-۹]/g,d =>
+            "۰۱۲۳۴۵۶۷۸۹".indexOf(d)
+        )
+        .replace(/[٠-٩]/g,d =>
+            "٠١٢٣٤٥٦٧٨٩".indexOf(d)
+        );
 }
+
 
 function toPersianDigits(value){
+
     return String(value)
-        .replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
+        .replace(/\d/g,d =>
+            "۰۱۲۳۴۵۶۷۸۹"[d]
+        );
 }
 
+
 function normalizePhone(value){
-    let p = toEnglishDigits(value).replace(/\D/g,"");
+
+    let p =
+        toEnglishDigits(value)
+        .replace(/\D/g,"");
+
 
     if(p.startsWith("0098")){
-        p = "0" + p.slice(4);
+
+        p =
+            "0" +
+            p.slice(4);
+
     }
 
+
     if(p.startsWith("98")){
-        p = "0" + p.slice(2);
+
+        p =
+            "0" +
+            p.slice(2);
+
     }
+
 
     return p;
 }
 
+
 function sanitizeName(value){
+
     return String(value || "")
         .replace(/[^\u0600-\u06FF\s]/g,"")
         .replace(/\s+/g," ")
         .trim();
 }
 
+
 function show(el){
+
     el.style.display = "";
 }
 
+
 function hide(el){
+
     el.style.display = "none";
 }
 
 
-/* -------------------------
+/* =========================
    دریافت آزمون
-------------------------- */
+========================= */
 
 async function loadExam(){
 
     try{
 
-        const res = await fetch(`${API}/api/exam?id=${EXAM_ID}`);
+        const res =
+            await fetch(
+                `${API}/api/exam?id=${EXAM_ID}`
+            );
 
-        if(!res.ok){
-            throw new Error("خطا در دریافت آزمون");
+
+        const data =
+            await res.json();
+
+
+        if(!res.ok || !data.ok){
+
+            throw new Error(
+                data.error ||
+                "خطا در دریافت آزمون"
+            );
+
         }
 
-        const exam = await res.json();
 
-        examQuestionsCount = exam.questions.length;
+        const exam =
+            data.exam;
 
-        document.getElementById("examInfo").innerHTML = `
+
+        const questions =
+            data.questions || [];
+
+
+        examQuestionsCount =
+            questions.length;
+
+
+        document.getElementById(
+            "examInfo"
+        ).innerHTML = `
+
             <div style="
                 background:#f8fafc;
                 border-radius:16px;
@@ -963,191 +1121,415 @@ async function loadExam(){
                 line-height:2;
                 font-size:13px;
             ">
-                <div><b>${exam.title}</b></div>
-                <div style="color:#6b7280">
-                    ${toPersianDigits(exam.questions.length)} سؤال
-                    •
-                    زمان هر سؤال ۳۰ ثانیه
+
+                <div>
+                    <b>${exam.title}</b>
                 </div>
+
+                <div style="color:#6b7280">
+
+                    ${toPersianDigits(
+                        questions.length
+                    )}
+                    سؤال
+
+                    •
+                    
+                    زمان هر سؤال
+                    ${toPersianDigits(30)}
+                    ثانیه
+
+                </div>
+
             </div>
         `;
 
-        document.getElementById("paymentInfo").textContent =
-            toPersianDigits(exam.price.toLocaleString("en-US")) + " تومان";
+
+        document.getElementById(
+            "paymentInfo"
+        ).textContent =
+
+            toPersianDigits(
+                Number(exam.price)
+                    .toLocaleString("en-US")
+            )
+            +
+            " تومان";
+
 
     }catch(err){
 
-        document.getElementById("examInfo").innerHTML = `
+        console.error(
+            "LOAD EXAM ERROR:",
+            err
+        );
+
+
+        document.getElementById(
+            "examInfo"
+        ).innerHTML = `
+
             <div class="error">
+
                 دریافت اطلاعات آزمون انجام نشد.
+
+                <br>
+
+                ${err.message}
+
             </div>
+
         `;
+
     }
+
 }
 
 
-/* -------------------------
-   شروع فرآیند
-------------------------- */
+/* =========================
+   ثبت اطلاعات
+========================= */
 
-document.getElementById("startButton").addEventListener("click", async ()=>{
+document
+.getElementById("startButton")
+.addEventListener(
+    "click",
+    async ()=>{
 
-    const nameEl = document.getElementById("nameInput");
-    const phoneEl = document.getElementById("phoneInput");
-    const errorEl = document.getElementById("startError");
+        const nameEl =
+            document.getElementById(
+                "nameInput"
+            );
 
-    const name = sanitizeName(nameEl.value);
-    const phone = normalizePhone(phoneEl.value);
 
-    errorEl.innerHTML = "";
+        const phoneEl =
+            document.getElementById(
+                "phoneInput"
+            );
 
-    nameEl.value = name;
 
-    if(name.length < 3){
-        errorEl.innerHTML = `
-            <div class="error">
-                لطفاً نام و نام خانوادگی را وارد کنید.
-            </div>
-        `;
-        return;
-    }
+        const errorEl =
+            document.getElementById(
+                "startError"
+            );
 
-    if(!/^09\d{9}$/.test(phone)){
-        errorEl.innerHTML = `
-            <div class="error">
-                شماره موبایل واردشده معتبر نیست.
-            </div>
-        `;
-        return;
-    }
 
-    const btn = document.getElementById("startButton");
+        const name =
+            sanitizeName(
+                nameEl.value
+            );
 
-    btn.disabled = true;
-    btn.textContent = "در حال ثبت...";
 
-    try{
+        const phone =
+            normalizePhone(
+                phoneEl.value
+            );
 
-        const res = await fetch(`${API}/api/create-order`,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-                examId:EXAM_ID,
-                name,
-                phone
-            })
-        });
 
-        const data = await res.json();
+        errorEl.innerHTML = "";
 
-        if(!res.ok){
-            throw new Error(data.error || "خطا در ثبت سفارش");
+        nameEl.value = name;
+
+
+        if(name.length < 3){
+
+            errorEl.innerHTML = `
+
+                <div class="error">
+                    لطفاً نام و نام خانوادگی را وارد کنید.
+                </div>
+
+            `;
+
+            return;
+
         }
 
-        orderId = data.orderId;
 
-        hide(document.getElementById("startCard"));
-        show(document.getElementById("paymentCard"));
+        if(!/^09\d{9}$/.test(phone)){
 
-    }catch(err){
+            errorEl.innerHTML = `
 
-        errorEl.innerHTML = `
-            <div class="error">${err.message}</div>
-        `;
+                <div class="error">
+                    شماره موبایل واردشده معتبر نیست.
+                </div>
 
-    }finally{
+            `;
 
-        btn.disabled = false;
-        btn.textContent = "ادامه و ثبت اطلاعات";
+            return;
+
+        }
+
+
+        const btn =
+            document.getElementById(
+                "startButton"
+            );
+
+
+        btn.disabled = true;
+
+        btn.textContent =
+            "در حال ثبت...";
+
+
+        try{
+
+            const res =
+                await fetch(
+                    `${API}/api/create-order`,
+                    {
+                        method:"POST",
+
+                        headers:{
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                examId:EXAM_ID,
+                                name:name,
+                                phone:phone
+                            })
+                    }
+                );
+
+
+            const data =
+                await res.json();
+
+
+            if(!res.ok){
+
+                throw new Error(
+                    data.error ||
+                    "خطا در ثبت سفارش"
+                );
+
+            }
+
+
+            orderId =
+                data.orderId;
+
+
+            hide(
+                document.getElementById(
+                    "startCard"
+                )
+            );
+
+
+            show(
+                document.getElementById(
+                    "paymentCard"
+                )
+            );
+
+
+        }catch(err){
+
+            errorEl.innerHTML = `
+
+                <div class="error">
+                    ${err.message}
+                </div>
+
+            `;
+
+        }finally{
+
+            btn.disabled = false;
+
+            btn.textContent =
+                "ادامه و ثبت اطلاعات";
+
+        }
+
     }
+);
 
-});
 
-
-/* -------------------------
+/* =========================
    پرداخت آزمایشی
-------------------------- */
+========================= */
 
-document.getElementById("payButton").addEventListener("click", async ()=>{
+document
+.getElementById("payButton")
+.addEventListener(
+    "click",
+    async ()=>{
 
-    const errorEl = document.getElementById("paymentError");
-    const btn = document.getElementById("payButton");
+        const errorEl =
+            document.getElementById(
+                "paymentError"
+            );
 
-    errorEl.innerHTML = "";
 
-    btn.disabled = true;
-    btn.textContent = "در حال پردازش...";
+        const btn =
+            document.getElementById(
+                "payButton"
+            );
 
-    try{
 
-        const res = await fetch(`${API}/api/demo-pay`,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-                orderId
-            })
-        });
+        errorEl.innerHTML = "";
 
-        const data = await res.json();
 
-        if(!res.ok){
-            throw new Error(data.error || "خطا در پرداخت");
+        btn.disabled = true;
+
+        btn.textContent =
+            "در حال پردازش...";
+
+
+        try{
+
+            const res =
+                await fetch(
+                    `${API}/api/demo-pay`,
+                    {
+                        method:"POST",
+
+                        headers:{
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                orderId
+                            })
+                    }
+                );
+
+
+            const data =
+                await res.json();
+
+
+            if(!res.ok){
+
+                throw new Error(
+                    data.error ||
+                    "خطا در پرداخت"
+                );
+
+            }
+
+
+            hide(
+                document.getElementById(
+                    "paymentCard"
+                )
+            );
+
+
+            show(
+                document.getElementById(
+                    "rulesCard"
+                )
+            );
+
+
+        }catch(err){
+
+            errorEl.innerHTML = `
+
+                <div class="error">
+                    ${err.message}
+                </div>
+
+            `;
+
+        }finally{
+
+            btn.disabled = false;
+
+            btn.textContent =
+                "پرداخت و ادامه";
+
         }
 
-        hide(document.getElementById("paymentCard"));
-        show(document.getElementById("rulesCard"));
-
-    }catch(err){
-
-        errorEl.innerHTML = `
-            <div class="error">${err.message}</div>
-        `;
-
-    }finally{
-
-        btn.disabled = false;
-        btn.textContent = "پرداخت و ادامه";
     }
+);
 
-});
 
-
-/* -------------------------
+/* =========================
    شروع آزمون
-------------------------- */
+========================= */
 
-document.getElementById("beginExamButton").addEventListener("click", startExam);
+document
+.getElementById("beginExamButton")
+.addEventListener(
+    "click",
+    startExam
+);
 
 
 async function startExam(){
 
+    const errorEl =
+        document.getElementById(
+            "examError"
+        );
+
+
+    errorEl.innerHTML = "";
+
+
     try{
 
-        const res = await fetch(`${API}/api/start`,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-                orderId,
-                examId:EXAM_ID
-            })
-        });
+        const res =
+            await fetch(
+                `${API}/api/start`,
+                {
+                    method:"POST",
 
-        const data = await res.json();
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            orderId,
+                            examId:EXAM_ID
+                        })
+                }
+            );
+
+
+        const data =
+            await res.json();
+
 
         if(!res.ok){
-            throw new Error(data.error || "خطا در شروع آزمون");
+
+            throw new Error(
+                data.error ||
+                "خطا در شروع آزمون"
+            );
+
         }
 
-        attemptId = data.attemptId;
 
-        hide(document.getElementById("rulesCard"));
-        show(document.getElementById("examCard"));
+        attemptId =
+            data.attemptId;
+
+
+        hide(
+            document.getElementById(
+                "rulesCard"
+            )
+        );
+
+
+        show(
+            document.getElementById(
+                "examCard"
+            )
+        );
+
 
         showQuestion(
             data.question,
@@ -1155,181 +1537,399 @@ async function startExam(){
             data.questionStartedAt
         );
 
+
     }catch(err){
 
-        document.getElementById("examError").innerHTML = `
-            <div class="error">${err.message}</div>
+        errorEl.innerHTML = `
+
+            <div class="error">
+                ${err.message}
+            </div>
+
         `;
+
     }
+
 }
 
 
-/* -------------------------
+/* =========================
    نمایش سؤال
-------------------------- */
+========================= */
 
-function showQuestion(question,index,startedAt){
+function showQuestion(
+    question,
+    index,
+    startedAt
+){
 
-    currentQuestion = question;
+    currentQuestion =
+        question;
 
-    const total = examQuestionsCount;
 
-    const number = index + 1;
+    const total =
+        examQuestionsCount;
 
-    document.getElementById("progress").textContent =
-        `سؤال ${toPersianDigits(number)} از ${toPersianDigits(total)}`;
 
-    document.getElementById("progressText").textContent =
-        `سؤال ${toPersianDigits(number)} از ${toPersianDigits(total)}`;
+    const number =
+        index + 1;
 
-    const percent = Math.round((number / total) * 100);
 
-    document.getElementById("progressPercent").textContent =
-        toPersianDigits(percent) + "٪";
+    document.getElementById(
+        "progress"
+    ).textContent =
 
-    document.getElementById("progressFill").style.width =
+        `سؤال ${
+            toPersianDigits(number)
+        } از ${
+            toPersianDigits(total)
+        }`;
+
+
+    document.getElementById(
+        "progressText"
+    ).textContent =
+
+        `سؤال ${
+            toPersianDigits(number)
+        } از ${
+            toPersianDigits(total)
+        }`;
+
+
+    const percent =
+        Math.round(
+            (number / total) * 100
+        );
+
+
+    document.getElementById(
+        "progressPercent"
+    ).textContent =
+
+        toPersianDigits(percent)
+        +
+        "٪";
+
+
+    document.getElementById(
+        "progressFill"
+    ).style.width =
         percent + "%";
 
 
-    document.getElementById("questionBox").innerHTML = `
+    document.getElementById(
+        "questionBox"
+    ).innerHTML = `
 
-        <h3>${question.question_text}</h3>
+        <h3>
+            ${question.question_text}
+        </h3>
 
-        <div class="options" style="margin-top:18px">
+        <div
+            class="options"
+            style="margin-top:18px"
+        >
 
-            ${createOption(0,"الف",question.option_a)}
-            ${createOption(1,"ب",question.option_b)}
-            ${createOption(2,"ج",question.option_c)}
-            ${createOption(3,"د",question.option_d)}
+            ${createOption(
+                0,
+                "الف",
+                question.option_a
+            )}
+
+            ${createOption(
+                1,
+                "ب",
+                question.option_b
+            )}
+
+            ${createOption(
+                2,
+                "ج",
+                question.option_c
+            )}
+
+            ${createOption(
+                3,
+                "د",
+                question.option_d
+            )}
 
         </div>
+
     `;
 
-    document.querySelectorAll(".option").forEach(btn=>{
 
-        btn.addEventListener("click",()=>{
+    document
+    .querySelectorAll(".option")
+    .forEach(btn=>{
 
-            const selected = Number(btn.dataset.index);
+        btn.addEventListener(
+            "click",
+            ()=>{
 
-            submitAnswer(index,selected);
+                if(submitting){
+                    return;
+                }
 
-        });
+
+                const selected =
+                    Number(
+                        btn.dataset.index
+                    );
+
+
+                submitAnswer(
+                    index,
+                    selected
+                );
+
+            }
+        );
 
     });
 
 
-    startTimer(startedAt, question.duration_seconds || 30);
+    startTimer(
+        startedAt,
+        question.duration_seconds || 30
+    );
+
 }
 
 
-function createOption(index,letter,text){
+function createOption(
+    index,
+    letter,
+    text
+){
 
     return `
-        <button class="option" data-index="${index}">
-            <span class="option-letter">${letter}</span>
-            <span class="option-text">${text}</span>
+
+        <button
+            class="option"
+            data-index="${index}"
+        >
+
+            <span class="option-letter">
+                ${letter}
+            </span>
+
+            <span class="option-text">
+                ${text}
+            </span>
+
         </button>
+
     `;
+
 }
 
 
-/* -------------------------
+/* =========================
    تایمر
-------------------------- */
+========================= */
 
-function startTimer(startedAt,duration){
+function startTimer(
+    startedAt,
+    duration
+){
 
-    clearInterval(timerInterval);
+    clearInterval(
+        timerInterval
+    );
 
-    const start = new Date(startedAt).getTime();
+
+    const start =
+        new Date(
+            startedAt
+        ).getTime();
+
+
+    const timerEl =
+        document.getElementById(
+            "timer"
+        );
+
+
+    const timerCircle =
+        document.querySelector(
+            ".timer"
+        );
+
 
     function tick(){
 
-        const now = Date.now();
+        const now =
+            Date.now();
 
-        const elapsed = Math.floor((now - start) / 1000);
 
-        secondsLeft = Math.max(0,duration - elapsed);
+        const elapsed =
+            Math.floor(
+                (now - start) / 1000
+            );
 
-        document.getElementById("timer").textContent =
-            toPersianDigits(secondsLeft);
+
+        secondsLeft =
+            Math.max(
+                0,
+                duration - elapsed
+            );
+
+
+        timerEl.textContent =
+            toPersianDigits(
+                secondsLeft
+            );
+
 
         if(secondsLeft <= 10){
 
-            document.querySelector(".timer").style.background =
+            timerCircle.style.background =
                 "linear-gradient(135deg,#dc2626,#ef4444)";
 
         }else{
 
-            document.querySelector(".timer").style.background =
+            timerCircle.style.background =
                 "linear-gradient(135deg,var(--primary),var(--primary2))";
+
         }
+
 
         if(secondsLeft <= 0){
 
-            clearInterval(timerInterval);
+            clearInterval(
+                timerInterval
+            );
 
-            submitAnswer(currentQuestionIndex(),null);
+
+            submitAnswer(
+                currentQuestionIndex(),
+                null
+            );
 
         }
+
     }
+
 
     tick();
 
-    timerInterval = setInterval(tick,1000);
+
+    timerInterval =
+        setInterval(
+            tick,
+            1000
+        );
+
 }
 
+
+/* =========================
+   شماره سؤال فعلی
+========================= */
 
 function currentQuestionIndex(){
 
-    const text = document.getElementById("progress").textContent;
+    const text =
+        document.getElementById(
+            "progress"
+        ).textContent;
 
-    const match = text.match(/[۰-۹0-9]+/);
 
-    if(!match) return 0;
+    const match =
+        text.match(
+            /[۰-۹0-9]+/
+        );
 
-    return Number(toEnglishDigits(match[0])) - 1;
+
+    if(!match){
+        return 0;
+    }
+
+
+    return Number(
+        toEnglishDigits(
+            match[0]
+        )
+    ) - 1;
+
 }
 
 
-/* -------------------------
+/* =========================
    ارسال پاسخ
-------------------------- */
+========================= */
 
-let submitting = false;
+async function submitAnswer(
+    questionIndex,
+    selectedIndex
+){
 
-async function submitAnswer(questionIndex,selectedIndex){
+    if(submitting){
+        return;
+    }
 
-    if(submitting) return;
 
     submitting = true;
 
-    clearInterval(timerInterval);
 
-    document.querySelectorAll(".option").forEach(btn=>{
+    clearInterval(
+        timerInterval
+    );
+
+
+    document
+    .querySelectorAll(".option")
+    .forEach(btn=>{
+
         btn.disabled = true;
+
         btn.style.opacity = ".65";
+
     });
+
 
     try{
 
-        const res = await fetch(`${API}/api/answer`,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-                attemptId,
-                questionIndex,
-                selectedIndex
-            })
-        });
+        const res =
+            await fetch(
+                `${API}/api/answer`,
+                {
+                    method:"POST",
 
-        const data = await res.json();
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            attemptId,
+
+                            questionIndex,
+
+                            selectedIndex
+
+                        })
+                }
+            );
+
+
+        const data =
+            await res.json();
+
 
         if(!res.ok){
-            throw new Error(data.error || "خطا در ثبت پاسخ");
+
+            throw new Error(
+                data.error ||
+                "خطا در ثبت پاسخ"
+            );
+
         }
+
 
         if(data.finished){
 
@@ -1345,60 +1945,108 @@ async function submitAnswer(questionIndex,selectedIndex){
 
         }
 
+
     }catch(err){
 
-        document.getElementById("examError").innerHTML = `
-            <div class="error">${err.message}</div>
+        document.getElementById(
+            "examError"
+        ).innerHTML = `
+
+            <div class="error">
+                ${err.message}
+            </div>
+
         `;
 
     }finally{
 
         submitting = false;
+
     }
+
 }
 
 
-/* -------------------------
+/* =========================
    پایان آزمون
-------------------------- */
+========================= */
 
 async function finishExam(){
 
-    clearInterval(timerInterval);
+    clearInterval(
+        timerInterval
+    );
 
-    const res = await fetch(`${API}/api/submit`,{
-        method:"POST",
-        headers:{
-            "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-            attemptId
-        })
-    });
 
-    const data = await res.json();
+    const res =
+        await fetch(
+            `${API}/api/submit`,
+            {
+                method:"POST",
+
+                headers:{
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body:
+                    JSON.stringify({
+                        attemptId
+                    })
+            }
+        );
+
+
+    const data =
+        await res.json();
+
 
     if(!res.ok){
-        throw new Error(data.error || "خطا در محاسبه نتیجه");
+
+        throw new Error(
+            data.error ||
+            "خطا در محاسبه نتیجه"
+        );
+
     }
 
-    hide(document.getElementById("examCard"));
 
-    show(document.getElementById("resultCard"));
+    hide(
+        document.getElementById(
+            "examCard"
+        )
+    );
+
+
+    show(
+        document.getElementById(
+            "resultCard"
+        )
+    );
+
 
     renderResult(data);
+
 }
 
 
-/* -------------------------
-   نتیجه
-------------------------- */
+/* =========================
+   نمایش نتیجه
+========================= */
 
 function renderResult(data){
 
-    const summary = document.getElementById("resultSummary");
+    const summary =
+        document.getElementById(
+            "resultSummary"
+        );
 
-    const score = Number(data.score || 0);
+
+    const score =
+        Number(
+            data.score || 0
+        );
+
 
     summary.innerHTML = `
 
@@ -1410,9 +2058,15 @@ function renderResult(data){
             margin-bottom:15px;
         ">
 
-            <div style="font-size:13px;color:#6b7280">
+            <div
+                style="
+                    font-size:13px;
+                    color:#6b7280
+                "
+            >
                 نمره نهایی
             </div>
+
 
             <div style="
                 font-size:38px;
@@ -1420,104 +2074,199 @@ function renderResult(data){
                 color:var(--primary);
                 margin-top:5px;
             ">
+
                 ${toPersianDigits(score)}
+
             </div>
 
         </div>
+
 
         <div class="stats">
 
             <div class="stat">
-                <div class="stat-number" style="color:#16a34a">
-                    ${toPersianDigits(data.correct_count || 0)}
+
+                <div
+                    class="stat-number"
+                    style="color:#16a34a"
+                >
+                    ${toPersianDigits(
+                        data.correct_count || 0
+                    )}
                 </div>
-                <div class="stat-label">صحیح</div>
+
+                <div class="stat-label">
+                    صحیح
+                </div>
+
             </div>
 
-            <div class="stat">
-                <div class="stat-number" style="color:#dc2626">
-                    ${toPersianDigits(data.wrong_count || 0)}
-                </div>
-                <div class="stat-label">غلط</div>
-            </div>
 
             <div class="stat">
+
+                <div
+                    class="stat-number"
+                    style="color:#dc2626"
+                >
+                    ${toPersianDigits(
+                        data.wrong_count || 0
+                    )}
+                </div>
+
+                <div class="stat-label">
+                    غلط
+                </div>
+
+            </div>
+
+
+            <div class="stat">
+
                 <div class="stat-number">
-                    ${toPersianDigits(data.empty_count || 0)}
+                    ${toPersianDigits(
+                        data.empty_count || 0
+                    )}
                 </div>
-                <div class="stat-label">بدون پاسخ</div>
+
+                <div class="stat-label">
+                    بدون پاسخ
+                </div>
+
             </div>
 
         </div>
+
     `;
 
 
-    const sheet = document.getElementById("answerSheet");
+    const sheet =
+        document.getElementById(
+            "answerSheet"
+        );
+
 
     sheet.innerHTML = "";
 
-    if(!data.sheet) return;
 
-    data.sheet.forEach((item,index)=>{
+    if(!data.sheet){
+        return;
+    }
 
-        let cls = "empty";
-        let status = "بدون پاسخ";
 
-        if(item.selectedIndex !== null){
+    data.sheet.forEach(
+        (item,index)=>{
 
-            if(item.selectedIndex === item.correctIndex){
+            let cls = "empty";
 
-                cls = "correct";
-                status = "پاسخ صحیح";
+            let status =
+                "بدون پاسخ";
 
-            }else{
 
-                cls = "wrong";
-                status = "پاسخ غلط";
+            if(
+                item.selectedIndex !== null
+            ){
+
+                if(
+                    item.selectedIndex ===
+                    item.correctIndex
+                ){
+
+                    cls = "correct";
+
+                    status =
+                        "پاسخ صحیح";
+
+                }else{
+
+                    cls = "wrong";
+
+                    status =
+                        "پاسخ غلط";
+
+                }
+
             }
+
+
+            sheet.innerHTML += `
+
+                <div
+                    class="answer-row ${cls}"
+                >
+
+                    <div style="
+                        font-weight:bold;
+                        margin-bottom:5px
+                    ">
+
+                        سؤال ${
+                            toPersianDigits(
+                                index + 1
+                            )
+                        }
+
+                    </div>
+
+
+                    <div>
+                        ${status}
+                    </div>
+
+                </div>
+
+            `;
+
         }
+    );
 
-        sheet.innerHTML += `
-
-            <div class="answer-row ${cls}">
-
-                <div style="font-weight:bold;margin-bottom:5px">
-                    سؤال ${toPersianDigits(index + 1)}
-                </div>
-
-                <div>
-                    ${status}
-                </div>
-
-            </div>
-        `;
-    });
 }
 
 
-/* -------------------------
-   جلوگیری از ورود کاراکتر نامعتبر
-------------------------- */
+/* =========================
+   ورودی نام
+========================= */
 
-document.getElementById("nameInput").addEventListener("input",function(){
+document
+.getElementById("nameInput")
+.addEventListener(
+    "input",
+    function(){
 
-    this.value = this.value
-        .replace(/[^\u0600-\u06FF\s]/g,"");
+        this.value =
+            this.value
+            .replace(
+                /[^\u0600-\u06FF\s]/g,
+                ""
+            );
 
-});
-
-
-document.getElementById("phoneInput").addEventListener("input",function(){
-
-    this.value = this.value
-        .replace(/[^\d۰-۹٠-٩]/g,"");
-
-});
+    }
+);
 
 
-/* -------------------------
-   شروع
-------------------------- */
+/* =========================
+   ورودی موبایل
+========================= */
+
+document
+.getElementById("phoneInput")
+.addEventListener(
+    "input",
+    function(){
+
+        this.value =
+            this.value
+            .replace(
+                /[^\d۰-۹٠-٩]/g,
+                ""
+            );
+
+    }
+);
+
+
+/* =========================
+   شروع صفحه
+========================= */
 
 loadExam();
 
