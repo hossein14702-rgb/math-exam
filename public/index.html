@@ -2042,10 +2042,32 @@ function renderResult(data){
         );
 
 
+    /*
+        نتیجه واقعی Worker داخل data.result است
+    */
+
+    const result =
+        data.result || {};
+
+
     const score =
-        Number(
-            data.score || 0
-        );
+        Number(result.score || 0);
+
+
+    const total =
+        Number(result.total || 0);
+
+
+    const correct =
+        Number(result.correct || 0);
+
+
+    const wrong =
+        Number(result.wrong || 0);
+
+
+    const empty =
+        Number(result.empty || 0);
 
 
     summary.innerHTML = `
@@ -2058,12 +2080,10 @@ function renderResult(data){
             margin-bottom:15px;
         ">
 
-            <div
-                style="
-                    font-size:13px;
-                    color:#6b7280
-                "
-            >
+            <div style="
+                font-size:13px;
+                color:#6b7280
+            ">
                 نمره نهایی
             </div>
 
@@ -2075,7 +2095,21 @@ function renderResult(data){
                 margin-top:5px;
             ">
 
-                ${toPersianDigits(score)}
+                ${toPersianDigits(score)}٪
+
+            </div>
+
+
+            <div style="
+                margin-top:8px;
+                color:#6b7280;
+                font-size:12px;
+            ">
+
+                ${toPersianDigits(correct)}
+                پاسخ صحیح از
+                ${toPersianDigits(total)}
+                سؤال
 
             </div>
 
@@ -2090,9 +2124,9 @@ function renderResult(data){
                     class="stat-number"
                     style="color:#16a34a"
                 >
-                    ${toPersianDigits(
-                        data.correct_count || 0
-                    )}
+
+                    ${toPersianDigits(correct)}
+
                 </div>
 
                 <div class="stat-label">
@@ -2108,9 +2142,9 @@ function renderResult(data){
                     class="stat-number"
                     style="color:#dc2626"
                 >
-                    ${toPersianDigits(
-                        data.wrong_count || 0
-                    )}
+
+                    ${toPersianDigits(wrong)}
+
                 </div>
 
                 <div class="stat-label">
@@ -2123,9 +2157,9 @@ function renderResult(data){
             <div class="stat">
 
                 <div class="stat-number">
-                    ${toPersianDigits(
-                        data.empty_count || 0
-                    )}
+
+                    ${toPersianDigits(empty)}
+
                 </div>
 
                 <div class="stat-label">
@@ -2139,6 +2173,10 @@ function renderResult(data){
     `;
 
 
+    /*
+        پاسخنامه
+    */
+
     const sheet =
         document.getElementById(
             "answerSheet"
@@ -2148,13 +2186,42 @@ function renderResult(data){
     sheet.innerHTML = "";
 
 
-    if(!data.sheet){
+    const answerSheet =
+        data.sheet || [];
+
+
+    if(answerSheet.length === 0){
+
+        sheet.innerHTML = `
+            <div class="answer-row empty">
+                پاسخنامه‌ای ثبت نشده است.
+            </div>
+        `;
+
         return;
     }
 
 
-    data.sheet.forEach(
+    answerSheet.forEach(
         (item,index)=>{
+
+            /*
+                Worker:
+                selected = انتخاب دانش‌آموز
+                correct = گزینه صحیح
+
+                مقدار null یعنی بدون پاسخ
+            */
+
+            const selected =
+                item.selected === null
+                    ? null
+                    : Number(item.selected);
+
+
+            const correctAnswer =
+                Number(item.correct);
+
 
             let cls = "empty";
 
@@ -2162,13 +2229,29 @@ function renderResult(data){
                 "بدون پاسخ";
 
 
-            if(
-                item.selectedIndex !== null
-            ){
+            let selectedText = "";
+
+
+            if(selected === null){
+
+                cls = "empty";
+
+                status =
+                    "بدون پاسخ";
+
+            }else{
+
+                selectedText =
+                    [
+                        "الف",
+                        "ب",
+                        "ج",
+                        "د"
+                    ][selected];
+
 
                 if(
-                    item.selectedIndex ===
-                    item.correctIndex
+                    selected === correctAnswer
                 ){
 
                     cls = "correct";
@@ -2188,6 +2271,15 @@ function renderResult(data){
             }
 
 
+            const correctText =
+                [
+                    "الف",
+                    "ب",
+                    "ج",
+                    "د"
+                ][correctAnswer];
+
+
             sheet.innerHTML += `
 
                 <div
@@ -2196,20 +2288,59 @@ function renderResult(data){
 
                     <div style="
                         font-weight:bold;
-                        margin-bottom:5px
+                        margin-bottom:7px
                     ">
 
-                        سؤال ${
-                            toPersianDigits(
-                                index + 1
-                            )
-                        }
+                        سؤال
+                        ${toPersianDigits(index + 1)}
 
                     </div>
 
 
-                    <div>
+                    <div style="
+                        font-weight:bold;
+                        margin-bottom:5px;
+                    ">
+
                         ${status}
+
+                    </div>
+
+
+                    ${
+                        selected === null
+
+                        ?
+
+                        `
+                        <div style="
+                            color:#6b7280;
+                        ">
+                            پاسخ شما: بدون پاسخ
+                        </div>
+                        `
+
+                        :
+
+                        `
+                        <div style="
+                            color:#374151;
+                        ">
+                            پاسخ شما:
+                            ${selectedText}
+                        </div>
+                        `
+                    }
+
+
+                    <div style="
+                        color:#6b7280;
+                        margin-top:4px;
+                    ">
+
+                        پاسخ صحیح:
+                        ${correctText}
+
                     </div>
 
                 </div>
