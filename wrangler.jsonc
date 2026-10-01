@@ -1,8 +1,7 @@
 {
   "name": "azmon",
-  "main": "worker.js",
+  "main": "./worker.js",
   "compatibility_date": "2026-10-01",
-
   "d1_databases": [
     {
       "binding": "DB",
@@ -11,4 +10,3 @@
     }
   ]
 }
- 
