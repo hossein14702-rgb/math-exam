@@ -2,6 +2,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // CORS
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: corsHeaders()
@@ -9,11 +10,18 @@ export default {
     }
 
     try {
-      // -----------------------------
-      // GET EXAM
-      // -----------------------------
-      if (request.method === "GET" && url.pathname === "/api/exam") {
-        const examId = Number(url.searchParams.get("id") || 1);
+
+      // =========================================================
+      // GET /api/exam?id=1
+      // دریافت اطلاعات آزمون و سوالات
+      // =========================================================
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/exam"
+      ) {
+        const examId = Number(
+          url.searchParams.get("id") || 1
+        );
 
         const exam = await env.DB.prepare(`
           SELECT
@@ -24,7 +32,9 @@ export default {
           FROM exams
           WHERE id = ?
             AND active = 1
-        `).bind(examId).first();
+        `)
+          .bind(examId)
+          .first();
 
         if (!exam) {
           return json({
@@ -45,7 +55,9 @@ export default {
           FROM questions
           WHERE exam_id = ?
           ORDER BY id
-        `).bind(examId).all();
+        `)
+          .bind(examId)
+          .all();
 
         return json({
           ok: true,
@@ -54,9 +66,11 @@ export default {
         });
       }
 
-      // -----------------------------
-      // CREATE ORDER
-      // -----------------------------
+
+      // =========================================================
+      // POST /api/create-order
+      // ایجاد سفارش
+      // =========================================================
       if (
         request.method === "POST" &&
         url.pathname === "/api/create-order"
@@ -82,11 +96,16 @@ export default {
         }
 
         const exam = await env.DB.prepare(`
-          SELECT id, title, price
+          SELECT
+            id,
+            title,
+            price
           FROM exams
           WHERE id = ?
             AND active = 1
-        `).bind(examId).first();
+        `)
+          .bind(examId)
+          .first();
 
         if (!exam) {
           return json({
@@ -108,14 +127,16 @@ export default {
             created_at
           )
           VALUES (?, ?, ?, ?, ?, 'pending', ?)
-        `).bind(
-          orderId,
-          exam.id,
-          name,
-          phone,
-          exam.price,
-          new Date().toISOString()
-        ).run();
+        `)
+          .bind(
+            orderId,
+            exam.id,
+            name,
+            phone,
+            exam.price,
+            new Date().toISOString()
+          )
+          .run();
 
         return json({
           ok: true,
@@ -125,15 +146,20 @@ export default {
         });
       }
 
-      // -----------------------------
-      // DEMO PAYMENT
-      // -----------------------------
+
+      // =========================================================
+      // POST /api/demo-pay
+      // پرداخت آزمایشی
+      // =========================================================
       if (
         request.method === "POST" &&
         url.pathname === "/api/demo-pay"
       ) {
         const body = await request.json();
-        const orderId = String(body.orderId || "");
+
+        const orderId = String(
+          body.orderId || ""
+        );
 
         if (!orderId) {
           return json({
@@ -143,10 +169,14 @@ export default {
         }
 
         const order = await env.DB.prepare(`
-          SELECT id, status
+          SELECT
+            id,
+            status
           FROM orders
           WHERE id = ?
-        `).bind(orderId).first();
+        `)
+          .bind(orderId)
+          .first();
 
         if (!order) {
           return json({
@@ -161,10 +191,12 @@ export default {
             status = 'paid',
             paid_at = ?
           WHERE id = ?
-        `).bind(
-          new Date().toISOString(),
-          orderId
-        ).run();
+        `)
+          .bind(
+            new Date().toISOString(),
+            orderId
+          )
+          .run();
 
         return json({
           ok: true,
@@ -173,16 +205,20 @@ export default {
         });
       }
 
-      // -----------------------------
-      // START EXAM
-      // -----------------------------
+
+      // =========================================================
+      // POST /api/start
+      // شروع آزمون
+      // =========================================================
       if (
         request.method === "POST" &&
         url.pathname === "/api/start"
       ) {
         const body = await request.json();
 
-        const orderId = String(body.orderId || "");
+        const orderId = String(
+          body.orderId || ""
+        );
 
         if (!orderId) {
           return json({
@@ -198,7 +234,9 @@ export default {
             status
           FROM orders
           WHERE id = ?
-        `).bind(orderId).first();
+        `)
+          .bind(orderId)
+          .first();
 
         if (!order) {
           return json({
@@ -214,7 +252,6 @@ export default {
           }, 403);
         }
 
-        // جلوگیری از ساخت چند attempt برای یک سفارش
         const existing = await env.DB.prepare(`
           SELECT
             id,
@@ -223,7 +260,9 @@ export default {
           WHERE order_id = ?
           ORDER BY started_at DESC
           LIMIT 1
-        `).bind(orderId).first();
+        `)
+          .bind(orderId)
+          .first();
 
         if (existing) {
           return json({
@@ -242,7 +281,9 @@ export default {
           WHERE exam_id = ?
           ORDER BY id
           LIMIT 1
-        `).bind(order.exam_id).first();
+        `)
+          .bind(order.exam_id)
+          .first();
 
         if (!firstQuestion) {
           return json({
@@ -252,7 +293,9 @@ export default {
         }
 
         const attemptId = crypto.randomUUID();
-        const startedAt = new Date().toISOString();
+
+        const startedAt =
+          new Date().toISOString();
 
         await env.DB.prepare(`
           INSERT INTO attempts (
@@ -261,30 +304,38 @@ export default {
             started_at
           )
           VALUES (?, ?, ?)
-        `).bind(
-          attemptId,
-          orderId,
-          startedAt
-        ).run();
+        `)
+          .bind(
+            attemptId,
+            orderId,
+            startedAt
+          )
+          .run();
 
         return json({
           ok: true,
           attemptId,
           startedAt,
-          questionDuration: firstQuestion.duration_seconds || 30
+          questionDuration:
+            firstQuestion.duration_seconds || 30
         });
       }
 
-      // -----------------------------
-      // SUBMIT EXAM
-      // -----------------------------
+
+      // =========================================================
+      // POST /api/submit
+      // ثبت نهایی آزمون و محاسبه نتیجه
+      // =========================================================
       if (
         request.method === "POST" &&
         url.pathname === "/api/submit"
       ) {
         const body = await request.json();
 
-        const attemptId = String(body.attemptId || "");
+        const attemptId = String(
+          body.attemptId || ""
+        );
+
         const answers = Array.isArray(body.answers)
           ? body.answers
           : [];
@@ -308,7 +359,9 @@ export default {
           JOIN orders o
             ON o.id = a.order_id
           WHERE a.id = ?
-        `).bind(attemptId).first();
+        `)
+          .bind(attemptId)
+          .first();
 
         if (!attempt) {
           return json({
@@ -344,7 +397,9 @@ export default {
           FROM questions
           WHERE exam_id = ?
           ORDER BY id
-        `).bind(attempt.exam_id).all();
+        `)
+          .bind(attempt.exam_id)
+          .all();
 
         const rows = questions.results || [];
 
@@ -355,6 +410,7 @@ export default {
         const sheet = [];
 
         for (let i = 0; i < rows.length; i++) {
+
           const q = rows[i];
 
           let selected = null;
@@ -367,10 +423,17 @@ export default {
             selected = Number(answers[i]);
           }
 
-          if (selected === null || Number.isNaN(selected)) {
+          if (
+            selected === null ||
+            Number.isNaN(selected)
+          ) {
             empty++;
-          } else if (selected === Number(q.correct_index)) {
+
+          } else if (
+            selected === Number(q.correct_index)
+          ) {
             correct++;
+
           } else {
             wrong++;
           }
@@ -392,10 +455,13 @@ export default {
         const total = rows.length;
 
         const score = total > 0
-          ? Number(((correct / total) * 100).toFixed(2))
+          ? Number(
+              ((correct / total) * 100).toFixed(2)
+            )
           : 0;
 
-        const finishedAt = new Date().toISOString();
+        const finishedAt =
+          new Date().toISOString();
 
         await env.DB.prepare(`
           UPDATE attempts
@@ -406,17 +472,20 @@ export default {
             wrong_count = ?,
             empty_count = ?
           WHERE id = ?
-        `).bind(
-          finishedAt,
-          score,
-          correct,
-          wrong,
-          empty,
-          attemptId
-        ).run();
+        `)
+          .bind(
+            finishedAt,
+            score,
+            correct,
+            wrong,
+            empty,
+            attemptId
+          )
+          .run();
 
         return json({
           ok: true,
+
           result: {
             total,
             correct,
@@ -424,29 +493,32 @@ export default {
             empty,
             score
           },
+
           sheet
         });
       }
 
-      // -----------------------------
-      // HEALTH CHECK
-      // -----------------------------
-      if (
-        request.method === "GET" &&
-        url.pathname === "/"
-      ) {
-        return json({
-          ok: true,
-          message: "Math Exam Worker is running."
-        });
+
+      // =========================================================
+      // Static Assets
+      // هر چیزی غیر از /api/* از public خوانده می‌شود
+      // =========================================================
+      if (!url.pathname.startsWith("/api/")) {
+        return env.ASSETS.fetch(request);
       }
 
+
+      // =========================================================
+      // مسیر ناشناخته
+      // =========================================================
       return json({
         ok: false,
         error: "مسیر درخواست پیدا نشد."
       }, 404);
 
+
     } catch (error) {
+
       console.error(error);
 
       return json({
@@ -459,10 +531,9 @@ export default {
 };
 
 
-// =====================================
-// HELPERS
-// =====================================
-
+// =============================================================
+// CORS
+// =============================================================
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
@@ -473,6 +544,9 @@ function corsHeaders() {
 }
 
 
+// =============================================================
+// JSON Response
+// =============================================================
 function json(data, status = 200) {
   return new Response(
     JSON.stringify(data),
@@ -484,29 +558,53 @@ function json(data, status = 200) {
 }
 
 
+// =============================================================
+// Normalize Iranian Phone
+// =============================================================
 function normalizePhone(value) {
+
   let phone = String(value || "");
 
   const persian = "۰۱۲۳۴۵۶۷۸۹";
   const arabic = "٠١٢٣٤٥٦٧٨٩";
 
+
+  // Persian digits → English
   phone = phone.replace(/[۰-۹]/g, d => {
-    return String(persian.indexOf(d));
+    return String(
+      persian.indexOf(d)
+    );
   });
 
+
+  // Arabic digits → English
   phone = phone.replace(/[٠-٩]/g, d => {
-    return String(arabic.indexOf(d));
+    return String(
+      arabic.indexOf(d)
+    );
   });
 
+
+  // فقط عدد
   phone = phone.replace(/\D/g, "");
 
+
+  // 98xxxxxxxxxx → 09xxxxxxxxx
   if (phone.startsWith("98")) {
-    phone = "0" + phone.substring(2);
+    phone =
+      "0" +
+      phone.substring(2);
   }
 
+
+  // 0098xxxxxxxxxx → 09xxxxxxxxx
   if (phone.startsWith("0098")) {
-    phone = "0" + phone.substring(4);
+    phone =
+      "0" +
+      phone.substring(4);
   }
 
+
+  // حداکثر 11 رقم
   return phone.substring(0, 11);
 }
