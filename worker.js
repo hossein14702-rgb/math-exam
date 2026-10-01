@@ -247,7 +247,10 @@ export default {
           }, 403);
         }
 
-        // اگر قبلاً آزمون شروع شده، همان آزمون را برگردان
+
+        // =================================================
+        // اگر قبلاً آزمون شروع شده
+        // =================================================
         const existing = await env.DB.prepare(`
           SELECT
             id,
@@ -272,14 +275,111 @@ export default {
             }, 400);
           }
 
+
+          // -----------------------------------------------
+          // آزمون جدید با attempt_questions
+          // -----------------------------------------------
+          const savedQuestions = await env.DB.prepare(`
+            SELECT
+              id,
+              question_id,
+              question_order,
+              question_text_snapshot,
+              option_a_snapshot,
+              option_b_snapshot,
+              option_c_snapshot,
+              option_d_snapshot,
+              duration_seconds_snapshot,
+              started_at
+            FROM attempt_questions
+            WHERE attempt_id = ?
+            ORDER BY question_order
+          `)
+            .bind(existing.id)
+            .all();
+
+          const savedRows =
+            savedQuestions.results || [];
+
+          if (savedRows.length > 0) {
+
+            const currentIndex =
+              Number(existing.current_question || 0);
+
+            let currentQuestion =
+              savedRows.find(
+                q =>
+                  Number(q.question_order) ===
+                  currentIndex
+              );
+
+            if (!currentQuestion) {
+              return json({
+                ok: false,
+                error: "سؤال فعلی پیدا نشد."
+              }, 400);
+            }
+
+
+            // اگر سؤال فعلی هنوز شروع نشده، زمان شروع را ثبت کن
+            let questionStartedAt =
+              currentQuestion.started_at;
+
+            if (!questionStartedAt) {
+
+              questionStartedAt =
+                new Date().toISOString();
+
+              await env.DB.prepare(`
+                UPDATE attempt_questions
+                SET started_at = ?
+                WHERE id = ?
+              `)
+                .bind(
+                  questionStartedAt,
+                  currentQuestion.id
+                )
+                .run();
+
+              await env.DB.prepare(`
+                UPDATE attempts
+                SET question_started_at = ?
+                WHERE id = ?
+              `)
+                .bind(
+                  questionStartedAt,
+                  existing.id
+                )
+                .run();
+            }
+
+            return json({
+              ok: true,
+              attemptId: existing.id,
+              startedAt: existing.started_at,
+              currentQuestion: currentIndex,
+              questionStartedAt,
+              alreadyStarted: true,
+              question:
+                publicSnapshotQuestion(
+                  currentQuestion
+                )
+            });
+          }
+
+
+          // -----------------------------------------------
+          // سازگاری با آزمون‌های قدیمی
+          // -----------------------------------------------
           const currentIndex =
             Number(existing.current_question || 0);
 
-          const currentQuestion = await getQuestion(
-            env,
-            order.exam_id,
-            currentIndex
-          );
+          const currentQuestion =
+            await getQuestion(
+              env,
+              order.exam_id,
+              currentIndex
+            );
 
           if (!currentQuestion) {
             return json({
@@ -296,28 +396,41 @@ export default {
             questionStartedAt:
               existing.question_started_at,
             alreadyStarted: true,
-            question: publicQuestion(currentQuestion)
+            question:
+              publicQuestion(currentQuestion)
           });
         }
 
-        const firstQuestion = await getQuestion(
-          env,
-          order.exam_id,
-          0
-        );
 
-        if (!firstQuestion) {
+        // =================================================
+        // آزمون جدید
+        // انتخاب سؤال از پوشه‌ها
+        // =================================================
+        const selectedQuestions =
+          await selectQuestionsForExam(
+            env,
+            order.exam_id
+          );
+
+        if (!selectedQuestions.length) {
           return json({
             ok: false,
-            error: "برای این آزمون سؤال ثبت نشده."
+            error:
+              "برای این آزمون سؤال قابل انتخاب وجود ندارد."
           }, 400);
         }
 
-        const attemptId = crypto.randomUUID();
+
+        const attemptId =
+          crypto.randomUUID();
 
         const startedAt =
           new Date().toISOString();
 
+
+        // -----------------------------------------------
+        // ساخت attempt
+        // -----------------------------------------------
         await env.DB.prepare(`
           INSERT INTO attempts (
             id,
@@ -336,6 +449,60 @@ export default {
           )
           .run();
 
+
+        // -----------------------------------------------
+        // ذخیره Snapshot سؤال‌ها
+        // -----------------------------------------------
+        for (
+          let i = 0;
+          i < selectedQuestions.length;
+          i++
+        ) {
+
+          const q =
+            selectedQuestions[i];
+
+          await env.DB.prepare(`
+            INSERT INTO attempt_questions (
+              attempt_id,
+              question_id,
+              question_order,
+              question_text_snapshot,
+              option_a_snapshot,
+              option_b_snapshot,
+              option_c_snapshot,
+              option_d_snapshot,
+              correct_index_snapshot,
+              duration_seconds_snapshot,
+              started_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `)
+            .bind(
+              attemptId,
+              q.id,
+              i,
+              q.question_text,
+              q.option_a,
+              q.option_b,
+              q.option_c,
+              q.option_d,
+              q.correct_index,
+              Number(
+                q.duration_seconds || 30
+              ),
+              i === 0
+                ? startedAt
+                : null
+            )
+            .run();
+        }
+
+
+        const firstQuestion =
+          selectedQuestions[0];
+
+
         return json({
           ok: true,
           attemptId,
@@ -343,7 +510,10 @@ export default {
           currentQuestion: 0,
           questionStartedAt: startedAt,
           alreadyStarted: false,
-          question: publicQuestion(firstQuestion)
+          question:
+            publicQuestion(
+              firstQuestion
+            )
         });
       }
 
@@ -406,6 +576,7 @@ export default {
           }, 400);
         }
 
+
         const attempt = await env.DB.prepare(`
           SELECT
             a.id,
@@ -445,70 +616,282 @@ export default {
           }, 400);
         }
 
-        // جلوگیری از پاسخ دادن به سؤال قبلی یا بعدی
         if (
           Number(attempt.current_question) !==
           questionIndex
         ) {
           return json({
             ok: false,
-            error: "این سؤال دیگر قابل پاسخ‌گویی نیست."
+            error:
+              "این سؤال دیگر قابل پاسخ‌گویی نیست."
           }, 409);
         }
 
-        const question = await getQuestion(
-          env,
-          attempt.exam_id,
-          questionIndex
-        );
+
+        // =================================================
+        // سؤال Snapshot شده
+        // =================================================
+        let question =
+          await env.DB.prepare(`
+            SELECT
+              id,
+              question_id,
+              question_order,
+              question_text_snapshot,
+              option_a_snapshot,
+              option_b_snapshot,
+              option_c_snapshot,
+              option_d_snapshot,
+              correct_index_snapshot,
+              duration_seconds_snapshot,
+              started_at
+            FROM attempt_questions
+            WHERE attempt_id = ?
+              AND question_order = ?
+          `)
+            .bind(
+              attemptId,
+              questionIndex
+            )
+            .first();
+
+
+        // =================================================
+        // سازگاری با آزمون‌های قدیمی
+        // =================================================
+        let isSnapshot = true;
 
         if (!question) {
-          return json({
-            ok: false,
-            error: "سؤال پیدا نشد."
-          }, 404);
+
+          isSnapshot = false;
+
+          question =
+            await getQuestion(
+              env,
+              attempt.exam_id,
+              questionIndex
+            );
+
+          if (!question) {
+            return json({
+              ok: false,
+              error: "سؤال پیدا نشد."
+            }, 404);
+          }
         }
 
-        const now = new Date();
+
+        const now =
+          new Date();
+
 
         const questionStarted =
-          new Date(
-            attempt.question_started_at
-          );
+          isSnapshot
+            ? new Date(
+                question.started_at ||
+                attempt.question_started_at
+              )
+            : new Date(
+                attempt.question_started_at
+              );
+
 
         const elapsedSeconds =
-          (now.getTime() -
-            questionStarted.getTime()) / 1000;
+          (
+            now.getTime() -
+            questionStarted.getTime()
+          ) / 1000;
+
 
         const duration =
-          Number(question.duration_seconds || 30);
+          isSnapshot
+            ? Number(
+                question.duration_seconds_snapshot ||
+                30
+              )
+            : Number(
+                question.duration_seconds ||
+                30
+              );
 
-        // اگر زمان تمام شده باشد، پاسخ کاربر نادیده گرفته می‌شود
+
+        // اگر زمان تمام شده باشد
         if (elapsedSeconds > duration) {
           selectedIndex = null;
         }
 
-        // ثبت پاسخ
-        await env.DB.prepare(`
-          INSERT INTO attempt_answers (
-            attempt_id,
-            question_index,
-            selected_index,
-            answered_at
-          )
-          VALUES (?, ?, ?, ?)
-        `)
-          .bind(
-            attemptId,
-            questionIndex,
-            selectedIndex,
-            now.toISOString()
-          )
-          .run();
 
+        // =================================================
+        // ثبت پاسخ
+        // =================================================
+        if (isSnapshot) {
+
+          const isCorrect =
+            selectedIndex !== null &&
+            selectedIndex ===
+              Number(
+                question.correct_index_snapshot
+              )
+              ? 1
+              : 0;
+
+
+          await env.DB.prepare(`
+            UPDATE attempt_questions
+            SET
+              selected_index = ?,
+              answered_at = ?,
+              elapsed_seconds = ?,
+              is_correct = ?
+            WHERE attempt_id = ?
+              AND question_order = ?
+          `)
+            .bind(
+              selectedIndex,
+              now.toISOString(),
+              Math.round(elapsedSeconds),
+              isCorrect,
+              attemptId,
+              questionIndex
+            )
+            .run();
+
+        } else {
+
+          await env.DB.prepare(`
+            INSERT INTO attempt_answers (
+              attempt_id,
+              question_index,
+              selected_index,
+              answered_at
+            )
+            VALUES (?, ?, ?, ?)
+          `)
+            .bind(
+              attemptId,
+              questionIndex,
+              selectedIndex,
+              now.toISOString()
+            )
+            .run();
+        }
+
+
+        // =================================================
+        // سؤال بعدی
+        // =================================================
         const nextIndex =
           questionIndex + 1;
 
+
+        if (isSnapshot) {
+
+          const nextQuestion =
+            await env.DB.prepare(`
+              SELECT
+                id,
+                question_id,
+                question_order,
+                question_text_snapshot,
+                option_a_snapshot,
+                option_b_snapshot,
+                option_c_snapshot,
+                option_d_snapshot,
+                correct_index_snapshot,
+                duration_seconds_snapshot,
+                started_at
+              FROM attempt_questions
+              WHERE attempt_id = ?
+                AND question_order = ?
+            `)
+              .bind(
+                attemptId,
+                nextIndex
+              )
+              .first();
+
+
+          if (nextQuestion) {
+
+            const nextStartedAt =
+              now.toISOString();
+
+
+            await env.DB.prepare(`
+              UPDATE attempt_questions
+              SET started_at = ?
+              WHERE attempt_id = ?
+                AND question_order = ?
+            `)
+              .bind(
+                nextStartedAt,
+                attemptId,
+                nextIndex
+              )
+              .run();
+
+
+            await env.DB.prepare(`
+              UPDATE attempts
+              SET
+                current_question = ?,
+                question_started_at = ?
+              WHERE id = ?
+            `)
+              .bind(
+                nextIndex,
+                nextStartedAt,
+                attemptId
+              )
+              .run();
+
+
+            return json({
+              ok: true,
+              finished: false,
+              timedOut:
+                elapsedSeconds > duration,
+              currentQuestion:
+                nextIndex,
+              questionStartedAt:
+                nextStartedAt,
+              question:
+                publicSnapshotQuestion(
+                  nextQuestion
+                )
+            });
+          }
+
+
+          // ---------------------------------------------
+          // پایان آزمون Snapshot
+          // ---------------------------------------------
+          await env.DB.prepare(`
+            UPDATE attempts
+            SET
+              current_question = ?,
+              question_started_at = NULL
+            WHERE id = ?
+          `)
+            .bind(
+              nextIndex,
+              attemptId
+            )
+            .run();
+
+
+          return json({
+            ok: true,
+            finished: true,
+            timedOut:
+              elapsedSeconds > duration
+          });
+        }
+
+
+        // =================================================
+        // مسیر قدیمی
+        // =================================================
         const nextQuestion =
           await getQuestion(
             env,
@@ -516,7 +899,7 @@ export default {
             nextIndex
           );
 
-        // اگر سؤال دیگری وجود دارد
+
         if (nextQuestion) {
 
           await env.DB.prepare(`
@@ -533,20 +916,24 @@ export default {
             )
             .run();
 
+
           return json({
             ok: true,
             finished: false,
             timedOut:
               elapsedSeconds > duration,
-            currentQuestion: nextIndex,
+            currentQuestion:
+              nextIndex,
             questionStartedAt:
               now.toISOString(),
             question:
-              publicQuestion(nextQuestion)
+              publicQuestion(
+                nextQuestion
+              )
           });
         }
 
-        // اگر سؤال آخر بوده
+
         await env.DB.prepare(`
           UPDATE attempts
           SET
@@ -559,6 +946,7 @@ export default {
             attemptId
           )
           .run();
+
 
         return json({
           ok: true,
@@ -589,6 +977,7 @@ export default {
           }, 400);
         }
 
+
         const attempt = await env.DB.prepare(`
           SELECT
             a.id,
@@ -605,12 +994,14 @@ export default {
           .bind(attemptId)
           .first();
 
+
         if (!attempt) {
           return json({
             ok: false,
             error: "آزمون پیدا نشد."
           }, 404);
         }
+
 
         if (attempt.status !== "paid") {
           return json({
@@ -619,150 +1010,166 @@ export default {
           }, 403);
         }
 
-        if (attempt.finished_at) {
 
+        if (attempt.finished_at) {
           return await buildResult(
             env,
             attemptId
           );
         }
 
-        const questions = await env.DB.prepare(`
-          SELECT
-            id,
-            question_text,
-            option_a,
-            option_b,
-            option_c,
-            option_d,
-            correct_index
-          FROM questions
-          WHERE exam_id = ?
-          ORDER BY id
-        `)
-          .bind(attempt.exam_id)
-          .all();
 
-        const rows =
-          questions.results || [];
+        // =================================================
+        // اگر Snapshot وجود دارد
+        // =================================================
+        const savedQuestions =
+          await env.DB.prepare(`
+            SELECT
+              question_order,
+              question_text_snapshot,
+              option_a_snapshot,
+              option_b_snapshot,
+              option_c_snapshot,
+              option_d_snapshot,
+              correct_index_snapshot,
+              selected_index,
+              elapsed_seconds
+            FROM attempt_questions
+            WHERE attempt_id = ?
+            ORDER BY question_order
+          `)
+            .bind(attemptId)
+            .all();
 
-        const answers = await env.DB.prepare(`
-          SELECT
-            question_index,
-            selected_index
-          FROM attempt_answers
-          WHERE attempt_id = ?
-          ORDER BY question_index
-        `)
-          .bind(attemptId)
-          .all();
 
-        const answerRows =
-          answers.results || [];
+        const savedRows =
+          savedQuestions.results || [];
 
-        let correct = 0;
-        let wrong = 0;
-        let empty = 0;
 
-        const answerMap = {};
+        if (savedRows.length > 0) {
 
-        for (const a of answerRows) {
-          answerMap[
-            Number(a.question_index)
-          ] = a.selected_index === null
-            ? null
-            : Number(a.selected_index);
-        }
+          let correct = 0;
+          let wrong = 0;
+          let empty = 0;
 
-        const sheet = [];
+          const sheet = [];
 
-        for (
-          let i = 0;
-          i < rows.length;
-          i++
-        ) {
 
-          const q = rows[i];
+          for (const q of savedRows) {
 
-          const selected =
-            Object.prototype.hasOwnProperty.call(
-              answerMap,
-              i
-            )
-              ? answerMap[i]
-              : null;
+            const selected =
+              q.selected_index === null ||
+              q.selected_index === undefined
+                ? null
+                : Number(
+                    q.selected_index
+                  );
 
-          if (selected === null) {
-            empty++;
-          } else if (
-            selected === Number(q.correct_index)
-          ) {
-            correct++;
-          } else {
-            wrong++;
+
+            const correctIndex =
+              Number(
+                q.correct_index_snapshot
+              );
+
+
+            if (selected === null) {
+              empty++;
+            } else if (
+              selected === correctIndex
+            ) {
+              correct++;
+            } else {
+              wrong++;
+            }
+
+
+            sheet.push({
+              number:
+                Number(q.question_order) + 1,
+              question:
+                q.question_text_snapshot,
+              selected,
+              correct:
+                correctIndex,
+              elapsedSeconds:
+                q.elapsed_seconds === null
+                  ? null
+                  : Number(
+                      q.elapsed_seconds
+                    ),
+              options: [
+                q.option_a_snapshot,
+                q.option_b_snapshot,
+                q.option_c_snapshot,
+                q.option_d_snapshot
+              ]
+            });
           }
 
-          sheet.push({
-            number: i + 1,
-            question: q.question_text,
-            selected,
-            correct:
-              Number(q.correct_index),
-            options: [
-              q.option_a,
-              q.option_b,
-              q.option_c,
-              q.option_d
-            ]
+
+          const total =
+            savedRows.length;
+
+
+          const score =
+            total > 0
+              ? Number(
+                  (
+                    (correct / total) *
+                    100
+                  ).toFixed(2)
+                )
+              : 0;
+
+
+          const finishedAt =
+            new Date().toISOString();
+
+
+          await env.DB.prepare(`
+            UPDATE attempts
+            SET
+              finished_at = ?,
+              score = ?,
+              correct_count = ?,
+              wrong_count = ?,
+              empty_count = ?
+            WHERE id = ?
+          `)
+            .bind(
+              finishedAt,
+              score,
+              correct,
+              wrong,
+              empty,
+              attemptId
+            )
+            .run();
+
+
+          return json({
+            ok: true,
+
+            result: {
+              total,
+              correct,
+              wrong,
+              empty,
+              score
+            },
+
+            sheet
           });
         }
 
-        const total = rows.length;
 
-        const score = total > 0
-          ? Number(
-              (
-                (correct / total) * 100
-              ).toFixed(2)
-            )
-          : 0;
-
-        const finishedAt =
-          new Date().toISOString();
-
-        await env.DB.prepare(`
-          UPDATE attempts
-          SET
-            finished_at = ?,
-            score = ?,
-            correct_count = ?,
-            wrong_count = ?,
-            empty_count = ?
-          WHERE id = ?
-        `)
-          .bind(
-            finishedAt,
-            score,
-            correct,
-            wrong,
-            empty,
-            attemptId
-          )
-          .run();
-
-        return json({
-          ok: true,
-
-          result: {
-            total,
-            correct,
-            wrong,
-            empty,
-            score
-          },
-
-          sheet
-        });
+        // =================================================
+        // نتیجه آزمون‌های قدیمی
+        // =================================================
+        return await buildLegacyResult(
+          env,
+          attempt
+        );
       }
 
 
@@ -773,10 +1180,12 @@ export default {
         return env.ASSETS.fetch(request);
       }
 
+
       return json({
         ok: false,
         error: "مسیر درخواست پیدا نشد."
       }, 404);
+
 
     } catch (error) {
 
@@ -795,7 +1204,216 @@ export default {
 
 
 // =====================================================
-// توابع کمکی
+// انتخاب سؤال برای آزمون
+// =====================================================
+
+async function selectQuestionsForExam(
+  env,
+  examId
+) {
+
+  const rules =
+    await env.DB.prepare(`
+      SELECT
+        r.id,
+        r.folder_id,
+        r.selection_count,
+        r.selection_mode,
+        f.name AS folder_name
+      FROM exam_folder_rules r
+      JOIN question_folders f
+        ON f.id = r.folder_id
+      WHERE r.exam_id = ?
+        AND f.active = 1
+        AND r.selection_count > 0
+      ORDER BY r.id
+    `)
+      .bind(examId)
+      .all();
+
+
+  const ruleRows =
+    rules.results || [];
+
+
+  const selected = [];
+
+
+  for (const rule of ruleRows) {
+
+    const count =
+      Number(
+        rule.selection_count || 0
+      );
+
+
+    if (count <= 0) {
+      continue;
+    }
+
+
+    const mode =
+      String(
+        rule.selection_mode ||
+        "random"
+      ).toLowerCase();
+
+
+    let rows = [];
+
+
+    // ===================================================
+    // حالت دستی
+    // ===================================================
+    if (mode === "manual") {
+
+      const manual =
+        await env.DB.prepare(`
+          SELECT
+            q.id,
+            q.question_text,
+            q.option_a,
+            q.option_b,
+            q.option_c,
+            q.option_d,
+            q.correct_index,
+            q.duration_seconds
+          FROM exam_manual_questions m
+          JOIN questions q
+            ON q.id = m.question_id
+          WHERE m.exam_id = ?
+            AND q.folder_id = ?
+          ORDER BY m.sort_order, q.id
+          LIMIT ?
+        `)
+          .bind(
+            examId,
+            rule.folder_id,
+            count
+          )
+          .all();
+
+
+      rows =
+        manual.results || [];
+
+    } else {
+
+      // =================================================
+      // حالت تصادفی
+      // =================================================
+      const random =
+        await env.DB.prepare(`
+          SELECT
+            id,
+            question_text,
+            option_a,
+            option_b,
+            option_c,
+            option_d,
+            correct_index,
+            duration_seconds
+          FROM questions
+          WHERE folder_id = ?
+            AND (
+              active IS NULL
+              OR active = 1
+            )
+          ORDER BY RANDOM()
+          LIMIT ?
+        `)
+          .bind(
+            rule.folder_id,
+            count
+          )
+          .all();
+
+
+      rows =
+        random.results || [];
+    }
+
+
+    // اگر سؤال کافی نبود، آزمون را ناقص شروع نکن
+    if (rows.length < count) {
+      throw new Error(
+        `در ${rule.folder_name} فقط ${rows.length} سؤال موجود است ولی ${count} سؤال لازم است.`
+      );
+    }
+
+
+    selected.push(...rows);
+  }
+
+
+  // =====================================================
+  // اگر هیچ Rule ثبت نشده بود
+  // برای سازگاری با آزمون فعلی
+  // =====================================================
+  if (selected.length === 0) {
+
+    const legacy =
+      await env.DB.prepare(`
+        SELECT
+          id,
+          question_text,
+          option_a,
+          option_b,
+          option_c,
+          option_d,
+          correct_index,
+          duration_seconds
+        FROM questions
+        WHERE exam_id = ?
+        ORDER BY id
+      `)
+        .bind(examId)
+        .all();
+
+
+    return legacy.results || [];
+  }
+
+
+  return selected;
+}
+
+
+// =====================================================
+// سؤال عمومی Snapshot
+// =====================================================
+
+function publicSnapshotQuestion(q) {
+
+  return {
+    id:
+      q.question_id,
+
+    question_text:
+      q.question_text_snapshot,
+
+    option_a:
+      q.option_a_snapshot,
+
+    option_b:
+      q.option_b_snapshot,
+
+    option_c:
+      q.option_c_snapshot,
+
+    option_d:
+      q.option_d_snapshot,
+
+    duration_seconds:
+      Number(
+        q.duration_seconds_snapshot || 30
+      )
+  };
+}
+
+
+// =====================================================
+// سؤال معمولی
 // =====================================================
 
 async function getQuestion(
@@ -827,20 +1445,31 @@ async function getQuestion(
 }
 
 
+// =====================================================
+// سؤال عمومی
+// =====================================================
+
 function publicQuestion(q) {
 
   return {
-    id: q.id,
+    id:
+      q.id,
+
     question_text:
       q.question_text,
+
     option_a:
       q.option_a,
+
     option_b:
       q.option_b,
+
     option_c:
       q.option_c,
+
     option_d:
       q.option_d,
+
     duration_seconds:
       Number(
         q.duration_seconds || 30
@@ -849,67 +1478,58 @@ function publicQuestion(q) {
 }
 
 
+// =====================================================
+// نتیجه آزمون Snapshot
+// =====================================================
+
 async function buildResult(
   env,
   attemptId
 ) {
 
-  const attempt = await env.DB.prepare(`
-    SELECT
-      a.id,
-      a.order_id,
-      o.exam_id
-    FROM attempts a
-    JOIN orders o
-      ON o.id = a.order_id
-    WHERE a.id = ?
-  `)
-    .bind(attemptId)
-    .first();
+  const attempt =
+    await env.DB.prepare(`
+      SELECT
+        a.id,
+        a.order_id
+      FROM attempts a
+      WHERE a.id = ?
+    `)
+      .bind(attemptId)
+      .first();
 
-  const questions = await env.DB.prepare(`
-    SELECT
-      id,
-      question_text,
-      option_a,
-      option_b,
-      option_c,
-      option_d,
-      correct_index
-    FROM questions
-    WHERE exam_id = ?
-    ORDER BY id
-  `)
-    .bind(attempt.exam_id)
-    .all();
 
-  const answers = await env.DB.prepare(`
-    SELECT
-      question_index,
-      selected_index
-    FROM attempt_answers
-    WHERE attempt_id = ?
-    ORDER BY question_index
-  `)
-    .bind(attemptId)
-    .all();
+  if (!attempt) {
+    return json({
+      ok: false,
+      error: "آزمون پیدا نشد."
+    }, 404);
+  }
+
+
+  const questions =
+    await env.DB.prepare(`
+      SELECT
+        question_order,
+        question_text_snapshot,
+        option_a_snapshot,
+        option_b_snapshot,
+        option_c_snapshot,
+        option_d_snapshot,
+        correct_index_snapshot,
+        selected_index,
+        elapsed_seconds
+      FROM attempt_questions
+      WHERE attempt_id = ?
+      ORDER BY question_order
+    `)
+      .bind(attemptId)
+      .all();
+
 
   const rows =
     questions.results || [];
 
-  const answerRows =
-    answers.results || [];
-
-  const answerMap = {};
-
-  for (const a of answerRows) {
-    answerMap[
-      Number(a.question_index)
-    ] =
-      a.selected_index === null
-        ? null
-        : Number(a.selected_index);
-  }
 
   let correct = 0;
   let wrong = 0;
@@ -917,58 +1537,78 @@ async function buildResult(
 
   const sheet = [];
 
-  for (
-    let i = 0;
-    i < rows.length;
-    i++
-  ) {
 
-    const q = rows[i];
+  for (const q of rows) {
 
     const selected =
-      Object.prototype.hasOwnProperty.call(
-        answerMap,
-        i
-      )
-        ? answerMap[i]
-        : null;
+      q.selected_index === null ||
+      q.selected_index === undefined
+        ? null
+        : Number(
+            q.selected_index
+          );
+
+
+    const correctIndex =
+      Number(
+        q.correct_index_snapshot
+      );
+
 
     if (selected === null) {
       empty++;
     } else if (
-      selected === Number(q.correct_index)
+      selected === correctIndex
     ) {
       correct++;
     } else {
       wrong++;
     }
 
+
     sheet.push({
-      number: i + 1,
+      number:
+        Number(q.question_order) + 1,
+
       question:
-        q.question_text,
+        q.question_text_snapshot,
+
       selected,
+
       correct:
-        Number(q.correct_index),
+        correctIndex,
+
+      elapsedSeconds:
+        q.elapsed_seconds === null
+          ? null
+          : Number(
+              q.elapsed_seconds
+            ),
+
       options: [
-        q.option_a,
-        q.option_b,
-        q.option_c,
-        q.option_d
+        q.option_a_snapshot,
+        q.option_b_snapshot,
+        q.option_c_snapshot,
+        q.option_d_snapshot
       ]
     });
   }
 
-  const total = rows.length;
 
-  const score = total > 0
-    ? Number(
-        (
-          (correct / total) *
-          100
-        ).toFixed(2)
-      )
-    : 0;
+  const total =
+    rows.length;
+
+
+  const score =
+    total > 0
+      ? Number(
+          (
+            (correct / total) *
+            100
+          ).toFixed(2)
+        )
+      : 0;
+
 
   return json({
     ok: true,
@@ -986,19 +1626,180 @@ async function buildResult(
 }
 
 
+// =====================================================
+// نتیجه آزمون‌های قدیمی
+// =====================================================
+
+async function buildLegacyResult(
+  env,
+  attempt
+) {
+
+  const questions =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        question_text,
+        option_a,
+        option_b,
+        option_c,
+        option_d,
+        correct_index
+      FROM questions
+      WHERE exam_id = ?
+      ORDER BY id
+    `)
+      .bind(attempt.exam_id)
+      .all();
+
+
+  const answers =
+    await env.DB.prepare(`
+      SELECT
+        question_index,
+        selected_index
+      FROM attempt_answers
+      WHERE attempt_id = ?
+      ORDER BY question_index
+    `)
+      .bind(attempt.id)
+      .all();
+
+
+  const rows =
+    questions.results || [];
+
+  const answerRows =
+    answers.results || [];
+
+
+  const answerMap = {};
+
+
+  for (const a of answerRows) {
+
+    answerMap[
+      Number(a.question_index)
+    ] =
+      a.selected_index === null
+        ? null
+        : Number(
+            a.selected_index
+          );
+  }
+
+
+  let correct = 0;
+  let wrong = 0;
+  let empty = 0;
+
+  const sheet = [];
+
+
+  for (
+    let i = 0;
+    i < rows.length;
+    i++
+  ) {
+
+    const q = rows[i];
+
+    const selected =
+      Object.prototype.hasOwnProperty.call(
+        answerMap,
+        i
+      )
+        ? answerMap[i]
+        : null;
+
+
+    if (selected === null) {
+      empty++;
+    } else if (
+      selected === Number(q.correct_index)
+    ) {
+      correct++;
+    } else {
+      wrong++;
+    }
+
+
+    sheet.push({
+      number: i + 1,
+
+      question:
+        q.question_text,
+
+      selected,
+
+      correct:
+        Number(q.correct_index),
+
+      options: [
+        q.option_a,
+        q.option_b,
+        q.option_c,
+        q.option_d
+      ]
+    });
+  }
+
+
+  const total =
+    rows.length;
+
+
+  const score =
+    total > 0
+      ? Number(
+          (
+            (correct / total) *
+            100
+          ).toFixed(2)
+        )
+      : 0;
+
+
+  return json({
+    ok: true,
+
+    result: {
+      total,
+      correct,
+      wrong,
+      empty,
+      score
+    },
+
+    sheet
+  });
+}
+
+
+// =====================================================
+// CORS
+// =====================================================
+
 function corsHeaders() {
 
   return {
     "Access-Control-Allow-Origin": "*",
+
     "Access-Control-Allow-Methods":
       "GET, POST, OPTIONS",
+
     "Access-Control-Allow-Headers":
       "Content-Type",
+
     "Content-Type":
       "application/json; charset=utf-8"
   };
 }
 
+
+// =====================================================
+// JSON
+// =====================================================
 
 function json(
   data,
@@ -1016,16 +1817,22 @@ function json(
 }
 
 
+// =====================================================
+// تبدیل شماره موبایل
+// =====================================================
+
 function normalizePhone(value) {
 
   let phone =
     String(value || "");
+
 
   const persian =
     "۰۱۲۳۴۵۶۷۸۹";
 
   const arabic =
     "٠١٢٣٤٥٦٧٨٩";
+
 
   phone =
     phone.replace(
@@ -1036,6 +1843,7 @@ function normalizePhone(value) {
         )
     );
 
+
   phone =
     phone.replace(
       /[٠-٩]/g,
@@ -1045,11 +1853,13 @@ function normalizePhone(value) {
         )
     );
 
+
   phone =
     phone.replace(
       /\D/g,
       ""
     );
+
 
   if (
     phone.startsWith("0098")
@@ -1059,6 +1869,7 @@ function normalizePhone(value) {
       phone.substring(4);
   }
 
+
   if (
     phone.startsWith("98")
   ) {
@@ -1066,6 +1877,7 @@ function normalizePhone(value) {
       "0" +
       phone.substring(2);
   }
+
 
   return phone.substring(
     0,
