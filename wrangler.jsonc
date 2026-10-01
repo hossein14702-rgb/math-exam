@@ -1,0 +1,13 @@
+{
+  "name": "azmon",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-01",
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "math_exam_db",
+      "database_id": "6dd636bf-5020-44f9-8f46-cfe1ec924805"
+    }
+  ]
+}
