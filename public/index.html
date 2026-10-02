@@ -1076,11 +1076,16 @@ function renderExamInfo(){
         return;
     }
 
-    const exam = examData.exam || {};
+    const exam =
+        examData.exam || {};
+
+    const questions =
+        examData.questions || [];
 
     const finalPrice =
         Number(
             exam.finalPrice ??
+            exam.final_price ??
             exam.price ??
             0
         );
@@ -1088,29 +1093,38 @@ function renderExamInfo(){
     const basePrice =
         Number(
             exam.basePrice ??
+            exam.base_price ??
             exam.price ??
             0
         );
 
     const discountEnabled =
         exam.discountEnabled === true ||
+        Number(exam.discountEnabled || 0) === 1 ||
         Number(exam.discount_enabled || 0) === 1;
 
     const discountActive =
-        exam.discountActive === true;
+        exam.discountActive === true ||
+        Number(exam.discountActive || 0) === 1 ||
+        exam.discount_active === true ||
+        Number(exam.discount_active || 0) === 1;
 
     const discountPercent =
         Number(
-            exam.discountPercent || 0
+            exam.discountPercent ??
+            exam.discount_percent ??
+            0
         );
+
+    const hasDiscount =
+        discountEnabled &&
+        discountActive &&
+        discountPercent > 0 &&
+        basePrice > finalPrice;
 
     let priceHtml = "";
 
-    if(
-        discountActive &&
-        discountPercent > 0 &&
-        basePrice > finalPrice
-    ){
+    if(hasDiscount){
 
         priceHtml = `
 
@@ -1207,7 +1221,11 @@ function renderExamInfo(){
             <div class="info-row">
                 <span class="info-label">تعداد سؤال</span>
                 <span class="info-value">
-                    ${toPersianNumber(examQuestionsCount)}
+                    ${toPersianNumber(
+                        examData.questionCount ??
+                        examQuestionsCount ??
+                        questions.length
+                    )}
                 </span>
             </div>
 
