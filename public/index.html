@@ -68,6 +68,7 @@ body.page-loading{
     justify-content:center;
     margin-top:22px;
     gap:8px;
+    flex-wrap:wrap;
 }
 
 .step{
@@ -174,6 +175,11 @@ body.page-loading{
     background:white;
 }
 
+.input-wrap:focus-within{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.08);
+}
+
 .input-icon{
     padding:0 12px;
     color:#6b7280;
@@ -189,15 +195,23 @@ body.page-loading{
     background:white;
 }
 
-.input-wrap input:focus{
-    background:#f8fafc;
-}
-
 .hint{
     display:block;
     margin-top:6px;
     color:#9ca3af;
     font-size:11px;
+}
+
+.otp-wrap{
+    margin-top:18px;
+}
+
+.otp-input{
+    text-align:center;
+    letter-spacing:8px;
+    font-size:23px !important;
+    font-weight:bold;
+    direction:ltr;
 }
 
 .primary-btn{
@@ -235,6 +249,33 @@ body.page-loading{
 .secondary-btn:disabled{
     opacity:.6;
     cursor:not-allowed;
+}
+
+.link-btn{
+    border:0;
+    background:none;
+    color:#2563eb;
+    font-family:inherit;
+    font-size:13px;
+    cursor:pointer;
+    padding:8px;
+}
+
+.link-btn:disabled{
+    color:#9ca3af;
+    cursor:not-allowed;
+}
+
+.otp-actions{
+    text-align:center;
+    margin-top:10px;
+}
+
+.otp-timer{
+    text-align:center;
+    color:#6b7280;
+    font-size:12px;
+    margin-top:5px;
 }
 
 .error{
@@ -335,50 +376,6 @@ body.page-loading{
     color:#15803d;
     text-align:center;
     font-size:13px;
-}
-
-.otp-box{
-    margin-top:20px;
-    padding:18px;
-    border-radius:15px;
-    background:#f8fafc;
-    text-align:center;
-}
-
-.otp-email{
-    font-weight:bold;
-    color:#2563eb;
-    direction:ltr;
-    display:inline-block;
-}
-
-.otp-input{
-    text-align:center;
-    direction:ltr;
-    letter-spacing:7px;
-    font-size:24px !important;
-    font-weight:bold;
-}
-
-.resend-text{
-    margin-top:12px;
-    color:#6b7280;
-    font-size:12px;
-}
-
-.resend-button{
-    border:0;
-    background:none;
-    color:#2563eb;
-    font-family:inherit;
-    font-size:12px;
-    cursor:pointer;
-    padding:0;
-}
-
-.resend-button:disabled{
-    color:#9ca3af;
-    cursor:not-allowed;
 }
 
 .rules{
@@ -715,6 +712,11 @@ body.page-loading{
         flex-direction:column;
         align-items:flex-start;
     }
+
+    .otp-input{
+        font-size:20px !important;
+        letter-spacing:5px;
+    }
 }
 </style>
 </head>
@@ -752,7 +754,7 @@ body.page-loading{
 
     <p class="subtitle">
         برای شرکت در آزمون، نام و ایمیل خود را وارد کنید.
-        کد تأیید برای ایمیل شما ارسال خواهد شد.
+        سپس یک کد تأیید برای ایمیل شما ارسال می‌شود.
     </p>
 
     <div id="examInfo">
@@ -791,23 +793,23 @@ body.page-loading{
             <input
                 id="emailInput"
                 type="email"
-                inputmode="email"
                 placeholder="example@gmail.com"
                 autocomplete="email"
+                inputmode="email"
                 dir="ltr"
             >
 
         </div>
 
         <span class="hint">
-            کد تأیید به این ایمیل ارسال می‌شود.
+            کد تأیید به همین ایمیل ارسال می‌شود.
         </span>
 
     </div>
 
     <div id="startError"></div>
 
-    <button id="startButton" class="primary-btn">
+    <button id="sendCodeButton" class="primary-btn">
         ارسال کد تأیید
     </button>
 
@@ -816,78 +818,70 @@ body.page-loading{
 
 <!-- تأیید ایمیل -->
 
-<div class="card hidden" id="otpCard">
+<div class="card hidden" id="verifyCard">
 
     <div class="card-title">
 
-        <div class="card-title-icon">✉️</div>
+        <div class="card-title-icon">🔐</div>
 
         <h2>تأیید ایمیل</h2>
 
     </div>
 
     <p class="subtitle">
-        کد ۶ رقمی ارسال‌شده به ایمیل زیر را وارد کنید.
+        کد ۶ رقمی ارسال‌شده به ایمیل
+        <strong id="verifyEmailText"></strong>
+        را وارد کنید.
     </p>
 
-    <div class="otp-box">
+    <div class="field otp-wrap">
 
-        <div>
-            کد ارسال‌شده به:
-        </div>
+        <label>کد تأیید</label>
 
-        <div
-            id="otpEmail"
-            class="otp-email"
-        >
-            -
-        </div>
+        <div class="input-wrap">
 
-        <div class="field">
+            <span class="input-icon">🔢</span>
 
-            <label>کد تأیید</label>
-
-            <div class="input-wrap">
-
-                <input
-                    id="otpInput"
-                    class="otp-input"
-                    type="text"
-                    inputmode="numeric"
-                    maxlength="6"
-                    autocomplete="one-time-code"
-                    placeholder="------"
-                >
-
-            </div>
+            <input
+                id="otpInput"
+                class="otp-input"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="۱۲۳۴۵۶"
+                dir="ltr"
+            >
 
         </div>
-
-        <div
-            id="otpTimerText"
-            class="resend-text"
-        >
-            امکان ارسال مجدد تا ۶۰ ثانیه دیگر
-        </div>
-
-        <button
-            id="resendOtpButton"
-            class="resend-button"
-            disabled
-        >
-            ارسال مجدد کد
-        </button>
 
     </div>
 
-    <div id="otpError"></div>
+    <div id="verifyError"></div>
 
     <button
-        id="verifyOtpButton"
+        id="verifyCodeButton"
         class="primary-btn"
     >
         تأیید ایمیل و ادامه
     </button>
+
+    <div class="otp-actions">
+
+        <button
+            id="resendCodeButton"
+            class="link-btn"
+            type="button"
+        >
+            ارسال مجدد کد
+        </button>
+
+        <div
+            id="otpTimer"
+            class="otp-timer"
+        ></div>
+
+    </div>
 
     <button
         id="backToStartButton"
@@ -955,14 +949,16 @@ body.page-loading{
         <div class="rule">
             <div class="rule-icon">✓</div>
             <div>
-                هر سؤال زمان مشخصی دارد و با پایان زمان، سؤال به‌صورت خودکار بسته می‌شود.
+                هر سؤال زمان مشخصی دارد و با پایان زمان،
+                سؤال به‌صورت خودکار بسته می‌شود.
             </div>
         </div>
 
         <div class="rule">
             <div class="rule-icon">✓</div>
             <div>
-                پس از عبور از هر سؤال، امکان بازگشت به سؤال قبلی وجود ندارد.
+                پس از عبور از هر سؤال،
+                امکان بازگشت به سؤال قبلی وجود ندارد.
             </div>
         </div>
 
@@ -1105,12 +1101,11 @@ let examData = null;
 let examStartedAt = null;
 let examFinishedAt = null;
 
-let currentEmail = "";
-let currentName = "";
+let verifiedEmail = null;
 let verificationToken = null;
 
-let otpCountdown = 0;
-let otpCountdownInterval = null;
+let resendTimerInterval = null;
+let resendRemaining = 0;
 
 
 /* =========================
@@ -1143,6 +1138,26 @@ function toPersianNumber(value){
 
 }
 
+function normalizeDigits(value){
+
+    return String(value || "")
+        .replace(/[۰-۹]/g,d =>
+            String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+        )
+        .replace(/[٠-٩]/g,d =>
+            String("٠١٢٣٤٥٦٧٨٩".indexOf(d))
+        );
+
+}
+
+function normalizeOtp(value){
+
+    return normalizeDigits(value)
+        .replace(/\D/g,"")
+        .slice(0,6);
+
+}
+
 function normalizeEmail(value){
 
     return String(value || "")
@@ -1157,27 +1172,6 @@ function sanitizeName(value){
         .trim()
         .replace(/[^\u0600-\u06FFa-zA-Z\s]/g,"")
         .replace(/\s+/g," ");
-
-}
-
-function normalizeOtp(value){
-
-    return String(value || "")
-        .replace(/[۰-۹]/g,d =>
-            String(
-                "۰۱۲۳۴۵۶۷۸۹".indexOf(d)
-            )
-        )
-        .replace(/\D/g,"")
-        .slice(0,6);
-
-}
-
-function isValidEmail(email){
-
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-        email
-    );
 
 }
 
@@ -1199,16 +1193,17 @@ function showError(id,message){
 
 }
 
-function showSuccess(id,message){
-
-    $(id).innerHTML =
-        `<div class="success">${escapeHtml(message)}</div>`;
-
-}
-
 function clearError(id){
 
     $(id).innerHTML = "";
+
+}
+
+function isValidEmail(email){
+
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        email
+    );
 
 }
 
@@ -1226,6 +1221,7 @@ function clearSession(){
         "math_exam_started",
         "math_exam_paid",
         "math_exam_name",
+        "math_exam_phone",
         "math_exam_email",
         "math_exam_verification_token"
 
@@ -1237,9 +1233,88 @@ function clearSession(){
 
     orderId = null;
     attemptId = null;
-    currentEmail = "";
-    currentName = "";
+    verifiedEmail = null;
     verificationToken = null;
+
+}
+
+
+/* =========================
+   تایمر ارسال مجدد OTP
+========================= */
+
+function startResendTimer(seconds){
+
+    stopResendTimer();
+
+    resendRemaining =
+        Math.max(0, Number(seconds || 60));
+
+    updateResendTimer();
+
+    resendTimerInterval =
+        setInterval(
+            () => {
+
+                resendRemaining--;
+
+                updateResendTimer();
+
+                if(resendRemaining <= 0){
+
+                    stopResendTimer();
+                    updateResendTimer();
+
+                }
+
+            },
+            1000
+        );
+
+}
+
+function stopResendTimer(){
+
+    if(resendTimerInterval){
+
+        clearInterval(
+            resendTimerInterval
+        );
+
+        resendTimerInterval = null;
+
+    }
+
+}
+
+function updateResendTimer(){
+
+    const button =
+        $("resendCodeButton");
+
+    const timer =
+        $("otpTimer");
+
+    if(resendRemaining > 0){
+
+        button.disabled = true;
+
+        timer.textContent =
+            "ارسال مجدد تا " +
+            toPersianNumber(
+                resendRemaining
+            ) +
+            " ثانیه دیگر";
+
+    }
+    else{
+
+        button.disabled = false;
+
+        timer.textContent =
+            "امکان ارسال مجدد کد فعال است.";
+
+    }
 
 }
 
@@ -1325,7 +1400,8 @@ function renderExamInfo(){
                     </div>
 
                     <div class="discount-badge">
-                        ${toPersianNumber(discountPercent)}٪ تخفیف فعال
+                        ${toPersianNumber(discountPercent)}
+                        ٪ تخفیف فعال
                     </div>
 
                 </div>
@@ -1507,7 +1583,7 @@ async function loadExam(){
             </div>
         `;
 
-        $("startButton").disabled = true;
+        $("sendCodeButton").disabled = true;
 
     }
 
@@ -1515,13 +1591,17 @@ async function loadExam(){
 
 
 /* =========================
-   ارسال OTP
+   ارسال کد ایمیل
 ========================= */
 
-async function sendOtp(){
+$("sendCodeButton").addEventListener(
+    "click",
+    sendVerificationCode
+);
+
+async function sendVerificationCode(){
 
     clearError("startError");
-    clearError("otpError");
 
     const name =
         sanitizeName(
@@ -1540,7 +1620,8 @@ async function sendOtp(){
             "لطفاً نام و نام خانوادگی را وارد کنید."
         );
 
-        return false;
+        return;
+
     }
 
     if(!isValidEmail(email)){
@@ -1550,12 +1631,13 @@ async function sendOtp(){
             "لطفاً یک ایمیل معتبر وارد کنید."
         );
 
-        return false;
+        return;
+
     }
 
-    $("startButton").disabled = true;
+    $("sendCodeButton").disabled = true;
 
-    $("startButton").textContent =
+    $("sendCodeButton").textContent =
         "در حال ارسال کد...";
 
     try{
@@ -1587,39 +1669,37 @@ async function sendOtp(){
 
         }
 
-        currentName = name;
-        currentEmail = email;
-
         localStorage.setItem(
             "math_exam_name",
-            currentName
+            name
         );
 
         localStorage.setItem(
             "math_exam_email",
-            currentEmail
+            email
         );
 
-        $("otpEmail").textContent =
-            currentEmail;
+        verifiedEmail = null;
+        verificationToken = null;
+
+        $("verifyEmailText").textContent =
+            email;
 
         $("otpInput").value = "";
 
-        hide("startCard");
-        show("otpCard");
+        clearError("verifyError");
 
-        startOtpCountdown(
-            Number(
-                data.resendAfterSeconds ||
-                60
-            )
+        hide("startCard");
+        show("verifyCard");
+
+        startResendTimer(
+            Number(data.retryAfter || 60)
         );
 
-        setTimeout(() => {
-            $("otpInput").focus();
-        },100);
-
-        return true;
+        setTimeout(
+            () => $("otpInput").focus(),
+            100
+        );
 
     }
     catch(error){
@@ -1629,14 +1709,12 @@ async function sendOtp(){
             error.message
         );
 
-        return false;
-
     }
     finally{
 
-        $("startButton").disabled = false;
+        $("sendCodeButton").disabled = false;
 
-        $("startButton").textContent =
+        $("sendCodeButton").textContent =
             "ارسال کد تأیید";
 
     }
@@ -1645,121 +1723,73 @@ async function sendOtp(){
 
 
 /* =========================
-   شمارش معکوس OTP
+   ورود فقط عدد در OTP
 ========================= */
 
-function stopOtpCountdown(){
+$("otpInput").addEventListener(
+    "input",
+    function(){
 
-    if(otpCountdownInterval){
-
-        clearInterval(
-            otpCountdownInterval
-        );
-
-        otpCountdownInterval = null;
-
-    }
-
-}
-
-function startOtpCountdown(seconds){
-
-    stopOtpCountdown();
-
-    otpCountdown =
-        Math.max(
-            0,
-            Number(seconds || 60)
-        );
-
-    updateOtpCountdownUI();
-
-    otpCountdownInterval =
-        setInterval(
-            () => {
-
-                otpCountdown--;
-
-                updateOtpCountdownUI();
-
-                if(otpCountdown <= 0){
-
-                    stopOtpCountdown();
-
-                }
-
-            },
-            1000
-        );
-
-}
-
-function updateOtpCountdownUI(){
-
-    const button =
-        $("resendOtpButton");
-
-    const text =
-        $("otpTimerText");
-
-    if(otpCountdown > 0){
-
-        button.disabled = true;
-
-        text.textContent =
-            "امکان ارسال مجدد تا " +
-            toPersianNumber(otpCountdown) +
-            " ثانیه دیگر";
+        this.value =
+            normalizeOtp(
+                this.value
+            );
 
     }
-    else{
-
-        button.disabled = false;
-
-        text.textContent =
-            "اگر کد را دریافت نکردید، می‌توانید دوباره درخواست کنید.";
-
-    }
-
-}
+);
 
 
 /* =========================
    تأیید OTP
 ========================= */
 
-async function verifyOtp(){
+$("verifyCodeButton").addEventListener(
+    "click",
+    verifyEmailCode
+);
 
-    clearError("otpError");
+async function verifyEmailCode(){
+
+    clearError("verifyError");
+
+    const email =
+        normalizeEmail(
+            $("emailInput").value ||
+            localStorage.getItem(
+                "math_exam_email"
+            )
+        );
 
     const code =
         normalizeOtp(
             $("otpInput").value
         );
 
+    if(!isValidEmail(email)){
+
+        showError(
+            "verifyError",
+            "ایمیل معتبر نیست."
+        );
+
+        return;
+
+    }
+
     if(code.length !== 6){
 
         showError(
-            "otpError",
-            "کد تأیید باید ۶ رقم باشد."
+            "verifyError",
+            "کد تأیید باید ۶ رقمی باشد."
         );
 
         return;
+
     }
 
-    if(!currentEmail){
+    $("verifyCodeButton").disabled = true;
 
-        showError(
-            "otpError",
-            "ایمیل پیدا نشد. لطفاً دوباره ایمیل را وارد کنید."
-        );
-
-        return;
-    }
-
-    $("verifyOtpButton").disabled = true;
-
-    $("verifyOtpButton").textContent =
+    $("verifyCodeButton").textContent =
         "در حال تأیید...";
 
     try{
@@ -1774,7 +1804,7 @@ async function verifyOtp(){
                             "application/json"
                     },
                     body:JSON.stringify({
-                        email:currentEmail,
+                        email:email,
                         code:code
                     })
                 }
@@ -1792,40 +1822,63 @@ async function verifyOtp(){
 
         }
 
-        verificationToken =
-            data.verificationToken ||
-            data.token ||
-            null;
-
-        if(!verificationToken){
+        if(
+            !data.verificationToken
+        ){
 
             throw new Error(
-                "تأیید ایمیل انجام شد اما توکن تأیید دریافت نشد."
+                "توکن تأیید از سرور دریافت نشد."
             );
 
         }
+
+        verifiedEmail = email;
+
+        verificationToken =
+            data.verificationToken;
+
+        localStorage.setItem(
+            "math_exam_email",
+            email
+        );
 
         localStorage.setItem(
             "math_exam_verification_token",
             verificationToken
         );
 
-        await createOrder();
+        const name =
+            sanitizeName(
+                $("nameInput").value ||
+                localStorage.getItem(
+                    "math_exam_name"
+                )
+            );
+
+        /*
+           بعد از تأیید ایمیل، سفارش ساخته می‌شود.
+        */
+
+        await createOrderAfterVerification(
+            name,
+            email,
+            verificationToken
+        );
 
     }
     catch(error){
 
         showError(
-            "otpError",
+            "verifyError",
             error.message
         );
 
     }
     finally{
 
-        $("verifyOtpButton").disabled = false;
+        $("verifyCodeButton").disabled = false;
 
-        $("verifyOtpButton").textContent =
+        $("verifyCodeButton").textContent =
             "تأیید ایمیل و ادامه";
 
     }
@@ -1834,353 +1887,232 @@ async function verifyOtp(){
 
 
 /* =========================
-   ارسال مجدد OTP
+   ساخت سفارش بعد از تأیید
 ========================= */
 
-async function resendOtp(){
+async function createOrderAfterVerification(
+    name,
+    email,
+    token
+){
 
-    if(otpCountdown > 0){
-        return;
-    }
-
-    if(!currentEmail){
-
-        showError(
-            "otpError",
-            "ایمیل پیدا نشد."
-        );
-
-        return;
-    }
-
-    $("resendOtpButton").disabled = true;
-
-    $("resendOtpButton").textContent =
-        "در حال ارسال...";
-
-    clearError("otpError");
-
-    try{
-
-        const response =
-            await fetch(
-                `${API}/api/auth/send-code`,
-                {
-                    method:"POST",
-                    headers:{
-                        "Content-Type":
-                            "application/json"
-                    },
-                    body:JSON.stringify({
-                        email:currentEmail
-                    })
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if(!data.ok){
-
-            throw new Error(
-                data.error ||
-                "ارسال مجدد کد انجام نشد."
-            );
-
-        }
-
-        showSuccess(
-            "otpError",
-            "کد تأیید جدید ارسال شد."
-        );
-
-        startOtpCountdown(
-            Number(
-                data.resendAfterSeconds ||
-                60
-            )
-        );
-
-    }
-    catch(error){
-
-        showError(
-            "otpError",
-            error.message
-        );
-
-        $("resendOtpButton").disabled = false;
-
-    }
-    finally{
-
-        $("resendOtpButton").textContent =
-            "ارسال مجدد کد";
-
-    }
-
-}
-
-
-/* =========================
-   ایجاد سفارش
-========================= */
-
-async function createOrder(){
-
-    if(!currentName){
-
-        currentName =
-            sanitizeName(
-                $("nameInput").value
-            );
-    }
-
-    if(!currentEmail){
-
-        currentEmail =
-            normalizeEmail(
-                $("emailInput").value
-            );
-    }
-
-    if(!verificationToken){
-
-        verificationToken =
-            localStorage.getItem(
-                "math_exam_verification_token"
-            );
-    }
-
-    if(!verificationToken){
+    if(!name || name.length < 2){
 
         throw new Error(
-            "تأیید ایمیل معتبر نیست. لطفاً دوباره کد دریافت کنید."
+            "نام کاربر معتبر نیست."
         );
 
     }
 
-    try{
+    const response =
+        await fetch(
+            `${API}/api/create-order`,
+            {
+                method:"POST",
+                headers:{
+                    "Content-Type":
+                        "application/json"
+                },
+                body:JSON.stringify({
 
-        const response =
-            await fetch(
-                `${API}/api/create-order`,
-                {
-                    method:"POST",
-                    headers:{
-                        "Content-Type":
-                            "application/json"
-                    },
-                    body:JSON.stringify({
+                    examId:EXAM_ID,
 
-                        examId:EXAM_ID,
+                    name:name,
 
-                        name:currentName,
+                    email:email,
 
-                        email:currentEmail,
+                    verificationToken:token
 
-                        verificationToken:
-                            verificationToken
-
-                    })
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if(!data.ok){
-
-            throw new Error(
-                data.error ||
-                "ثبت سفارش انجام نشد."
-            );
-
-        }
-
-        orderId =
-            data.orderId;
-
-        attemptId = null;
-
-        examStartedAt = null;
-        examFinishedAt = null;
-
-        localStorage.removeItem(
-            "math_exam_started_at"
+                })
+            }
         );
 
-        localStorage.removeItem(
-            "math_exam_finished_at"
+    const data =
+        await response.json();
+
+    if(!data.ok){
+
+        throw new Error(
+            data.error ||
+            "ثبت سفارش انجام نشد."
         );
-
-        localStorage.setItem(
-            "math_exam_order_id",
-            orderId
-        );
-
-        localStorage.setItem(
-            "math_exam_name",
-            currentName
-        );
-
-        localStorage.setItem(
-            "math_exam_email",
-            currentEmail
-        );
-
-        localStorage.setItem(
-            "math_exam_paid",
-            "0"
-        );
-
-        localStorage.removeItem(
-            "math_exam_attempt_id"
-        );
-
-        localStorage.removeItem(
-            "math_exam_started"
-        );
-
-        localStorage.removeItem(
-            "math_exam_verification_token"
-        );
-
-        verificationToken = null;
-
-        stopOtpCountdown();
-
-        hide("otpCard");
-        show("paymentCard");
-
-        renderExamInfo();
 
     }
-    catch(error){
 
-        showError(
-            "otpError",
-            error.message
-        );
+    orderId =
+        data.orderId;
 
-        throw error;
+    attemptId = null;
 
-    }
+    examStartedAt = null;
+    examFinishedAt = null;
+
+    localStorage.removeItem(
+        "math_exam_started_at"
+    );
+
+    localStorage.removeItem(
+        "math_exam_finished_at"
+    );
+
+    localStorage.setItem(
+        "math_exam_order_id",
+        orderId
+    );
+
+    localStorage.setItem(
+        "math_exam_name",
+        name
+    );
+
+    localStorage.setItem(
+        "math_exam_email",
+        email
+    );
+
+    localStorage.setItem(
+        "math_exam_paid",
+        "0"
+    );
+
+    localStorage.removeItem(
+        "math_exam_attempt_id"
+    );
+
+    localStorage.removeItem(
+        "math_exam_started"
+    );
+
+    /*
+       توکن verification بعد از مصرف شدن
+       دیگر برای سفارش جدید استفاده نمی‌شود.
+    */
+
+    localStorage.removeItem(
+        "math_exam_verification_token"
+    );
+
+    verificationToken = null;
+
+    stopResendTimer();
+
+    hide("verifyCard");
+    hide("startCard");
+
+    show("paymentCard");
 
 }
 
 
 /* =========================
-   تغییر ایمیل
+   ارسال مجدد کد
+========================= */
+
+$("resendCodeButton").addEventListener(
+    "click",
+    async function(){
+
+        clearError("verifyError");
+
+        if(resendRemaining > 0){
+            return;
+        }
+
+        const email =
+            normalizeEmail(
+                $("emailInput").value ||
+                localStorage.getItem(
+                    "math_exam_email"
+                )
+            );
+
+        if(!isValidEmail(email)){
+
+            showError(
+                "verifyError",
+                "ایمیل معتبر نیست."
+            );
+
+            return;
+
+        }
+
+        $("resendCodeButton").disabled = true;
+
+        try{
+
+            const response =
+                await fetch(
+                    `${API}/api/auth/send-code`,
+                    {
+                        method:"POST",
+                        headers:{
+                            "Content-Type":
+                                "application/json"
+                        },
+                        body:JSON.stringify({
+                            email:email
+                        })
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if(!data.ok){
+
+                throw new Error(
+                    data.error ||
+                    "ارسال مجدد کد انجام نشد."
+                );
+
+            }
+
+            $("otpInput").value = "";
+
+            startResendTimer(
+                Number(data.retryAfter || 60)
+            );
+
+            $("verifyError").innerHTML =
+                `<div class="success">
+                    کد تأیید جدید ارسال شد.
+                </div>`;
+
+        }
+        catch(error){
+
+            showError(
+                "verifyError",
+                error.message
+            );
+
+            updateResendTimer();
+
+        }
+
+    }
+);
+
+
+/* =========================
+   بازگشت به صفحه شروع
 ========================= */
 
 $("backToStartButton").addEventListener(
     "click",
     function(){
 
-        stopOtpCountdown();
+        stopResendTimer();
 
-        clearError("otpError");
+        clearError("verifyError");
 
         $("otpInput").value = "";
 
         show("startCard");
-        hide("otpCard");
+        hide("verifyCard");
 
-        $("startButton").disabled = false;
-
-    }
-);
-
-
-/* =========================
-   شروع مرحله ثبت اطلاعات
-========================= */
-
-$("startButton").addEventListener(
-    "click",
-    async function(){
-
-        await sendOtp();
-
-    }
-);
-
-
-/* =========================
-   تأیید OTP
-========================= */
-
-$("verifyOtpButton").addEventListener(
-    "click",
-    async function(){
-
-        await verifyOtp();
-
-    }
-);
-
-
-/* =========================
-   ارسال مجدد OTP
-========================= */
-
-$("resendOtpButton").addEventListener(
-    "click",
-    async function(){
-
-        await resendOtp();
-
-    }
-);
-
-
-/* =========================
-   ورود با Enter
-========================= */
-
-$("otpInput").addEventListener(
-    "input",
-    function(){
-
-        this.value =
-            normalizeOtp(
-                this.value
-            );
-
-    }
-);
-
-$("otpInput").addEventListener(
-    "keydown",
-    function(event){
-
-        if(
-            event.key === "Enter"
-        ){
-
-            event.preventDefault();
-
-            verifyOtp();
-
-        }
-
-    }
-);
-
-$("emailInput").addEventListener(
-    "keydown",
-    function(event){
-
-        if(
-            event.key === "Enter"
-        ){
-
-            event.preventDefault();
-
-            sendOtp();
-
-        }
+        $("sendCodeButton").disabled = false;
 
     }
 );
@@ -2298,7 +2230,8 @@ function renderQuestionSteps(){
     ){
 
         if(i > 0){
-            html += `<div class="step-line"></div>`;
+            html +=
+                `<div class="step-line"></div>`;
         }
 
         html += `
@@ -2319,7 +2252,6 @@ function renderQuestionSteps(){
     }
 
     container.innerHTML = html;
-
 }
 
 function setStep(step){
@@ -2456,7 +2388,7 @@ async function startExam(){
         );
 
         hide("startCard");
-        hide("otpCard");
+        hide("verifyCard");
         hide("paymentCard");
         hide("rulesCard");
 
@@ -2515,8 +2447,8 @@ function showQuestion(
 
     const duration =
         Number(
-            question.duration_seconds ||
-            question.durationSeconds ||
+            question.duration_seconds ??
+            question.durationSeconds ??
             30
         );
 
@@ -2552,37 +2484,32 @@ function showQuestion(
         {
             index:0,
             letter:"الف",
-            text:question.option_a ??
-                 question.optionA ??
-                 ""
+            text:question.option_a
         },
 
         {
             index:1,
             letter:"ب",
-            text:question.option_b ??
-                 question.optionB ??
-                 ""
+            text:question.option_b
         },
 
         {
             index:2,
             letter:"ج",
-            text:question.option_c ??
-                 question.optionC ??
-                 ""
+            text:question.option_c
         },
 
         {
             index:3,
             letter:"د",
-            text:question.option_d ??
-                 question.optionD ??
-                 ""
+            text:question.option_d
         }
 
-    ].filter(option =>
-        String(option.text ?? "").trim() !== ""
+    ].filter(
+        option =>
+            option.text !== null &&
+            option.text !== undefined &&
+            String(option.text).trim() !== ""
     );
 
     $("questionBox").innerHTML = `
@@ -2754,11 +2681,7 @@ function getCurrentQuestionIndex(){
 
     let normalized = text;
 
-    for(
-        let i=0;
-        i<10;
-        i++
-    ){
+    for(let i=0;i<10;i++){
 
         normalized =
             normalized.replaceAll(
@@ -2958,8 +2881,8 @@ async function finishExam(){
         hide("examCard");
         hide("rulesCard");
         hide("paymentCard");
-        hide("otpCard");
         hide("startCard");
+        hide("verifyCard");
 
         show("resultCard");
 
@@ -2976,40 +2899,6 @@ async function finishExam(){
         );
 
     }
-
-}
-
-
-/* =========================
-   تاریخ
-========================= */
-
-function formatDateTime(value){
-
-    if(!value){
-        return "ثبت نشده";
-    }
-
-    const date =
-        new Date(value);
-
-    if(Number.isNaN(
-        date.getTime()
-    )){
-        return "ثبت نشده";
-    }
-
-    return date.toLocaleString(
-        "fa-IR",
-        {
-            year:"numeric",
-            month:"2-digit",
-            day:"2-digit",
-            hour:"2-digit",
-            minute:"2-digit",
-            second:"2-digit"
-        }
-    );
 
 }
 
@@ -3331,6 +3220,42 @@ function optionText(
 
 
 /* =========================
+   تاریخ
+========================= */
+
+function formatDateTime(value){
+
+    if(!value){
+        return "ثبت نشده";
+    }
+
+    const date =
+        new Date(value);
+
+    if(
+        Number.isNaN(
+            date.getTime()
+        )
+    ){
+        return "ثبت نشده";
+    }
+
+    return date.toLocaleString(
+        "fa-IR",
+        {
+            year:"numeric",
+            month:"2-digit",
+            day:"2-digit",
+            hour:"2-digit",
+            minute:"2-digit",
+            second:"2-digit"
+        }
+    );
+
+}
+
+
+/* =========================
    بازیابی امن Session
 ========================= */
 
@@ -3356,14 +3281,14 @@ async function restoreSession(){
             "math_exam_paid"
         );
 
-    const savedName =
-        localStorage.getItem(
-            "math_exam_name"
-        );
-
     const savedEmail =
         localStorage.getItem(
             "math_exam_email"
+        );
+
+    const savedName =
+        localStorage.getItem(
+            "math_exam_name"
         );
 
     examStartedAt =
@@ -3376,18 +3301,28 @@ async function restoreSession(){
             "math_exam_finished_at"
         );
 
-    if(savedName){
-        currentName = savedName;
-    }
 
     if(savedEmail){
-        currentEmail = savedEmail;
+
+        verifiedEmail =
+            savedEmail;
+
+        $("emailInput").value =
+            savedEmail;
+
+    }
+
+    if(savedName){
+
+        $("nameInput").value =
+            savedName;
+
     }
 
 
-    /* =========================
-       آزمون نیمه‌تمام
-    ========================= */
+    /*
+       آزمون نیمه‌کاره
+    */
 
     if(
         savedOrderId &&
@@ -3459,7 +3394,7 @@ async function restoreSession(){
             }
 
             hide("startCard");
-            hide("otpCard");
+            hide("verifyCard");
             hide("paymentCard");
             hide("rulesCard");
 
@@ -3484,15 +3419,14 @@ async function restoreSession(){
             );
 
             return;
-
         }
 
     }
 
 
-    /* =========================
+    /*
        سفارش پرداخت‌شده ولی آزمون شروع نشده
-    ========================= */
+    */
 
     if(
         savedOrderId &&
@@ -3504,7 +3438,7 @@ async function restoreSession(){
             savedOrderId;
 
         hide("startCard");
-        hide("otpCard");
+        hide("verifyCard");
         hide("paymentCard");
 
         show("rulesCard");
@@ -3514,9 +3448,9 @@ async function restoreSession(){
     }
 
 
-    /* =========================
-       سفارش پرداخت‌نشده
-    ========================= */
+    /*
+       سفارش ساخته شده ولی پرداخت نشده
+    */
 
     if(
         savedOrderId &&
@@ -3528,7 +3462,7 @@ async function restoreSession(){
             savedOrderId;
 
         hide("startCard");
-        hide("otpCard");
+        hide("verifyCard");
 
         show("paymentCard");
 
@@ -3537,9 +3471,9 @@ async function restoreSession(){
     }
 
 
-    /* =========================
-       اطلاعات ناقص
-    ========================= */
+    /*
+       Session ناقص یا خراب
+    */
 
     if(
         savedAttemptId ||
@@ -3556,46 +3490,18 @@ async function restoreSession(){
 
 
 /* =========================
-   لغو Resume
-========================= */
-
-$("cancelResumeButton").addEventListener(
-    "click",
-    function(){
-
-        stopTimer();
-
-        clearSession();
-
-        hide("rulesCard");
-        hide("paymentCard");
-        hide("otpCard");
-        hide("examCard");
-        hide("resultCard");
-
-        show("startCard");
-
-        $("nameInput").value = "";
-        $("emailInput").value = "";
-
-        clearError("rulesError");
-
-    }
-);
-
-
-/* =========================
    شروع صفحه
 ========================= */
 
 async function initializePage(){
 
     hide("startCard");
-    hide("otpCard");
+    hide("verifyCard");
     hide("paymentCard");
     hide("rulesCard");
     hide("examCard");
     hide("resultCard");
+
     hideQuestionSteps();
 
     await loadExam();
