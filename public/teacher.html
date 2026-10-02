@@ -264,6 +264,139 @@ button:disabled {
 }
 
 /* =========================
+   انتخاب تاریخ شمسی
+========================= */
+
+.jalali-date-wrapper {
+    position: relative;
+}
+
+.jalali-date-input {
+    cursor: pointer;
+    background: white !important;
+}
+
+.date-time-row {
+    display: grid;
+    grid-template-columns: 1fr 120px;
+    gap: 8px;
+}
+
+.time-input {
+    text-align: center;
+    direction: ltr;
+}
+
+.jalali-picker {
+    display: none;
+    position: absolute;
+    top: calc(100% + 7px);
+    right: 0;
+    width: 330px;
+    max-width: 95vw;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.18);
+    border: 1px solid #e5e7eb;
+    z-index: 2000;
+    padding: 12px;
+}
+
+.jalali-picker.show {
+    display: block;
+}
+
+.jalali-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.jalali-picker-header button {
+    background: #f1f5f9;
+    color: #111827;
+    padding: 7px 12px;
+    min-width: 40px;
+}
+
+.jalali-picker-header button:hover {
+    background: #e2e8f0;
+}
+
+.jalali-month-title {
+    flex: 1;
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.jalali-weekdays,
+.jalali-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+}
+
+.jalali-weekdays div {
+    text-align: center;
+    font-size: 11px;
+    color: #64748b;
+    padding: 6px 0;
+    font-weight: bold;
+}
+
+.jalali-day {
+    border: 0;
+    background: white;
+    padding: 8px 2px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #111827;
+}
+
+.jalali-day:hover {
+    background: #dbeafe;
+}
+
+.jalali-day.empty-day {
+    cursor: default;
+    background: transparent;
+}
+
+.jalali-day.today {
+    border: 1px solid #2563eb;
+}
+
+.jalali-day.selected {
+    background: #2563eb;
+    color: white;
+    font-weight: bold;
+}
+
+.jalali-picker-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+.jalali-picker-footer button {
+    flex: 1;
+    padding: 8px;
+    background: #f1f5f9;
+}
+
+.jalali-picker-footer .today-btn {
+    background: #2563eb;
+    color: white;
+}
+
+/* =========================
    آمار
 ========================= */
 
@@ -577,6 +710,11 @@ tr:hover td {
     .header h1 {
         font-size: 21px;
     }
+
+    .jalali-picker {
+        right: 50%;
+        transform: translateX(50%);
+    }
 }
 
 @media (max-width: 450px) {
@@ -606,6 +744,10 @@ tr:hover td {
         width: 100%;
         margin: 10px auto;
         padding: 15px;
+    }
+
+    .date-time-row {
+        grid-template-columns: 1fr 105px;
     }
 }
 </style>
@@ -641,13 +783,9 @@ tr:hover td {
 
     </div>
 
-
     <div id="errorBox" class="error"></div>
 
-
-    <!-- =========================
-         تنظیمات قیمت و تخفیف
-    ========================= -->
+    <!-- تنظیمات قیمت -->
 
     <div class="settings-box">
 
@@ -657,9 +795,8 @@ tr:hover td {
 
         <div class="settings-description">
             قیمت اصلی آزمون و شرایط تخفیف را از این بخش تنظیم کنید.
-            ساعت‌های واردشده بر اساس ساعت ایران هستند.
+            تاریخ‌ها بر اساس تقویم شمسی و ساعت‌ها بر اساس ساعت ایران هستند.
         </div>
-
 
         <div class="settings-grid">
 
@@ -677,7 +814,6 @@ tr:hover td {
                     placeholder="مثلاً 50000">
 
             </div>
-
 
             <div class="form-group">
 
@@ -700,10 +836,7 @@ tr:hover td {
 
             </div>
 
-
-            <div
-                id="discountPercentGroup"
-                class="form-group">
+            <div id="discountPercentGroup" class="form-group">
 
                 <label for="discountPercent">
                     درصد تخفیف
@@ -720,32 +853,78 @@ tr:hover td {
             </div>
 
 
-            <div
-                id="discountStartGroup"
-                class="form-group">
+            <!-- شروع تخفیف -->
 
-                <label for="discountStart">
-                    شروع تخفیف — ساعت ایران
+            <div id="discountStartGroup" class="form-group">
+
+                <label>
+                    شروع تخفیف — تاریخ شمسی و ساعت ایران
                 </label>
 
-                <input
-                    id="discountStart"
-                    type="datetime-local">
+                <div class="date-time-row">
+
+                    <div class="jalali-date-wrapper">
+
+                        <input
+                            id="discountStart"
+                            class="jalali-date-input"
+                            type="text"
+                            readonly
+                            placeholder="انتخاب تاریخ"
+                            autocomplete="off">
+
+                        <div
+                            id="discountStartPicker"
+                            class="jalali-picker">
+                        </div>
+
+                    </div>
+
+                    <input
+                        id="discountStartTime"
+                        class="time-input"
+                        type="time"
+                        value="00:00">
+
+                </div>
 
             </div>
 
 
-            <div
-                id="discountEndGroup"
-                class="form-group">
+            <!-- پایان تخفیف -->
 
-                <label for="discountEnd">
-                    پایان تخفیف — ساعت ایران
+            <div id="discountEndGroup" class="form-group">
+
+                <label>
+                    پایان تخفیف — تاریخ شمسی و ساعت ایران
                 </label>
 
-                <input
-                    id="discountEnd"
-                    type="datetime-local">
+                <div class="date-time-row">
+
+                    <div class="jalali-date-wrapper">
+
+                        <input
+                            id="discountEnd"
+                            class="jalali-date-input"
+                            type="text"
+                            readonly
+                            placeholder="انتخاب تاریخ"
+                            autocomplete="off">
+
+                        <div
+                            id="discountEndPicker"
+                            class="jalali-picker">
+                        </div>
+
+                    </div>
+
+                    <input
+                        id="discountEndTime"
+                        class="time-input"
+                        type="time"
+                        value="23:59">
+
+                </div>
 
             </div>
 
@@ -824,9 +1003,7 @@ tr:hover td {
     </div>
 
 
-    <!-- =========================
-         آمار
-    ========================= -->
+    <!-- آمار -->
 
     <div class="stats">
 
@@ -892,9 +1069,7 @@ tr:hover td {
     </div>
 
 
-    <!-- =========================
-         جدول دانش‌آموزان
-    ========================= -->
+    <!-- جدول دانش‌آموزان -->
 
     <div class="table-box">
 
@@ -933,7 +1108,6 @@ tr:hover td {
 
             </thead>
 
-
             <tbody id="studentsBody"></tbody>
 
         </table>
@@ -953,9 +1127,7 @@ tr:hover td {
 </div>
 
 
-<!-- =========================
-     مودال جزئیات آزمون
-========================= -->
+<!-- مودال جزئیات -->
 
 <div
     id="attemptModal"
@@ -1002,9 +1174,9 @@ const API_BASE =
 const EXAM_ID = 1;
 
 
-/* =========================
+/* =========================================================
    اعداد فارسی
-========================= */
+========================================================= */
 
 function faNumber(value) {
 
@@ -1023,9 +1195,1192 @@ function faNumber(value) {
 }
 
 
-/* =========================
-   تاریخ — نمایش با ساعت ایران
-========================= */
+/* =========================================================
+   تبدیل میلادی به شمسی
+========================================================= */
+
+function gregorianToJalali(gy, gm, gd) {
+
+    const g_d_m = [
+        0,
+        31,
+        59,
+        90,
+        120,
+        151,
+        181,
+        212,
+        243,
+        273,
+        304,
+        334
+    ];
+
+    let jy;
+
+    if (gy > 1600) {
+
+        jy = 979;
+
+        gy -= 1600;
+
+    }
+    else {
+
+        jy = 0;
+
+        gy -= 621;
+
+    }
+
+    const gy2 =
+        gm > 2
+            ? gy + 1
+            : gy;
+
+    let days =
+        365 * gy +
+        Math.floor(
+            (gy2 + 3) / 4
+        ) -
+        Math.floor(
+            (gy2 + 99) / 100
+        ) +
+        Math.floor(
+            (gy2 + 399) / 400
+        ) -
+        80 +
+        gd +
+        g_d_m[gm - 1];
+
+
+    jy +=
+        33 *
+        Math.floor(
+            days / 12053
+        );
+
+    days %= 12053;
+
+    jy +=
+        4 *
+        Math.floor(
+            days / 1461
+        );
+
+    days %= 1461;
+
+
+    if (days > 365) {
+
+        jy +=
+            Math.floor(
+                (days - 1) / 365
+            );
+
+        days =
+            (days - 1) % 365;
+
+    }
+
+
+    let jm;
+
+    if (days < 186) {
+
+        jm =
+            1 +
+            Math.floor(
+                days / 31
+            );
+
+    }
+    else {
+
+        jm =
+            7 +
+            Math.floor(
+                (days - 186) / 30
+            );
+
+    }
+
+
+    const jd =
+        1 +
+        (
+            days < 186
+                ? days % 31
+                : (days - 186) % 30
+        );
+
+
+    return [
+        jy,
+        jm,
+        jd
+    ];
+
+}
+
+
+/* =========================================================
+   تبدیل شمسی به میلادی
+========================================================= */
+
+function jalaliToGregorian(jy, jm, jd) {
+
+    let gy;
+
+    if (jy > 979) {
+
+        gy = 1600;
+
+        jy -= 979;
+
+    }
+    else {
+
+        gy = 621;
+
+    }
+
+
+    let days =
+        365 * jy +
+        Math.floor(
+            jy / 33
+        ) * 8 +
+        Math.floor(
+            (
+                jy % 33 + 3
+            ) / 4
+        ) +
+        78 +
+        jd +
+        (
+            jm < 7
+                ? (jm - 1) * 31
+                : (jm - 7) * 30 + 186
+        );
+
+
+    gy +=
+        400 *
+        Math.floor(
+            days / 146097
+        );
+
+    days %= 146097;
+
+
+    if (days > 36524) {
+
+        gy +=
+            100 *
+            Math.floor(
+                --days / 36524
+            );
+
+        days %= 36524;
+
+        if (days >= 365) {
+            days++;
+        }
+
+    }
+
+
+    gy +=
+        4 *
+        Math.floor(
+            days / 1461
+        );
+
+    days %= 1461;
+
+
+    if (days > 365) {
+
+        gy +=
+            Math.floor(
+                (days - 1) / 365
+            );
+
+        days =
+            (days - 1) % 365;
+
+    }
+
+
+    const gd =
+        days + 1;
+
+
+    const sal_a = [
+        0,
+        31,
+        (
+            gy % 4 === 0 &&
+            (
+                gy % 100 !== 0 ||
+                gy % 400 === 0
+            )
+        )
+            ? 29
+            : 28,
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31
+    ];
+
+
+    let gm = 0;
+
+    let remaining = gd;
+
+    while (
+        remaining >
+        sal_a[gm]
+    ) {
+
+        remaining -=
+            sal_a[gm];
+
+        gm++;
+
+    }
+
+
+    return [
+        gy,
+        gm,
+        remaining
+    ];
+
+}
+
+
+/* =========================================================
+   تعداد روزهای ماه شمسی
+========================================================= */
+
+function jalaliMonthDays(year, month) {
+
+    if (month <= 6) {
+        return 31;
+    }
+
+    if (month <= 11) {
+        return 30;
+    }
+
+    /*
+     * بررسی سال کبیسه با تبدیل سال بعد
+     */
+
+    const g1 =
+        jalaliToGregorian(
+            year,
+            12,
+            29
+        );
+
+    const g2 =
+        jalaliToGregorian(
+            year,
+            12,
+            30
+        );
+
+    const d1 =
+        new Date(
+            g1[0],
+            g1[1] - 1,
+            g1[2]
+        );
+
+    const d2 =
+        new Date(
+            g2[0],
+            g2[1] - 1,
+            g2[2]
+        );
+
+    return
+        d1.getTime() !==
+        d2.getTime()
+            ? 30
+            : 29;
+
+}
+
+
+/* =========================================================
+   نام ماه‌های شمسی
+========================================================= */
+
+const jalaliMonths = [
+    "فروردین",
+    "اردیبهشت",
+    "خرداد",
+    "تیر",
+    "مرداد",
+    "شهریور",
+    "مهر",
+    "آبان",
+    "آذر",
+    "دی",
+    "بهمن",
+    "اسفند"
+];
+
+
+const jalaliWeekdays = [
+    "ش",
+    "ی",
+    "د",
+    "س",
+    "چ",
+    "پ",
+    "ج"
+];
+
+
+/* =========================================================
+   تاریخ شمسی امروز
+========================================================= */
+
+function getTodayJalali() {
+
+    const now =
+        new Date();
+
+    return gregorianToJalali(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        now.getDate()
+    );
+
+}
+
+
+/* =========================================================
+   روز هفته برای تاریخ شمسی
+========================================================= */
+
+function jalaliWeekDay(
+    jy,
+    jm,
+    jd
+) {
+
+    const g =
+        jalaliToGregorian(
+            jy,
+            jm,
+            jd
+        );
+
+    const date =
+        new Date(
+            g[0],
+            g[1] - 1,
+            g[2]
+        );
+
+    /*
+     * JS:
+     * یکشنبه=0 ... شنبه=6
+     *
+     * تبدیل به:
+     * شنبه=0 ... جمعه=6
+     */
+
+    return (
+        date.getDay() + 1
+    ) % 7;
+
+}
+
+
+/* =========================================================
+   فرمت تاریخ شمسی
+========================================================= */
+
+function formatJalaliDate(
+    y,
+    m,
+    d
+) {
+
+    return (
+        faNumber(y) +
+        "/" +
+        faNumber(
+            String(m).padStart(2, "0")
+        ) +
+        "/" +
+        faNumber(
+            String(d).padStart(2, "0")
+        )
+    );
+
+}
+
+
+/* =========================================================
+   مدیریت تقویم شمسی
+========================================================= */
+
+const datePickerState = {
+
+    start: {
+        year: 0,
+        month: 0,
+        day: 0
+    },
+
+    end: {
+        year: 0,
+        month: 0,
+        day: 0
+    }
+
+};
+
+
+function openJalaliPicker(
+    type
+) {
+
+    const input =
+        document.getElementById(
+            type === "start"
+                ? "discountStart"
+                : "discountEnd"
+        );
+
+    const picker =
+        document.getElementById(
+            type === "start"
+                ? "discountStartPicker"
+                : "discountEndPicker"
+        );
+
+
+    let selected =
+        parseJalaliInput(
+            input.value
+        );
+
+
+    const today =
+        getTodayJalali();
+
+
+    if (!selected) {
+
+        selected = {
+            year: today[0],
+            month: today[1],
+            day: today[2]
+        };
+
+    }
+
+
+    datePickerState[type] = {
+        year: selected.year,
+        month: selected.month,
+        day: selected.day
+    };
+
+
+    renderJalaliPicker(
+        type
+    );
+
+
+    picker.classList.add(
+        "show"
+    );
+
+}
+
+
+function closeAllDatePickers() {
+
+    document
+        .querySelectorAll(
+            ".jalali-picker"
+        )
+        .forEach(
+            picker =>
+                picker.classList.remove(
+                    "show"
+                )
+        );
+
+}
+
+
+function renderJalaliPicker(
+    type
+) {
+
+    const picker =
+        document.getElementById(
+            type === "start"
+                ? "discountStartPicker"
+                : "discountEndPicker"
+        );
+
+
+    const state =
+        datePickerState[type];
+
+
+    const days =
+        jalaliMonthDays(
+            state.year,
+            state.month
+        );
+
+
+    const firstDay =
+        jalaliWeekDay(
+            state.year,
+            state.month,
+            1
+        );
+
+
+    const today =
+        getTodayJalali();
+
+
+    let html = `
+
+        <div class="jalali-picker-header">
+
+            <button
+                type="button"
+                onclick="changeJalaliMonth('${type}', -1)">
+                ‹
+            </button>
+
+            <div class="jalali-month-title">
+                ${jalaliMonths[state.month - 1]}
+                ${faNumber(state.year)}
+            </div>
+
+            <button
+                type="button"
+                onclick="changeJalaliMonth('${type}', 1)">
+                ›
+            </button>
+
+        </div>
+
+        <div class="jalali-weekdays">
+    `;
+
+
+    jalaliWeekdays.forEach(
+        day => {
+
+            html += `
+                <div>${day}</div>
+            `;
+
+        }
+    );
+
+
+    html += `
+        </div>
+
+        <div class="jalali-days">
+    `;
+
+
+    for (
+        let i = 0;
+        i < firstDay;
+        i++
+    ) {
+
+        html += `
+            <button
+                type="button"
+                class="jalali-day empty-day">
+            </button>
+        `;
+
+    }
+
+
+    for (
+        let day = 1;
+        day <= days;
+        day++
+    ) {
+
+        const isToday =
+            today[0] === state.year &&
+            today[1] === state.month &&
+            today[2] === day;
+
+
+        const isSelected =
+            state.day === day;
+
+
+        let classes =
+            "jalali-day";
+
+
+        if (isToday) {
+            classes += " today";
+        }
+
+
+        if (isSelected) {
+            classes += " selected";
+        }
+
+
+        html += `
+
+            <button
+                type="button"
+                class="${classes}"
+                onclick="selectJalaliDate(
+                    '${type}',
+                    ${state.year},
+                    ${state.month},
+                    ${day}
+                )">
+
+                ${faNumber(day)}
+
+            </button>
+
+        `;
+
+    }
+
+
+    html += `
+        </div>
+
+        <div class="jalali-picker-footer">
+
+            <button
+                type="button"
+                onclick="clearJalaliDate('${type}')">
+
+                پاک کردن
+
+            </button>
+
+            <button
+                type="button"
+                class="today-btn"
+                onclick="selectTodayJalali('${type}')">
+
+                امروز
+
+            </button>
+
+        </div>
+    `;
+
+
+    picker.innerHTML =
+        html;
+
+}
+
+
+function changeJalaliMonth(
+    type,
+    amount
+) {
+
+    const state =
+        datePickerState[type];
+
+
+    state.month +=
+        amount;
+
+
+    if (state.month > 12) {
+
+        state.month = 1;
+        state.year++;
+
+    }
+
+
+    if (state.month < 1) {
+
+        state.month = 12;
+        state.year--;
+
+    }
+
+
+    const maxDay =
+        jalaliMonthDays(
+            state.year,
+            state.month
+        );
+
+
+    if (state.day > maxDay) {
+
+        state.day =
+            maxDay;
+
+    }
+
+
+    renderJalaliPicker(
+        type
+    );
+
+}
+
+
+function selectJalaliDate(
+    type,
+    year,
+    month,
+    day
+) {
+
+    const input =
+        document.getElementById(
+            type === "start"
+                ? "discountStart"
+                : "discountEnd"
+        );
+
+
+    datePickerState[type] = {
+        year,
+        month,
+        day
+    };
+
+
+    input.value =
+        formatJalaliDate(
+            year,
+            month,
+            day
+        );
+
+
+    closeAllDatePickers();
+
+    calculateDiscountPreview();
+
+}
+
+
+function selectTodayJalali(
+    type
+) {
+
+    const today =
+        getTodayJalali();
+
+
+    selectJalaliDate(
+        type,
+        today[0],
+        today[1],
+        today[2]
+    );
+
+}
+
+
+function clearJalaliDate(
+    type
+) {
+
+    const input =
+        document.getElementById(
+            type === "start"
+                ? "discountStart"
+                : "discountEnd"
+        );
+
+
+    input.value = "";
+
+
+    closeAllDatePickers();
+
+    calculateDiscountPreview();
+
+}
+
+
+function parseJalaliInput(
+    value
+) {
+
+    if (!value) {
+        return null;
+    }
+
+
+    const numbers =
+        String(value)
+            .replace(
+                /[۰-۹]/g,
+                d =>
+                    "۰۱۲۳۴۵۶۷۸۹".indexOf(d)
+            )
+            .match(
+                /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/
+            );
+
+
+    if (!numbers) {
+        return null;
+    }
+
+
+    const year =
+        Number(numbers[1]);
+
+    const month =
+        Number(numbers[2]);
+
+    const day =
+        Number(numbers[3]);
+
+
+    if (
+        year < 1200 ||
+        month < 1 ||
+        month > 12 ||
+        day < 1 ||
+        day >
+        jalaliMonthDays(
+            year,
+            month
+        )
+    ) {
+
+        return null;
+
+    }
+
+
+    return {
+        year,
+        month,
+        day
+    };
+
+}
+
+
+/* =========================================================
+   تاریخ میلادی ISO به تاریخ شمسی
+========================================================= */
+
+function isoToJalaliParts(
+    value
+) {
+
+    if (!value) {
+        return null;
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        isNaN(
+            date.getTime()
+        )
+    ) {
+        return null;
+    }
+
+
+    const parts =
+        new Intl.DateTimeFormat(
+            "en-US",
+            {
+                timeZone:
+                    "Asia/Tehran",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                hourCycle: "h23"
+            }
+        ).formatToParts(date);
+
+
+    const getPart =
+        type => {
+
+            const item =
+                parts.find(
+                    p =>
+                        p.type ===
+                        type
+                );
+
+            return item
+                ? Number(item.value)
+                : 0;
+
+        };
+
+
+    const gy =
+        getPart("year");
+
+    const gm =
+        getPart("month");
+
+    const gd =
+        getPart("day");
+
+
+    const j =
+        gregorianToJalali(
+            gy,
+            gm,
+            gd
+        );
+
+
+    return {
+        year: j[0],
+        month: j[1],
+        day: j[2],
+        hour: getPart("hour"),
+        minute: getPart("minute")
+    };
+
+}
+
+
+/* =========================================================
+   ISO به فیلدهای شمسی
+========================================================= */
+
+function setISOToJalaliFields(
+    iso,
+    type
+) {
+
+    if (!iso) {
+        return;
+    }
+
+
+    const data =
+        isoToJalaliParts(
+            iso
+        );
+
+
+    if (!data) {
+        return;
+    }
+
+
+    const input =
+        document.getElementById(
+            type === "start"
+                ? "discountStart"
+                : "discountEnd"
+        );
+
+
+    const timeInput =
+        document.getElementById(
+            type === "start"
+                ? "discountStartTime"
+                : "discountEndTime"
+        );
+
+
+    input.value =
+        formatJalaliDate(
+            data.year,
+            data.month,
+            data.day
+        );
+
+
+    timeInput.value =
+        String(
+            data.hour
+        ).padStart(2, "0") +
+        ":" +
+        String(
+            data.minute
+        ).padStart(2, "0");
+
+
+    datePickerState[type] = {
+        year: data.year,
+        month: data.month,
+        day: data.day
+    };
+
+}
+
+
+/* =========================================================
+   تاریخ شمسی + ساعت ایران به UTC ISO
+========================================================= */
+
+function jalaliFieldsToISO(
+    type
+) {
+
+    const dateInput =
+        document.getElementById(
+            type === "start"
+                ? "discountStart"
+                : "discountEnd"
+        );
+
+
+    const timeInput =
+        document.getElementById(
+            type === "start"
+                ? "discountStartTime"
+                : "discountEndTime"
+        );
+
+
+    const dateData =
+        parseJalaliInput(
+            dateInput.value
+        );
+
+
+    if (!dateData) {
+        return null;
+    }
+
+
+    const time =
+        timeInput.value ||
+        "00:00";
+
+
+    const timeMatch =
+        time.match(
+            /^(\d{2}):(\d{2})$/
+        );
+
+
+    if (!timeMatch) {
+        return null;
+    }
+
+
+    const hour =
+        Number(
+            timeMatch[1]
+        );
+
+
+    const minute =
+        Number(
+            timeMatch[2]
+        );
+
+
+    if (
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59
+    ) {
+        return null;
+    }
+
+
+    const g =
+        jalaliToGregorian(
+            dateData.year,
+            dateData.month,
+            dateData.day
+        );
+
+
+    /*
+     * ساعت ایران در حال حاضر UTC+03:30 است.
+     */
+
+    const utcMillis =
+        Date.UTC(
+            g[0],
+            g[1] - 1,
+            g[2],
+            hour,
+            minute
+        ) -
+        (
+            3.5 *
+            60 *
+            60 *
+            1000
+        );
+
+
+    const result =
+        new Date(
+            utcMillis
+        );
+
+
+    if (
+        isNaN(
+            result.getTime()
+        )
+    ) {
+        return null;
+    }
+
+
+    return result.toISOString();
+
+}
+
+
+/* =========================================================
+   نمایش تاریخ‌ها در جدول
+========================================================= */
 
 function formatDate(value) {
 
@@ -1035,14 +2390,20 @@ function formatDate(value) {
 
     try {
 
-        const date = new Date(value);
+        const date =
+            new Date(value);
 
-        if (isNaN(date.getTime())) {
+        if (
+            isNaN(
+                date.getTime()
+            )
+        ) {
             return "—";
         }
 
+
         return new Intl.DateTimeFormat(
-            "fa-IR",
+            "fa-IR-u-ca-persian",
             {
                 dateStyle: "short",
                 timeStyle: "short",
@@ -1059,176 +2420,9 @@ function formatDate(value) {
 }
 
 
-/* =========================
-   ISO به datetime-local
-   با ساعت ثابت ایران
-========================= */
-
-function isoToLocalInput(value) {
-
-    if (!value) {
-        return "";
-    }
-
-    try {
-
-        const date = new Date(value);
-
-        if (isNaN(date.getTime())) {
-            return "";
-        }
-
-        const parts =
-            new Intl.DateTimeFormat(
-                "en-US",
-                {
-                    timeZone: "Asia/Tehran",
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hourCycle: "h23"
-                }
-            ).formatToParts(date);
-
-
-        const getPart = type => {
-
-            const item =
-                parts.find(
-                    p => p.type === type
-                );
-
-            return item
-                ? item.value
-                : "";
-
-        };
-
-
-        const year =
-            getPart("year");
-
-        const month =
-            getPart("month");
-
-        const day =
-            getPart("day");
-
-        const hour =
-            getPart("hour");
-
-        const minute =
-            getPart("minute");
-
-
-        if (
-            !year ||
-            !month ||
-            !day ||
-            !hour ||
-            !minute
-        ) {
-            return "";
-        }
-
-
-        return `${year}-${month}-${day}T${hour}:${minute}`;
-
-    } catch (e) {
-
-        return "";
-
-    }
-
-}
-
-
-/* =========================
-   datetime-local ایران به UTC ISO
-========================= */
-
-function localInputToISO(value) {
-
-    if (!value) {
-        return null;
-    }
-
-    try {
-
-        const match =
-            value.match(
-                /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
-            );
-
-
-        if (!match) {
-            return null;
-        }
-
-
-        const year =
-            Number(match[1]);
-
-        const month =
-            Number(match[2]);
-
-        const day =
-            Number(match[3]);
-
-        const hour =
-            Number(match[4]);
-
-        const minute =
-            Number(match[5]);
-
-
-        /*
-         * ساعت ایران در بازه فعلی UTC+03:30 است.
-         * بنابراین برای تبدیل ساعت واردشده به UTC،
-         * ۳ ساعت و ۳۰ دقیقه کم می‌کنیم.
-         */
-
-        const utcMillis =
-            Date.UTC(
-                year,
-                month - 1,
-                day,
-                hour,
-                minute
-            ) -
-            (
-                3.5 *
-                60 *
-                60 *
-                1000
-            );
-
-
-        const date =
-            new Date(utcMillis);
-
-
-        if (isNaN(date.getTime())) {
-            return null;
-        }
-
-
-        return date.toISOString();
-
-    } catch (e) {
-
-        return null;
-
-    }
-
-}
-
-
-/* =========================
+/* =========================================================
    فرمت قیمت
-========================= */
+========================================================= */
 
 function formatPrice(value) {
 
@@ -1243,9 +2437,9 @@ function formatPrice(value) {
 }
 
 
-/* =========================
-   وضعیت تخفیف
-========================= */
+/* =========================================================
+   پیش‌نمایش تخفیف
+========================================================= */
 
 function calculateDiscountPreview() {
 
@@ -1282,18 +2476,6 @@ function calculateDiscountPreview() {
         );
 
 
-    const startValue =
-        document.getElementById(
-            "discountStart"
-        ).value;
-
-
-    const endValue =
-        document.getElementById(
-            "discountEnd"
-        ).value;
-
-
     let finalPrice =
         basePrice;
 
@@ -1305,26 +2487,27 @@ function calculateDiscountPreview() {
     if (enabled) {
 
         const startISO =
-            localInputToISO(
-                startValue
+            jalaliFieldsToISO(
+                "start"
             );
 
+
         const endISO =
-            localInputToISO(
-                endValue
+            jalaliFieldsToISO(
+                "end"
             );
 
 
         const start =
             startISO
-            ? new Date(startISO)
-            : null;
+                ? new Date(startISO)
+                : null;
 
 
         const end =
             endISO
-            ? new Date(endISO)
-            : null;
+                ? new Date(endISO)
+                : null;
 
 
         if (
@@ -1382,13 +2565,17 @@ function calculateDiscountPreview() {
     document.getElementById(
         "previewBasePrice"
     ).textContent =
-        formatPrice(basePrice);
+        formatPrice(
+            basePrice
+        );
 
 
     document.getElementById(
         "previewFinalPrice"
     ).textContent =
-        formatPrice(finalPrice);
+        formatPrice(
+            finalPrice
+        );
 
 
     const statusBox =
@@ -1428,9 +2615,9 @@ function calculateDiscountPreview() {
 }
 
 
-/* =========================
-   فعال/غیرفعال کردن فیلدهای تخفیف
-========================= */
+/* =========================================================
+   فعال/غیرفعال کردن تخفیف
+========================================================= */
 
 function toggleDiscountFields() {
 
@@ -1450,11 +2637,15 @@ function toggleDiscountFields() {
     ids.forEach(id => {
 
         const element =
-            document.getElementById(id);
+            document.getElementById(
+                id
+            );
+
 
         if (!element) {
             return;
         }
+
 
         if (enabled) {
 
@@ -1479,9 +2670,9 @@ function toggleDiscountFields() {
 }
 
 
-/* =========================
+/* =========================================================
    پیام تنظیمات
-========================= */
+========================================================= */
 
 function showSettingsMessage(
     message,
@@ -1502,8 +2693,8 @@ function showSettingsMessage(
         "settings-message " +
         (
             type === "success"
-            ? "settings-success"
-            : "settings-error"
+                ? "settings-success"
+                : "settings-error"
         );
 
 
@@ -1521,9 +2712,9 @@ function showSettingsMessage(
 }
 
 
-/* =========================
-   بارگذاری تنظیمات آزمون
-========================= */
+/* =========================================================
+   بارگذاری تنظیمات
+========================================================= */
 
 async function loadExamSettings() {
 
@@ -1560,7 +2751,9 @@ async function loadExamSettings() {
 
 
         const exam =
-            data.exam || data.settings || data;
+            data.exam ||
+            data.settings ||
+            data;
 
 
         const price =
@@ -1613,20 +2806,16 @@ async function loadExamSettings() {
             discountPercent;
 
 
-        document.getElementById(
-            "discountStart"
-        ).value =
-            isoToLocalInput(
-                discountStartAt
-            );
+        setISOToJalaliFields(
+            discountStartAt,
+            "start"
+        );
 
 
-        document.getElementById(
-            "discountEnd"
-        ).value =
-            isoToLocalInput(
-                discountEndAt
-            );
+        setISOToJalaliFields(
+            discountEndAt,
+            "end"
+        );
 
 
         toggleDiscountFields();
@@ -1637,6 +2826,7 @@ async function loadExamSettings() {
     } catch (error) {
 
         console.error(error);
+
 
         showSettingsMessage(
             "خطا در دریافت تنظیمات قیمت: " +
@@ -1651,9 +2841,9 @@ async function loadExamSettings() {
 }
 
 
-/* =========================
+/* =========================================================
    ذخیره تنظیمات
-========================= */
+========================================================= */
 
 async function saveExamSettings() {
 
@@ -1681,20 +2871,18 @@ async function saveExamSettings() {
         );
 
 
-    const startValue =
-        document.getElementById(
-            "discountStart"
-        ).value;
+    let discountStartAt =
+        null;
 
 
-    const endValue =
-        document.getElementById(
-            "discountEnd"
-        ).value;
+    let discountEndAt =
+        null;
 
 
     if (
-        !Number.isFinite(basePrice) ||
+        !Number.isFinite(
+            basePrice
+        ) ||
         basePrice <= 0
     ) {
 
@@ -1711,7 +2899,9 @@ async function saveExamSettings() {
     if (
         discountPercent < 0 ||
         discountPercent > 100 ||
-        !Number.isFinite(discountPercent)
+        !Number.isFinite(
+            discountPercent
+        )
     ) {
 
         showSettingsMessage(
@@ -1724,39 +2914,17 @@ async function saveExamSettings() {
     }
 
 
-    let discountStartAt =
-        null;
-
-    let discountEndAt =
-        null;
-
-
     if (discountEnabled) {
 
-        if (
-            !startValue ||
-            !endValue
-        ) {
-
-            showSettingsMessage(
-                "برای تخفیف فعال، تاریخ شروع و پایان الزامی است.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
         discountStartAt =
-            localInputToISO(
-                startValue
+            jalaliFieldsToISO(
+                "start"
             );
 
 
         discountEndAt =
-            localInputToISO(
-                endValue
+            jalaliFieldsToISO(
+                "end"
             );
 
 
@@ -1766,7 +2934,7 @@ async function saveExamSettings() {
         ) {
 
             showSettingsMessage(
-                "تاریخ شروع یا پایان معتبر نیست.",
+                "تاریخ شروع و پایان را به‌درستی انتخاب کنید.",
                 "error"
             );
 
@@ -1804,6 +2972,7 @@ async function saveExamSettings() {
 
     button.disabled =
         true;
+
 
     button.textContent =
         "⏳ در حال ذخیره...";
@@ -1881,6 +3050,7 @@ async function saveExamSettings() {
 
         console.error(error);
 
+
         showSettingsMessage(
             error.message ||
             "خطا در ذخیره تنظیمات.",
@@ -1901,11 +3071,13 @@ async function saveExamSettings() {
 }
 
 
-/* =========================
+/* =========================================================
    وضعیت پرداخت
-========================= */
+========================================================= */
 
-function getPaymentStatus(paymentStatus) {
+function getPaymentStatus(
+    paymentStatus
+) {
 
     const status =
         String(
@@ -1989,9 +3161,9 @@ function getPaymentStatus(paymentStatus) {
 }
 
 
-/* =========================
+/* =========================================================
    وضعیت آزمون
-========================= */
+========================================================= */
 
 function getExamStatus(status) {
 
@@ -2009,7 +3181,9 @@ function getExamStatus(status) {
     }
 
 
-    if (status === "in_progress") {
+    if (
+        status === "in_progress"
+    ) {
 
         return `
             <span class="status status-progress">
@@ -2020,7 +3194,9 @@ function getExamStatus(status) {
     }
 
 
-    if (status === "finished") {
+    if (
+        status === "finished"
+    ) {
 
         return `
             <span class="status status-finished">
@@ -2040,10 +3216,6 @@ function getExamStatus(status) {
 }
 
 
-/* =========================
-   وضعیت کلی قدیمی
-========================= */
-
 function getStatus(status) {
 
     return getExamStatus(status);
@@ -2051,9 +3223,9 @@ function getStatus(status) {
 }
 
 
-/* =========================
+/* =========================================================
    خطا
-========================= */
+========================================================= */
 
 function showError(message) {
 
@@ -2062,8 +3234,10 @@ function showError(message) {
             "errorBox"
         );
 
+
     box.textContent =
         message;
+
 
     box.style.display =
         "block";
@@ -2078,17 +3252,20 @@ function hideError() {
             "errorBox"
         );
 
+
     box.style.display =
         "none";
 
 }
 
 
-/* =========================
+/* =========================================================
    آمار
-========================= */
+========================================================= */
 
-function updateStats(students) {
+function updateStats(
+    students
+) {
 
     let total =
         students.length;
@@ -2103,30 +3280,34 @@ function updateStats(students) {
         0;
 
 
-    students.forEach(student => {
+    students.forEach(
+        student => {
 
-        if (
-            student.status ===
-            "in_progress"
-        ) {
-            progress++;
+            if (
+                student.status ===
+                "in_progress"
+            ) {
+                progress++;
+            }
+
+
+            if (
+                student.status ===
+                "finished"
+            ) {
+                finished++;
+            }
+
+
+            if (
+                student.status ===
+                "unpaid"
+            ) {
+                unpaid++;
+            }
+
         }
-
-        if (
-            student.status ===
-            "finished"
-        ) {
-            finished++;
-        }
-
-        if (
-            student.status ===
-            "unpaid"
-        ) {
-            unpaid++;
-        }
-
-    });
+    );
 
 
     document.getElementById(
@@ -2155,9 +3336,9 @@ function updateStats(students) {
 }
 
 
-/* =========================
+/* =========================================================
    HTML امن
-========================= */
+========================================================= */
 
 function escapeHtml(value) {
 
@@ -2191,9 +3372,9 @@ function escapeHtml(value) {
 }
 
 
-/* =========================
-   بارگذاری دانش‌آموزان
-========================= */
+/* =========================================================
+   دانش‌آموزان
+========================================================= */
 
 async function loadStudents() {
 
@@ -2272,7 +3453,9 @@ async function loadStudents() {
             data.students || [];
 
 
-        updateStats(students);
+        updateStats(
+            students
+        );
 
 
         body.innerHTML =
@@ -2295,7 +3478,10 @@ async function loadStudents() {
 
 
         students.forEach(
-            (student, index) => {
+            (
+                student,
+                index
+            ) => {
 
                 const tr =
                     document.createElement(
@@ -2450,7 +3636,9 @@ async function loadStudents() {
                 `;
 
 
-                body.appendChild(tr);
+                body.appendChild(
+                    tr
+                );
 
             }
         );
@@ -2466,7 +3654,9 @@ async function loadStudents() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
 
 
         loading.style.display =
@@ -2486,11 +3676,13 @@ async function loadStudents() {
 }
 
 
-/* =========================
-   مشاهده جزئیات آزمون
-========================= */
+/* =========================================================
+   مشاهده جزئیات
+========================================================= */
 
-async function showAttempt(attemptId) {
+async function showAttempt(
+    attemptId
+) {
 
     const modal =
         document.getElementById(
@@ -2547,12 +3739,16 @@ async function showAttempt(attemptId) {
         }
 
 
-        renderAttempt(data);
+        renderAttempt(
+            data
+        );
 
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
 
 
         content.innerHTML = `
@@ -2575,11 +3771,13 @@ async function showAttempt(attemptId) {
 }
 
 
-/* =========================
+/* =========================================================
    ساخت جزئیات آزمون
-========================= */
+========================================================= */
 
-function renderAttempt(data) {
+function renderAttempt(
+    data
+) {
 
     const student =
         data.student || {};
@@ -2605,10 +3803,16 @@ function renderAttempt(data) {
 
     const examStatus =
         attempt.finishedAt
-        ? getExamStatus("finished")
-        : attempt.startedAt
-        ? getExamStatus("in_progress")
-        : getExamStatus("paid_not_started");
+            ? getExamStatus(
+                "finished"
+            )
+            : attempt.startedAt
+                ? getExamStatus(
+                    "in_progress"
+                )
+                : getExamStatus(
+                    "paid_not_started"
+                );
 
 
     let html = `
@@ -2681,9 +3885,7 @@ function renderAttempt(data) {
                 </div>
 
                 <div class="summary-value">
-
                     ${paymentStatus}
-
                 </div>
 
             </div>
@@ -2696,9 +3898,7 @@ function renderAttempt(data) {
                 </div>
 
                 <div class="summary-value">
-
                     ${examStatus}
-
                 </div>
 
             </div>
@@ -2828,17 +4028,11 @@ function renderAttempt(data) {
                     <tr>
 
                         <th>سؤال</th>
-
                         <th>متن سؤال</th>
-
                         <th>پاسخ دانش‌آموز</th>
-
                         <th>پاسخ صحیح</th>
-
                         <th>نتیجه</th>
-
                         <th>زمان پاسخ</th>
-
                         <th>زمان مجاز</th>
 
                     </tr>
@@ -2850,171 +4044,173 @@ function renderAttempt(data) {
     `;
 
 
-    questions.forEach(question => {
+    questions.forEach(
+        question => {
 
-        let rowClass = "";
+            let rowClass = "";
 
-        let resultText = "";
+            let resultText = "";
 
-        let resultClass = "";
+            let resultClass = "";
 
 
-        if (
-            question.result ===
-            "correct"
-        ) {
+            if (
+                question.result ===
+                "correct"
+            ) {
 
-            rowClass =
-                "correct-row";
+                rowClass =
+                    "correct-row";
 
-            resultText =
-                "✓ صحیح";
+                resultText =
+                    "✓ صحیح";
 
-            resultClass =
-                "result-correct";
+                resultClass =
+                    "result-correct";
+
+            }
+            else if (
+                question.result ===
+                "wrong"
+            ) {
+
+                rowClass =
+                    "wrong-row";
+
+                resultText =
+                    "✕ غلط";
+
+                resultClass =
+                    "result-wrong";
+
+            }
+            else {
+
+                rowClass =
+                    "empty-row";
+
+                resultText =
+                    "— بدون پاسخ";
+
+                resultClass =
+                    "result-empty";
+
+            }
+
+
+            const selectedAnswer =
+                question.selectedIndex !== null &&
+                question.selectedIndex !== undefined
+
+                ? (
+                    question.options &&
+                    question.options[
+                        question.selectedIndex
+                    ]
+                    ? question.options[
+                        question.selectedIndex
+                    ]
+                    : "—"
+                )
+
+                : "بدون پاسخ";
+
+
+            const correctAnswer =
+                question.correctIndex !== null &&
+                question.correctIndex !== undefined
+
+                ? (
+                    question.options &&
+                    question.options[
+                        question.correctIndex
+                    ]
+                    ? question.options[
+                        question.correctIndex
+                    ]
+                    : "—"
+                )
+
+                : "—";
+
+
+            html += `
+
+                <tr class="${rowClass}">
+
+                    <td>
+                        ${faNumber(
+                            question.number
+                        )}
+                    </td>
+
+
+                    <td class="answer-box">
+                        ${escapeHtml(
+                            question.question ||
+                            "—"
+                        )}
+                    </td>
+
+
+                    <td class="answer-box">
+                        ${escapeHtml(
+                            selectedAnswer
+                        )}
+                    </td>
+
+
+                    <td class="answer-box">
+                        ${escapeHtml(
+                            correctAnswer
+                        )}
+                    </td>
+
+
+                    <td class="${resultClass}">
+                        ${resultText}
+                    </td>
+
+
+                    <td>
+
+                        ${
+                            question.elapsedSeconds !== null &&
+                            question.elapsedSeconds !== undefined
+
+                            ? faNumber(
+                                question.elapsedSeconds
+                            ) +
+                            " ثانیه"
+
+                            : "—"
+                        }
+
+                    </td>
+
+
+                    <td>
+
+                        ${
+                            question.durationSeconds !== null &&
+                            question.durationSeconds !== undefined
+
+                            ? faNumber(
+                                question.durationSeconds
+                            ) +
+                            " ثانیه"
+
+                            : "—"
+                        }
+
+                    </td>
+
+                </tr>
+
+            `;
 
         }
-        else if (
-            question.result ===
-            "wrong"
-        ) {
-
-            rowClass =
-                "wrong-row";
-
-            resultText =
-                "✕ غلط";
-
-            resultClass =
-                "result-wrong";
-
-        }
-        else {
-
-            rowClass =
-                "empty-row";
-
-            resultText =
-                "— بدون پاسخ";
-
-            resultClass =
-                "result-empty";
-
-        }
-
-
-        const selectedAnswer =
-            question.selectedIndex !== null &&
-            question.selectedIndex !== undefined
-
-            ? (
-                question.options &&
-                question.options[
-                    question.selectedIndex
-                ]
-                ? question.options[
-                    question.selectedIndex
-                ]
-                : "—"
-            )
-
-            : "بدون پاسخ";
-
-
-        const correctAnswer =
-            question.correctIndex !== null &&
-            question.correctIndex !== undefined
-
-            ? (
-                question.options &&
-                question.options[
-                    question.correctIndex
-                ]
-                ? question.options[
-                    question.correctIndex
-                ]
-                : "—"
-            )
-
-            : "—";
-
-
-        html += `
-
-            <tr class="${rowClass}">
-
-                <td>
-                    ${faNumber(
-                        question.number
-                    )}
-                </td>
-
-
-                <td class="answer-box">
-                    ${escapeHtml(
-                        question.question ||
-                        "—"
-                    )}
-                </td>
-
-
-                <td class="answer-box">
-                    ${escapeHtml(
-                        selectedAnswer
-                    )}
-                </td>
-
-
-                <td class="answer-box">
-                    ${escapeHtml(
-                        correctAnswer
-                    )}
-                </td>
-
-
-                <td class="${resultClass}">
-                    ${resultText}
-                </td>
-
-
-                <td>
-
-                    ${
-                        question.elapsedSeconds !== null &&
-                        question.elapsedSeconds !== undefined
-
-                        ? faNumber(
-                            question.elapsedSeconds
-                        ) +
-                        " ثانیه"
-
-                        : "—"
-                    }
-
-                </td>
-
-
-                <td>
-
-                    ${
-                        question.durationSeconds !== null &&
-                        question.durationSeconds !== undefined
-
-                        ? faNumber(
-                            question.durationSeconds
-                        ) +
-                        " ثانیه"
-
-                        : "—"
-                    }
-
-                </td>
-
-            </tr>
-
-        `;
-
-    });
+    );
 
 
     html += `
@@ -3036,9 +4232,9 @@ function renderAttempt(data) {
 }
 
 
-/* =========================
+/* =========================================================
    بستن مودال
-========================= */
+========================================================= */
 
 function closeAttemptModal() {
 
@@ -3066,9 +4262,9 @@ function closeModalByBackground(
 }
 
 
-/* =========================
-   حذف یک دانش‌آموز
-========================= */
+/* =========================================================
+   حذف دانش‌آموز
+========================================================= */
 
 async function deleteStudent(
     orderId,
@@ -3134,7 +4330,9 @@ async function deleteStudent(
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
 
 
         alert(
@@ -3150,9 +4348,9 @@ async function deleteStudent(
 }
 
 
-/* =========================
+/* =========================================================
    حذف همه
-========================= */
+========================================================= */
 
 async function deleteAllStudents() {
 
@@ -3221,7 +4419,9 @@ async function deleteAllStudents() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
 
 
         alert(
@@ -3237,9 +4437,9 @@ async function deleteAllStudents() {
 }
 
 
-/* =========================
+/* =========================================================
    بروزرسانی همه
-========================= */
+========================================================= */
 
 async function loadAll() {
 
@@ -3251,12 +4451,54 @@ async function loadAll() {
 }
 
 
-/* =========================
-   رویدادهای پیش‌نمایش قیمت
-========================= */
+/* =========================================================
+   رویدادهای تقویم
+========================================================= */
 
 document
-    .getElementById("basePrice")
+    .getElementById(
+        "discountStart"
+    )
+    .addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            closeAllDatePickers();
+
+            openJalaliPicker(
+                "start"
+            );
+
+        }
+    );
+
+
+document
+    .getElementById(
+        "discountEnd"
+    )
+    .addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            closeAllDatePickers();
+
+            openJalaliPicker(
+                "end"
+            );
+
+        }
+    );
+
+
+document
+    .getElementById(
+        "discountStartTime"
+    )
     .addEventListener(
         "input",
         calculateDiscountPreview
@@ -3264,7 +4506,9 @@ document
 
 
 document
-    .getElementById("discountPercent")
+    .getElementById(
+        "discountEndTime"
+    )
     .addEventListener(
         "input",
         calculateDiscountPreview
@@ -3272,7 +4516,9 @@ document
 
 
 document
-    .getElementById("discountStart")
+    .getElementById(
+        "basePrice"
+    )
     .addEventListener(
         "input",
         calculateDiscountPreview
@@ -3280,16 +4526,36 @@ document
 
 
 document
-    .getElementById("discountEnd")
+    .getElementById(
+        "discountPercent"
+    )
     .addEventListener(
         "input",
         calculateDiscountPreview
     );
 
 
-/* =========================
+document.addEventListener(
+    "click",
+    event => {
+
+        if (
+            !event.target.closest(
+                ".jalali-date-wrapper"
+            )
+        ) {
+
+            closeAllDatePickers();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
    اجرای اولیه
-========================= */
+========================================================= */
 
 loadAll();
 
