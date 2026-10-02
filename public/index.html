@@ -15,6 +15,11 @@ body{
     color:#1f2937;
 }
 
+/* جلوگیری از نمایش لحظه‌ای صفحه شروع هنگام Refresh */
+body.page-loading{
+    visibility:hidden;
+}
+
 .container{
     width:min(760px,94%);
     margin:30px auto;
@@ -662,7 +667,7 @@ body{
 </style>
 </head>
 
-<body>
+<body class="page-loading">
 
 <div class="container">
 
@@ -954,6 +959,10 @@ let submitting = false;
 let examQuestionsCount = 0;
 let examData = null;
 
+/* زمان‌های آزمون */
+let examStartedAt = null;
+let examFinishedAt = null;
+
 
 /* =========================
    ابزارها
@@ -1047,6 +1056,11 @@ function clearSession(){
     keys.forEach(key =>
         localStorage.removeItem(key)
     );
+
+    /*
+       زمان شروع و پایان را پاک نمی‌کنیم
+       چون برای نمایش نتیجه لازم هستند.
+    */
 
     orderId = null;
     attemptId = null;
@@ -1366,6 +1380,21 @@ $("startButton").addEventListener(
 
             attemptId = null;
 
+            /*
+               شروع یک آزمون جدید:
+               زمان‌های آزمون قبلی پاک می‌شوند.
+            */
+            examStartedAt = null;
+            examFinishedAt = null;
+
+            localStorage.removeItem(
+                "math_exam_started_at"
+            );
+
+            localStorage.removeItem(
+                "math_exam_finished_at"
+            );
+
             localStorage.setItem(
                 "math_exam_order_id",
                 orderId
@@ -1646,6 +1675,31 @@ async function startExam(){
 
         attemptId =
             data.attemptId;
+
+        /*
+           فقط در شروع واقعی آزمون،
+           زمان شروع را ذخیره می‌کنیم.
+        */
+        if(
+            !examStartedAt &&
+            data.questionStartedAt
+        ){
+
+            examStartedAt =
+                data.questionStartedAt;
+
+            localStorage.setItem(
+                "math_exam_started_at",
+                examStartedAt
+            );
+
+        }
+
+        examFinishedAt = null;
+
+        localStorage.removeItem(
+            "math_exam_finished_at"
+        );
 
         localStorage.setItem(
             "math_exam_attempt_id",
@@ -2103,6 +2157,19 @@ async function finishExam(){
         return;
     }
 
+    /*
+       زمان پایان را قبل از درخواست نتیجه ذخیره می‌کنیم
+       تا حتی اگر Worker این فیلد را برنگرداند،
+       زمان پایان در پنل موجود باشد.
+    */
+    examFinishedAt =
+        new Date().toISOString();
+
+    localStorage.setItem(
+        "math_exam_finished_at",
+        examFinishedAt
+    );
+
     try{
 
         const response =
@@ -2199,13 +2266,6 @@ function formatDateTime(value){
 
 function renderResult(data){
 
-    /*
-       پاسخ /api/submit از Worker مستقیماً
-       شامل score و correct و wrong و empty
-       و sheet است؛ بنابراین دیگر نباید
-       دنبال data.result بگردیم.
-    */
-
     const result =
         data || {};
 
@@ -2229,14 +2289,26 @@ function renderResult(data){
     const empty =
         Number(result.empty || 0);
 
+    /*
+       ابتدا زمان‌های برگشتی از Worker،
+       سپس زمان‌های ذخیره‌شده در مرورگر.
+    */
     const startedAt =
         result.startedAt ||
         result.started_at ||
+        examStartedAt ||
+        localStorage.getItem(
+            "math_exam_started_at"
+        ) ||
         null;
 
     const finishedAt =
         result.finishedAt ||
         result.finished_at ||
+        examFinishedAt ||
+        localStorage.getItem(
+            "math_exam_finished_at"
+        ) ||
         null;
 
     $("resultSummary").innerHTML = `
@@ -2326,21 +2398,6 @@ function renderResult(data){
         </div>
 
     `;
-
-    /*
-       Worker:
-       data.sheet = [
-           {
-               number,
-               question,
-               options,
-               selectedIndex,
-               correctIndex,
-               result,
-               elapsedSeconds
-           }
-       ]
-    */
 
     const sheet =
         Array.isArray(data.sheet)
@@ -2521,12 +2578,6 @@ function optionText(
         return "بدون پاسخ";
     }
 
-    /*
-       Worker گزینه‌ها را داخل آرایه options
-       برمی‌گرداند:
-       [A, B, C, D]
-    */
-
     const options =
         Array.isArray(item.options)
             ? item.options
@@ -2565,11 +2616,24 @@ async function restoreSession(){
             "math_exam_paid"
         );
 
+    /*
+       زمان شروع قبلی را بازیابی می‌کنیم.
+       این زمان با Refresh تغییر نمی‌کند.
+    */
+    examStartedAt =
+        localStorage.getItem(
+            "math_exam_started_at"
+        );
+
+    examFinishedAt =
+        localStorage.getItem(
+            "math_exam_finished_at"
+        );
+
 
     /*
     اگر attempt وجود دارد و started=1 است،
-    یعنی واقعاً آزمون قبلاً شروع شده.
-    فقط در این حالت آزمون را ادامه می‌دهیم.
+    یعنی آزمون واقعاً شروع شده.
     */
 
     if(
@@ -2626,6 +2690,26 @@ async function restoreSession(){
                 attemptId
             );
 
+            /*
+               اگر به هر دلیلی زمان شروع قبلی
+               ذخیره نشده بود، فقط یک بار
+               از زمان سؤال فعلی استفاده می‌کنیم.
+            */
+            if(
+                !examStartedAt &&
+                data.questionStartedAt
+            ){
+
+                examStartedAt =
+                    data.questionStartedAt;
+
+                localStorage.setItem(
+                    "math_exam_started_at",
+                    examStartedAt
+                );
+
+            }
+
             hide("startCard");
             hide("paymentCard");
             hide("rulesCard");
@@ -2651,9 +2735,11 @@ async function restoreSession(){
             );
 
             /*
-            اگر سرور موقتاً در دسترس نیست،
-            صفحه را در حالت شروع نگه می‌داریم.
+               Session را پاک نمی‌کنیم.
+               چون آزمون هنوز در حال اجراست
+               و با Refresh بعدی دوباره تلاش می‌شود.
             */
+
             return;
         }
 
@@ -2731,23 +2817,44 @@ async function restoreSession(){
 async function initializePage(){
 
     /*
-    ابتدا همیشه همه مراحل را مخفی می‌کنیم.
-    بنابراین هیچ Session قدیمی نمی‌تواند
-    باعث نمایش مستقیم آزمون شود مگر اینکه
-    attempt واقعی وجود داشته باشد.
+       همه کارت‌ها ابتدا مخفی می‌شوند.
+       body نیز تا پایان restoreSession
+       visibility:hidden دارد.
+       بنابراین صفحه شروع حتی برای یک لحظه
+       هنگام Refresh دیده نمی‌شود.
     */
 
+    hide("startCard");
     hide("paymentCard");
     hide("rulesCard");
     hide("examCard");
     hide("resultCard");
     hideQuestionSteps();
 
-    show("startCard");
-
     await loadExam();
 
     await restoreSession();
+
+    /*
+       اگر هیچ Session فعالی وجود نداشت،
+       صفحه شروع نمایش داده می‌شود.
+    */
+    if(
+        !attemptId &&
+        !orderId
+    ){
+
+        show("startCard");
+
+    }
+
+    /*
+       حالا وضعیت نهایی مشخص شده و صفحه را
+       برای کاربر قابل مشاهده می‌کنیم.
+    */
+    document.body.classList.remove(
+        "page-loading"
+    );
 
 }
 
