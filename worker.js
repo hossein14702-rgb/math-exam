@@ -1116,12 +1116,15 @@ export default {
             savedRows.length;
 
 
+          // =================================================
+          // نمره از ۲۰
+          // =================================================
           const score =
             total > 0
               ? Number(
                   (
                     (correct / total) *
-                    100
+                    20
                   ).toFixed(2)
                 )
               : 0;
@@ -1177,6 +1180,175 @@ export default {
           env,
           attempt
         );
+      }
+
+
+      // =====================================================
+      // پنل معلم - لیست دانش‌آموزان
+      // =====================================================
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/teacher/students"
+      ) {
+
+        const examId = Number(
+          url.searchParams.get("examId") || 1
+        );
+
+        if (!examId) {
+          return json({
+            ok: false,
+            error: "شناسه آزمون نامعتبر است."
+          }, 400);
+        }
+
+
+        const rows = await env.DB.prepare(`
+          SELECT
+            o.id AS order_id,
+            o.exam_id,
+            o.name,
+            o.phone,
+            o.amount,
+            o.status AS payment_status,
+            o.created_at,
+            o.paid_at,
+
+            a.id AS attempt_id,
+            a.started_at,
+            a.finished_at,
+            a.score,
+            a.correct_count,
+            a.wrong_count,
+            a.empty_count
+
+          FROM orders o
+
+          LEFT JOIN attempts a
+            ON a.id = (
+              SELECT a2.id
+              FROM attempts a2
+              WHERE a2.order_id = o.id
+              ORDER BY a2.started_at DESC
+              LIMIT 1
+            )
+
+          WHERE o.exam_id = ?
+
+          ORDER BY
+            CASE
+              WHEN o.paid_at IS NULL THEN o.created_at
+              ELSE o.paid_at
+            END DESC
+        `)
+          .bind(examId)
+          .all();
+
+
+        const students =
+          (rows.results || []).map(row => {
+
+            let status = "unpaid";
+
+
+            // -------------------------------------------
+            // وضعیت دانش‌آموز
+            // -------------------------------------------
+
+            if (row.payment_status !== "paid") {
+
+              status = "unpaid";
+
+            } else if (!row.attempt_id) {
+
+              status = "paid_not_started";
+
+            } else if (
+              row.attempt_id &&
+              !row.finished_at
+            ) {
+
+              status = "in_progress";
+
+            } else if (
+              row.attempt_id &&
+              row.finished_at
+            ) {
+
+              status = "finished";
+            }
+
+
+            return {
+
+              orderId:
+                row.order_id,
+
+              attemptId:
+                row.attempt_id || null,
+
+              examId:
+                Number(row.exam_id),
+
+              name:
+                row.name,
+
+              phone:
+                row.phone,
+
+              amount:
+                Number(row.amount || 0),
+
+              paymentStatus:
+                row.payment_status,
+
+              status,
+
+              createdAt:
+                row.created_at,
+
+              paidAt:
+                row.paid_at || null,
+
+              startedAt:
+                row.started_at || null,
+
+              finishedAt:
+                row.finished_at || null,
+
+              // نمره از ۲۰
+              score:
+                row.score === null ||
+                row.score === undefined
+                  ? null
+                  : Number(row.score),
+
+              correct:
+                row.correct_count === null ||
+                row.correct_count === undefined
+                  ? null
+                  : Number(row.correct_count),
+
+              wrong:
+                row.wrong_count === null ||
+                row.wrong_count === undefined
+                  ? null
+                  : Number(row.wrong_count),
+
+              empty:
+                row.empty_count === null ||
+                row.empty_count === undefined
+                  ? null
+                  : Number(row.empty_count)
+            };
+          });
+
+
+        return json({
+          ok: true,
+          examId,
+          students
+        });
       }
 
 
@@ -1607,12 +1779,15 @@ async function buildResult(
     rows.length;
 
 
+  // =====================================================
+  // نمره از ۲۰
+  // =====================================================
   const score =
     total > 0
       ? Number(
           (
             (correct / total) *
-            100
+            20
           ).toFixed(2)
         )
       : 0;
@@ -1762,12 +1937,15 @@ async function buildLegacyResult(
     rows.length;
 
 
+  // =====================================================
+  // نمره از ۲۰
+  // =====================================================
   const score =
     total > 0
       ? Number(
           (
             (correct / total) *
-            100
+            20
           ).toFixed(2)
         )
       : 0;
