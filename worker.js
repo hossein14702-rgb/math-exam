@@ -1086,17 +1086,22 @@ export default {
             sheet.push({
               number:
                 Number(q.question_order) + 1,
+
               question:
                 q.question_text_snapshot,
+
               selected,
+
               correct:
                 correctIndex,
+
               elapsedSeconds:
                 q.elapsed_seconds === null
                   ? null
                   : Number(
                       q.elapsed_seconds
                     ),
+
               options: [
                 q.option_a_snapshot,
                 q.option_b_snapshot,
@@ -1155,7 +1160,9 @@ export default {
               correct,
               wrong,
               empty,
-              score
+              score,
+              startedAt: attempt.started_at,
+              finishedAt: finishedAt
             },
 
             sheet
@@ -1231,10 +1238,8 @@ async function selectQuestionsForExam(
       .bind(examId)
       .all();
 
-
   const ruleRows =
     rules.results || [];
-
 
   const selected = [];
 
@@ -1491,7 +1496,9 @@ async function buildResult(
     await env.DB.prepare(`
       SELECT
         a.id,
-        a.order_id
+        a.order_id,
+        a.started_at,
+        a.finished_at
       FROM attempts a
       WHERE a.id = ?
     `)
@@ -1534,6 +1541,7 @@ async function buildResult(
   let correct = 0;
   let wrong = 0;
   let empty = 0;
+
 
   const sheet = [];
 
@@ -1618,7 +1626,9 @@ async function buildResult(
       correct,
       wrong,
       empty,
-      score
+      score,
+      startedAt: attempt.started_at,
+      finishedAt: attempt.finished_at
     },
 
     sheet
@@ -1669,6 +1679,7 @@ async function buildLegacyResult(
   const rows =
     questions.results || [];
 
+
   const answerRows =
     answers.results || [];
 
@@ -1693,6 +1704,7 @@ async function buildLegacyResult(
   let wrong = 0;
   let empty = 0;
 
+
   const sheet = [];
 
 
@@ -1703,6 +1715,7 @@ async function buildLegacyResult(
   ) {
 
     const q = rows[i];
+
 
     const selected =
       Object.prototype.hasOwnProperty.call(
@@ -1768,7 +1781,9 @@ async function buildLegacyResult(
       correct,
       wrong,
       empty,
-      score
+      score,
+      startedAt: attempt.started_at,
+      finishedAt: attempt.finished_at
     },
 
     sheet
@@ -1825,7 +1840,6 @@ function normalizePhone(value) {
 
   let phone =
     String(value || "");
-
 
   const persian =
     "۰۱۲۳۴۵۶۷۸۹";
