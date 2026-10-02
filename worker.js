@@ -65,18 +65,53 @@ export default {
         const pricing =
           getEffectivePrice(exam);
 
+        // تعداد واقعی سوالات آزمون طبق قوانین پوشه‌ها
+        const rulesResult =
+          await env.DB
+            .prepare(`
+              SELECT
+                selection_count
+              FROM exam_folder_rules efr
+              JOIN question_folders f
+                ON f.id = efr.folder_id
+              WHERE efr.exam_id = ?
+                AND f.active = 1
+            `)
+            .bind(examId)
+            .all();
+
+        const rules =
+          rulesResult.results || [];
+
+        let questionCount = 0;
+
+        if (rules.length) {
+          questionCount =
+            rules.reduce(
+              (sum, row) =>
+                sum +
+                Number(
+                  row.selection_count || 0
+                ),
+              0
+            );
+        }
+
         const publicExam = {
           id: exam.id,
           title: exam.title,
 
-          // برای سازگاری با index.html قبلی
-          price: pricing.finalPrice,
+          // قیمت نهایی فعلی
+          price:
+            pricing.finalPrice,
 
           // قیمت اصلی
-          basePrice: pricing.basePrice,
+          basePrice:
+            pricing.basePrice,
 
           // قیمت نهایی
-          finalPrice: pricing.finalPrice,
+          finalPrice:
+            pricing.finalPrice,
 
           discountEnabled:
             pricing.discountEnabled,
@@ -100,6 +135,7 @@ export default {
             exam.active,
         };
 
+        // لیست سوالات بانک برای سازگاری
         const result =
           await env.DB
             .prepare(`
@@ -125,7 +161,14 @@ export default {
         return json(
           {
             ok: true,
-            exam: publicExam,
+
+            exam:
+              publicExam,
+
+            // تعداد واقعی سوالات آزمون
+            questionCount,
+
+            // برای سازگاری با index قدیمی
             questions:
               result.results || [],
           },
@@ -154,7 +197,8 @@ export default {
           return json(
             {
               ok: false,
-              error: "examId نامعتبر است",
+              error:
+                "examId نامعتبر است",
             },
             400,
             cors
@@ -183,7 +227,8 @@ export default {
           return json(
             {
               ok: false,
-              error: "آزمون پیدا نشد",
+              error:
+                "آزمون پیدا نشد",
             },
             404,
             cors
@@ -198,15 +243,24 @@ export default {
             ok: true,
 
             exam: {
-              id: exam.id,
-              title: exam.title,
-              active: exam.active,
+              id:
+                exam.id,
+
+              title:
+                exam.title,
+
+              active:
+                exam.active,
 
               price:
-                Number(exam.price || 0),
+                Number(
+                  exam.price || 0
+                ),
 
               discountEnabled:
-                Number(exam.discount_enabled || 0) === 1,
+                Number(
+                  exam.discount_enabled || 0
+                ) === 1,
 
               discountPercent:
                 Number(
@@ -214,10 +268,12 @@ export default {
                 ),
 
               discountStartAt:
-                exam.discount_start_at || null,
+                exam.discount_start_at ||
+                null,
 
               discountEndAt:
-                exam.discount_end_at || null,
+                exam.discount_end_at ||
+                null,
             },
 
             pricing,
@@ -239,10 +295,14 @@ export default {
           await request.json();
 
         const examId =
-          Number(body.examId || 1);
+          Number(
+            body.examId || 1
+          );
 
         const price =
-          Number(body.price);
+          Number(
+            body.price
+          );
 
         const discountEnabled =
           body.discountEnabled === true ||
@@ -256,12 +316,16 @@ export default {
 
         let discountStartAt =
           body.discountStartAt
-            ? String(body.discountStartAt).trim()
+            ? String(
+                body.discountStartAt
+              ).trim()
             : null;
 
         let discountEndAt =
           body.discountEndAt
-            ? String(body.discountEndAt).trim()
+            ? String(
+                body.discountEndAt
+              ).trim()
             : null;
 
         if (
@@ -271,7 +335,8 @@ export default {
           return json(
             {
               ok: false,
-              error: "examId نامعتبر است",
+              error:
+                "examId نامعتبر است",
             },
             400,
             cors
@@ -308,7 +373,9 @@ export default {
         }
 
         if (
-          !Number.isFinite(discountPercent) ||
+          !Number.isFinite(
+            discountPercent
+          ) ||
           discountPercent < 0 ||
           discountPercent > 100
         ) {
@@ -323,9 +390,6 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
-        // اگر تخفیف فعال است
-        // -------------------------------------------------------
         if (discountEnabled) {
 
           if (
@@ -354,8 +418,12 @@ export default {
             ).getTime();
 
           if (
-            !Number.isFinite(startMs) ||
-            !Number.isFinite(endMs)
+            !Number.isFinite(
+              startMs
+            ) ||
+            !Number.isFinite(
+              endMs
+            )
           ) {
             return json(
               {
@@ -383,19 +451,6 @@ export default {
           }
         }
 
-        // -------------------------------------------------------
-        // اگر درصد تخفیف صفر است، عملاً تخفیفی نداریم
-        // -------------------------------------------------------
-        if (
-          discountPercent === 0
-        ) {
-          discountStartAt =
-            discountStartAt || null;
-
-          discountEndAt =
-            discountEndAt || null;
-        }
-
         await env.DB
           .prepare(`
             UPDATE exams
@@ -409,7 +464,9 @@ export default {
           `)
           .bind(
             price,
-            discountEnabled ? 1 : 0,
+            discountEnabled
+              ? 1
+              : 0,
             discountPercent,
             discountStartAt,
             discountEndAt,
@@ -446,26 +503,39 @@ export default {
               "تنظیمات قیمت با موفقیت ذخیره شد",
 
             exam: {
-              id: exam.id,
-              title: exam.title,
-              active: exam.active,
+              id:
+                exam.id,
+
+              title:
+                exam.title,
+
+              active:
+                exam.active,
 
               price:
-                Number(exam.price || 0),
+                Number(
+                  exam.price || 0
+                ),
 
               discountEnabled:
-                Number(exam.discount_enabled || 0) === 1,
+                Number(
+                  exam.discount_enabled ||
+                  0
+                ) === 1,
 
               discountPercent:
                 Number(
-                  exam.discount_percent || 0
+                  exam.discount_percent ||
+                  0
                 ),
 
               discountStartAt:
-                exam.discount_start_at || null,
+                exam.discount_start_at ||
+                null,
 
               discountEndAt:
-                exam.discount_end_at || null,
+                exam.discount_end_at ||
+                null,
             },
 
             pricing,
@@ -554,9 +624,6 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
-        // قیمت واقعی در سمت سرور محاسبه می‌شود
-        // -------------------------------------------------------
         const pricing =
           getEffectivePrice(exam);
 
@@ -659,7 +726,9 @@ export default {
         const order =
           await env.DB
             .prepare(`
-              SELECT id, status
+              SELECT
+                id,
+                status
               FROM orders
               WHERE id = ?
             `)
@@ -771,9 +840,9 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
-        // اگر قبلاً آزمون شروع شده
-        // -------------------------------------------------------
+        // =====================================================
+        // اگر قبلاً آزمون شروع شده است
+        // =====================================================
         const existingAttempt =
           await env.DB
             .prepare(`
@@ -788,6 +857,7 @@ export default {
 
         if (existingAttempt) {
 
+          // آزمون تمام شده
           if (
             existingAttempt.finished_at
           ) {
@@ -810,7 +880,9 @@ export default {
                 WHERE attempt_id = ?
                 ORDER BY question_order
               `)
-              .bind(existingAttempt.id)
+              .bind(
+                existingAttempt.id
+              )
               .all();
 
           if (
@@ -820,7 +892,8 @@ export default {
 
             let currentQuestion =
               Number(
-                existingAttempt.current_question || 0
+                existingAttempt.current_question ||
+                0
               );
 
             if (
@@ -836,7 +909,10 @@ export default {
                 currentQuestion
               ];
 
-            if (!current.started_at) {
+            // اگر سوال هنوز شروع نشده
+            if (
+              !current.started_at
+            ) {
 
               const now =
                 new Date().toISOString();
@@ -867,18 +943,27 @@ export default {
                 )
                 .run();
 
-              current.started_at = now;
+              current.started_at =
+                now;
             }
 
             return json(
               {
                 ok: true,
+
                 resumed: true,
+
                 attemptId:
                   existingAttempt.id,
+
                 currentQuestion,
+
                 totalQuestions:
                   snapshots.results.length,
+
+                questionStartedAt:
+                  current.started_at,
+
                 question:
                   publicSnapshotQuestion(
                     current
@@ -889,34 +974,57 @@ export default {
             );
           }
 
-          // -----------------------------------------------------
+          // ===================================================
           // Legacy attempt
-          // -----------------------------------------------------
+          // ===================================================
           const questions =
             await selectQuestionsForExam(
               env,
               order.exam_id
             );
 
+          const legacyIndex =
+            Math.min(
+              Math.max(
+                Number(
+                  existingAttempt.current_question ||
+                  0
+                ),
+                0
+              ),
+              Math.max(
+                questions.length - 1,
+                0
+              )
+            );
+
+          const legacyQuestion =
+            questions[
+              legacyIndex
+            ];
+
           return json(
             {
               ok: true,
+
               resumed: true,
+
               attemptId:
                 existingAttempt.id,
+
               currentQuestion:
-                Number(
-                  existingAttempt.current_question || 0
-                ),
+                legacyIndex,
+
               totalQuestions:
                 questions.length,
+
+              questionStartedAt:
+                existingAttempt.question_started_at ||
+                existingAttempt.started_at,
+
               question:
                 publicQuestion(
-                  questions[
-                    Number(
-                      existingAttempt.current_question || 0
-                    )
-                  ]
+                  legacyQuestion
                 ),
             },
             200,
@@ -924,9 +1032,9 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
+        // =====================================================
         // ایجاد آزمون جدید
-        // -------------------------------------------------------
+        // =====================================================
         const questions =
           await selectQuestionsForExam(
             env,
@@ -1028,11 +1136,19 @@ export default {
         return json(
           {
             ok: true,
+
             resumed: false,
+
             attemptId,
+
             currentQuestion: 0,
+
             totalQuestions:
               questions.length,
+
+            questionStartedAt:
+              startedAt,
+
             question:
               publicQuestion(
                 questions[0]
@@ -1090,6 +1206,27 @@ export default {
           );
         }
 
+        if (
+          selectedIndex !== null &&
+          (
+            !Number.isInteger(
+              selectedIndex
+            ) ||
+            selectedIndex < 0 ||
+            selectedIndex > 3
+          )
+        ) {
+          return json(
+            {
+              ok: false,
+              error:
+                "گزینه انتخاب‌شده نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+
         const attempt =
           await env.DB
             .prepare(`
@@ -1132,7 +1269,9 @@ export default {
           );
         }
 
-        if (attempt.finished_at) {
+        if (
+          attempt.finished_at
+        ) {
           return json(
             {
               ok: false,
@@ -1146,7 +1285,8 @@ export default {
 
         const currentQuestion =
           Number(
-            attempt.current_question || 0
+            attempt.current_question ||
+            0
           );
 
         if (
@@ -1178,9 +1318,9 @@ export default {
             )
             .first();
 
-        // -------------------------------------------------------
+        // =======================================================
         // Snapshot path
-        // -------------------------------------------------------
+        // =======================================================
         if (snapshot) {
 
           const startedAt =
@@ -1219,6 +1359,7 @@ export default {
 
           if (timedOut) {
             selectedIndex = null;
+
             elapsedSeconds =
               durationSeconds;
           }
@@ -1226,9 +1367,7 @@ export default {
           let isCorrect = null;
 
           if (
-            selectedIndex !== null &&
-            selectedIndex >= 0 &&
-            selectedIndex <= 3
+            selectedIndex !== null
           ) {
             isCorrect =
               selectedIndex ===
@@ -1273,17 +1412,20 @@ export default {
                 FROM attempt_questions
                 WHERE attempt_id = ?
               `)
-              .bind(attemptId)
+              .bind(
+                attemptId
+              )
               .first();
 
           const totalQuestions =
             Number(
-              totalQuestionsResult?.count || 0
+              totalQuestionsResult?.count ||
+              0
             );
 
-          // -----------------------------------------------------
+          // =====================================================
           // پایان آزمون
-          // -----------------------------------------------------
+          // =====================================================
           if (
             nextQuestion >=
             totalQuestions
@@ -1307,10 +1449,17 @@ export default {
             return json(
               {
                 ok: true,
+
                 finished: true,
+
                 nextQuestion:
                   totalQuestions,
+
+                currentQuestion:
+                  totalQuestions,
+
                 totalQuestions,
+
                 timedOut,
               },
               200,
@@ -1318,9 +1467,9 @@ export default {
             );
           }
 
-          // -----------------------------------------------------
+          // =====================================================
           // شروع سوال بعدی
-          // -----------------------------------------------------
+          // =====================================================
           await env.DB
             .prepare(`
               UPDATE attempt_questions
@@ -1367,10 +1516,21 @@ export default {
           return json(
             {
               ok: true,
+
               finished: false,
+
               nextQuestion,
+
+              currentQuestion:
+                nextQuestion,
+
               totalQuestions,
+
               timedOut,
+
+              questionStartedAt:
+                next.started_at,
+
               question:
                 publicSnapshotQuestion(
                   next
@@ -1381,9 +1541,9 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
+        // =======================================================
         // Legacy path
-        // -------------------------------------------------------
+        // =======================================================
         const question =
           await getQuestion(
             env,
@@ -1491,11 +1651,18 @@ export default {
           return json(
             {
               ok: true,
+
               finished: true,
+
               nextQuestion:
                 questions.length,
+
+              currentQuestion:
+                questions.length,
+
               totalQuestions:
                 questions.length,
+
               timedOut,
             },
             200,
@@ -1521,11 +1688,22 @@ export default {
         return json(
           {
             ok: true,
+
             finished: false,
+
             nextQuestion,
+
+            currentQuestion:
+              nextQuestion,
+
             totalQuestions:
               questions.length,
+
             timedOut,
+
+            questionStartedAt:
+              answeredAt,
+
             question:
               publicQuestion(
                 questions[
@@ -1588,7 +1766,9 @@ export default {
           );
         }
 
-        if (attempt.finished_at) {
+        if (
+          attempt.finished_at
+        ) {
           return json(
             await buildResult(
               env,
@@ -1780,7 +1960,8 @@ export default {
               row.payment_status !==
               "paid"
             ) {
-              status = "unpaid";
+              status =
+                "unpaid";
 
             } else if (
               !row.attempt_id
@@ -2281,12 +2462,14 @@ export default {
 
               attemptQuestions:
                 Number(
-                  attemptQuestionsCount?.count || 0
+                  attemptQuestionsCount?.count ||
+                  0
                 ),
 
               attemptAnswers:
                 Number(
-                  attemptAnswersCount?.count || 0
+                  attemptAnswersCount?.count ||
+                  0
                 ),
             },
           },
@@ -2446,12 +2629,14 @@ export default {
 
               attemptQuestions:
                 Number(
-                  attemptQuestionsCount?.count || 0
+                  attemptQuestionsCount?.count ||
+                  0
                 ),
 
               attemptAnswers:
                 Number(
-                  attemptAnswersCount?.count || 0
+                  attemptAnswersCount?.count ||
+                  0
                 ),
             },
           },
@@ -2502,7 +2687,10 @@ export default {
 // =============================================================
 // قیمت مؤثر آزمون
 // =============================================================
-function getEffectivePrice(exam, now = new Date()) {
+function getEffectivePrice(
+  exam,
+  now = new Date()
+) {
 
   const basePrice =
     Math.max(
@@ -2538,53 +2726,64 @@ function getEffectivePrice(exam, now = new Date()) {
     exam?.discount_end_at ||
     null;
 
-  // تخفیف خاموش است
   if (
     !discountEnabled
   ) {
     return {
       basePrice,
-      finalPrice: basePrice,
+      finalPrice:
+        basePrice,
 
-      discountEnabled: false,
-      discountActive: false,
+      discountEnabled:
+        false,
 
-      discountPercent: 0,
+      discountActive:
+        false,
+
+      discountPercent:
+        0,
 
       discountStartAt,
       discountEndAt,
     };
   }
 
-  // درصد تخفیف صفر است
   if (
     discountPercent <= 0
   ) {
     return {
       basePrice,
-      finalPrice: basePrice,
+      finalPrice:
+        basePrice,
 
-      discountEnabled: true,
-      discountActive: false,
+      discountEnabled:
+        true,
 
-      discountPercent: 0,
+      discountActive:
+        false,
+
+      discountPercent:
+        0,
 
       discountStartAt,
       discountEndAt,
     };
   }
 
-  // تاریخ‌ها وجود ندارند
   if (
     !discountStartAt ||
     !discountEndAt
   ) {
     return {
       basePrice,
-      finalPrice: basePrice,
+      finalPrice:
+        basePrice,
 
-      discountEnabled: true,
-      discountActive: false,
+      discountEnabled:
+        true,
+
+      discountActive:
+        false,
 
       discountPercent,
 
@@ -2594,7 +2793,9 @@ function getEffectivePrice(exam, now = new Date()) {
   }
 
   const nowMs =
-    new Date(now).getTime();
+    new Date(
+      now
+    ).getTime();
 
   const startMs =
     new Date(
@@ -2606,7 +2807,6 @@ function getEffectivePrice(exam, now = new Date()) {
       discountEndAt
     ).getTime();
 
-  // تاریخ نامعتبر
   if (
     !Number.isFinite(nowMs) ||
     !Number.isFinite(startMs) ||
@@ -2614,10 +2814,14 @@ function getEffectivePrice(exam, now = new Date()) {
   ) {
     return {
       basePrice,
-      finalPrice: basePrice,
+      finalPrice:
+        basePrice,
 
-      discountEnabled: true,
-      discountActive: false,
+      discountEnabled:
+        true,
+
+      discountActive:
+        false,
 
       discountPercent,
 
@@ -2633,10 +2837,14 @@ function getEffectivePrice(exam, now = new Date()) {
   if (!discountActive) {
     return {
       basePrice,
-      finalPrice: basePrice,
+      finalPrice:
+        basePrice,
 
-      discountEnabled: true,
-      discountActive: false,
+      discountEnabled:
+        true,
+
+      discountActive:
+        false,
 
       discountPercent,
 
@@ -2662,8 +2870,11 @@ function getEffectivePrice(exam, now = new Date()) {
 
     finalPrice,
 
-    discountEnabled: true,
-    discountActive: true,
+    discountEnabled:
+      true,
+
+    discountActive:
+      true,
 
     discountPercent,
 
@@ -2701,6 +2912,7 @@ async function selectQuestionsForExam(
   const rules =
     rulesResult.results || [];
 
+  // اگر قانون پوشه وجود نداشت
   if (!rules.length) {
 
     const result =
@@ -2720,7 +2932,9 @@ async function selectQuestionsForExam(
 
   const selected = [];
 
-  for (const rule of rules) {
+  for (
+    const rule of rules
+  ) {
 
     const count =
       Number(
@@ -2733,6 +2947,9 @@ async function selectQuestionsForExam(
 
     let rows = [];
 
+    // =========================================================
+    // انتخاب دستی
+    // =========================================================
     if (
       rule.selection_mode ===
       "manual"
@@ -2767,6 +2984,9 @@ async function selectQuestionsForExam(
 
     } else {
 
+      // =======================================================
+      // انتخاب تصادفی
+      // =======================================================
       const result =
         await env.DB
           .prepare(`
@@ -2815,9 +3035,17 @@ function publicQuestion(q) {
     return null;
   }
 
-  return {
-    id: q.id,
+  const duration =
+    Number(
+      q.duration_seconds || 30
+    );
 
+  return {
+
+    id:
+      q.id,
+
+    // ساختار جدید
     question:
       q.question_text,
 
@@ -2829,9 +3057,26 @@ function publicQuestion(q) {
     ],
 
     durationSeconds:
-      Number(
-        q.duration_seconds || 30
-      ),
+      duration,
+
+    // ساختار قدیمی برای index
+    question_text:
+      q.question_text,
+
+    option_a:
+      q.option_a,
+
+    option_b:
+      q.option_b,
+
+    option_c:
+      q.option_c,
+
+    option_d:
+      q.option_d,
+
+    duration_seconds:
+      duration,
   };
 }
 
@@ -2845,9 +3090,18 @@ function publicSnapshotQuestion(q) {
     return null;
   }
 
-  return {
-    id: q.question_id,
+  const duration =
+    Number(
+      q.duration_seconds_snapshot ||
+      30
+    );
 
+  return {
+
+    id:
+      q.question_id,
+
+    // ساختار جدید
     question:
       q.question_text_snapshot,
 
@@ -2859,10 +3113,26 @@ function publicSnapshotQuestion(q) {
     ],
 
     durationSeconds:
-      Number(
-        q.duration_seconds_snapshot ||
-        30
-      ),
+      duration,
+
+    // ساختار قدیمی برای index
+    question_text:
+      q.question_text_snapshot,
+
+    option_a:
+      q.option_a_snapshot,
+
+    option_b:
+      q.option_b_snapshot,
+
+    option_c:
+      q.option_c_snapshot,
+
+    option_d:
+      q.option_d_snapshot,
+
+    duration_seconds:
+      duration,
   };
 }
 
@@ -2908,7 +3178,9 @@ function calculateScore20(
       total || 0
     );
 
-  if (total <= 0) {
+  if (
+    total <= 0
+  ) {
     return 0;
   }
 
@@ -2988,12 +3260,14 @@ async function buildResult(
           ) {
 
             correct++;
+
             result =
               "correct";
 
           } else {
 
             wrong++;
+
             result =
               "wrong";
           }
@@ -3004,6 +3278,7 @@ async function buildResult(
         }
 
         return {
+
           number:
             Number(
               row.question_order
@@ -3158,17 +3433,20 @@ async function buildLegacyResult(
         ) {
 
           correct++;
+
           result =
             "correct";
 
         } else {
 
           wrong++;
+
           result =
             "wrong";
         }
 
         return {
+
           number:
             index + 1,
 
@@ -3227,6 +3505,7 @@ async function buildLegacyResult(
     .run();
 
   return {
+
     ok: true,
 
     attemptId,
