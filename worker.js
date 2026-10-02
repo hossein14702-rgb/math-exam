@@ -2,9 +2,9 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // -----------------------------
+    // =========================================================
     // CORS
-    // -----------------------------
+    // =========================================================
     const cors = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
@@ -27,10 +27,23 @@ export default {
         request.method === "GET" &&
         url.pathname === "/api/exam"
       ) {
-        const examId =
-          Number(
-            url.searchParams.get("id") || 1
+        const examId = Number(
+          url.searchParams.get("id") || 1
+        );
+
+        if (
+          !Number.isInteger(examId) ||
+          examId <= 0
+        ) {
+          return json(
+            {
+              ok: false,
+              error: "examId نامعتبر است",
+            },
+            400,
+            cors
           );
+        }
 
         const exam =
           await env.DB
@@ -69,12 +82,17 @@ export default {
           await env.DB
             .prepare(`
               SELECT
-                selection_count
+                efr.id,
+                efr.folder_id,
+                efr.selection_count,
+                efr.selection_mode,
+                f.name AS folder_name
               FROM exam_folder_rules efr
               JOIN question_folders f
                 ON f.id = efr.folder_id
               WHERE efr.exam_id = ?
                 AND f.active = 1
+              ORDER BY efr.id
             `)
             .bind(examId)
             .all();
@@ -89,47 +107,24 @@ export default {
             rules.reduce(
               (sum, row) =>
                 sum +
-                Number(
-                  row.selection_count || 0
-                ),
+                Number(row.selection_count || 0),
               0
             );
+        } else {
+          const countResult =
+            await env.DB
+              .prepare(`
+                SELECT COUNT(*) AS count
+                FROM questions
+                WHERE exam_id = ?
+                  AND active = 1
+              `)
+              .bind(examId)
+              .first();
+
+          questionCount =
+            Number(countResult?.count || 0);
         }
-
-        const publicExam = {
-          id: exam.id,
-          title: exam.title,
-
-          price:
-            pricing.finalPrice,
-
-          basePrice:
-            pricing.basePrice,
-
-          finalPrice:
-            pricing.finalPrice,
-
-          discountEnabled:
-            pricing.discountEnabled,
-
-          discountActive:
-            pricing.discountActive,
-
-          discountPercent:
-            pricing.discountPercent,
-
-          discountStartAt:
-            pricing.discountStartAt,
-
-          discountEndAt:
-            pricing.discountEndAt,
-
-          duration_seconds:
-            exam.duration_seconds,
-
-          active:
-            exam.active,
-        };
 
         const result =
           await env.DB
@@ -141,7 +136,6 @@ export default {
                 option_b,
                 option_c,
                 option_d,
-                correct_index,
                 duration_seconds,
                 folder_id,
                 active
@@ -157,13 +151,47 @@ export default {
           {
             ok: true,
 
-            exam:
-              publicExam,
+            exam: {
+              id: exam.id,
+              title: exam.title,
+
+              price:
+                pricing.finalPrice,
+
+              basePrice:
+                pricing.basePrice,
+
+              finalPrice:
+                pricing.finalPrice,
+
+              discountEnabled:
+                pricing.discountEnabled,
+
+              discountActive:
+                pricing.discountActive,
+
+              discountPercent:
+                pricing.discountPercent,
+
+              discountStartAt:
+                pricing.discountStartAt,
+
+              discountEndAt:
+                pricing.discountEndAt,
+
+              duration_seconds:
+                exam.duration_seconds,
+
+              active:
+                exam.active,
+            },
 
             questionCount,
 
             questions:
-              result.results || [],
+              (result.results || []).map(
+                q => publicQuestion(q)
+              ),
           },
           200,
           cors
@@ -190,8 +218,7 @@ export default {
           return json(
             {
               ok: false,
-              error:
-                "examId نامعتبر است",
+              error: "examId نامعتبر است",
             },
             400,
             cors
@@ -220,8 +247,7 @@ export default {
           return json(
             {
               ok: false,
-              error:
-                "آزمون پیدا نشد",
+              error: "آزمون پیدا نشد",
             },
             404,
             cors
@@ -236,19 +262,12 @@ export default {
             ok: true,
 
             exam: {
-              id:
-                exam.id,
-
-              title:
-                exam.title,
-
-              active:
-                exam.active,
+              id: exam.id,
+              title: exam.title,
+              active: exam.active,
 
               price:
-                Number(
-                  exam.price || 0
-                ),
+                Number(exam.price || 0),
 
               discountEnabled:
                 Number(
@@ -261,12 +280,10 @@ export default {
                 ),
 
               discountStartAt:
-                exam.discount_start_at ||
-                null,
+                exam.discount_start_at || null,
 
               discountEndAt:
-                exam.discount_end_at ||
-                null,
+                exam.discount_end_at || null,
             },
 
             pricing,
@@ -288,14 +305,10 @@ export default {
           await request.json();
 
         const examId =
-          Number(
-            body.examId || 1
-          );
+          Number(body.examId || 1);
 
         const price =
-          Number(
-            body.price
-          );
+          Number(body.price);
 
         const discountEnabled =
           body.discountEnabled === true ||
@@ -303,22 +316,16 @@ export default {
           body.discountEnabled === "1";
 
         const discountPercent =
-          Number(
-            body.discountPercent || 0
-          );
+          Number(body.discountPercent || 0);
 
         let discountStartAt =
           body.discountStartAt
-            ? String(
-                body.discountStartAt
-              ).trim()
+            ? String(body.discountStartAt).trim()
             : null;
 
         let discountEndAt =
           body.discountEndAt
-            ? String(
-                body.discountEndAt
-              ).trim()
+            ? String(body.discountEndAt).trim()
             : null;
 
         if (
@@ -328,8 +335,7 @@ export default {
           return json(
             {
               ok: false,
-              error:
-                "examId نامعتبر است",
+              error: "examId نامعتبر است",
             },
             400,
             cors
@@ -351,9 +357,7 @@ export default {
           );
         }
 
-        if (
-          !Number.isInteger(price)
-        ) {
+        if (!Number.isInteger(price)) {
           return json(
             {
               ok: false,
@@ -366,9 +370,7 @@ export default {
         }
 
         if (
-          !Number.isFinite(
-            discountPercent
-          ) ||
+          !Number.isFinite(discountPercent) ||
           discountPercent < 0 ||
           discountPercent > 100
         ) {
@@ -401,22 +403,14 @@ export default {
           }
 
           const startMs =
-            new Date(
-              discountStartAt
-            ).getTime();
+            new Date(discountStartAt).getTime();
 
           const endMs =
-            new Date(
-              discountEndAt
-            ).getTime();
+            new Date(discountEndAt).getTime();
 
           if (
-            !Number.isFinite(
-              startMs
-            ) ||
-            !Number.isFinite(
-              endMs
-            )
+            !Number.isFinite(startMs) ||
+            !Number.isFinite(endMs)
           ) {
             return json(
               {
@@ -429,9 +423,7 @@ export default {
             );
           }
 
-          if (
-            endMs <= startMs
-          ) {
+          if (endMs <= startMs) {
             return json(
               {
                 ok: false,
@@ -457,9 +449,7 @@ export default {
           `)
           .bind(
             price,
-            discountEnabled
-              ? 1
-              : 0,
+            discountEnabled ? 1 : 0,
             discountPercent,
             discountStartAt,
             discountEndAt,
@@ -496,44 +486,1775 @@ export default {
               "تنظیمات قیمت با موفقیت ذخیره شد",
 
             exam: {
-              id:
-                exam.id,
-
-              title:
-                exam.title,
-
-              active:
-                exam.active,
+              id: exam.id,
+              title: exam.title,
+              active: exam.active,
 
               price:
-                Number(
-                  exam.price || 0
-                ),
+                Number(exam.price || 0),
 
               discountEnabled:
                 Number(
-                  exam.discount_enabled ||
-                  0
+                  exam.discount_enabled || 0
                 ) === 1,
 
               discountPercent:
                 Number(
-                  exam.discount_percent ||
-                  0
+                  exam.discount_percent || 0
                 ),
 
               discountStartAt:
-                exam.discount_start_at ||
-                null,
+                exam.discount_start_at || null,
 
               discountEndAt:
-                exam.discount_end_at ||
-                null,
+                exam.discount_end_at || null,
             },
 
             pricing,
           },
           200,
+          cors
+        );
+      }
+
+
+      // =========================================================
+      // GET /api/teacher/folders
+      // =========================================================
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/teacher/folders"
+      ) {
+        const examId =
+          Number(
+            url.searchParams.get("examId") || 1
+          );
+
+        const result =
+          await env.DB
+            .prepare(`
+              SELECT
+                f.id,
+                f.name,
+                f.active,
+                f.created_at,
+                COUNT(q.id) AS question_count,
+                SUM(
+                  CASE
+                    WHEN q.active = 1 THEN 1
+                    ELSE 0
+                  END
+                ) AS active_question_count
+              FROM question_folders f
+              LEFT JOIN questions q
+                ON q.folder_id = f.id
+               AND q.exam_id = ?
+              GROUP BY
+                f.id,
+                f.name,
+                f.active,
+                f.created_at
+              ORDER BY f.id
+            `)
+            .bind(examId)
+            .all();
+
+        return json(
+          {
+            ok: true,
+            examId,
+            folders:
+              (result.results || []).map(row => ({
+                id: row.id,
+                name: row.name,
+                active:
+                  Number(row.active || 0) === 1,
+                createdAt:
+                  row.created_at,
+                questionCount:
+                  Number(row.question_count || 0),
+                activeQuestionCount:
+                  Number(
+                    row.active_question_count || 0
+                  ),
+              })),
+          },
+          200,
+          cors
+        );
+      }
+
+
+      // =========================================================
+      // POST /api/teacher/folders
+      // ایجاد / ویرایش / فعال‌سازی پوشه
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/folders"
+      ) {
+        const body =
+          await request.json();
+
+        const action =
+          String(
+            body.action || "create"
+          ).trim();
+
+        // -------------------------------------------------------
+        // CREATE
+        // -------------------------------------------------------
+        if (action === "create") {
+
+          const name =
+            String(
+              body.name || ""
+            ).trim();
+
+          if (!name) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "نام پوشه الزامی است",
+              },
+              400,
+              cors
+            );
+          }
+
+          const exists =
+            await env.DB
+              .prepare(`
+                SELECT id
+                FROM question_folders
+                WHERE name = ?
+                LIMIT 1
+              `)
+              .bind(name)
+              .first();
+
+          if (exists) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "پوشه‌ای با این نام وجود دارد",
+              },
+              400,
+              cors
+            );
+          }
+
+          const result =
+            await env.DB
+              .prepare(`
+                INSERT INTO question_folders (
+                  name,
+                  active
+                )
+                VALUES (?, 1)
+              `)
+              .bind(name)
+              .run();
+
+          const folder =
+            await env.DB
+              .prepare(`
+                SELECT
+                  id,
+                  name,
+                  active,
+                  created_at
+                FROM question_folders
+                WHERE id = ?
+              `)
+              .bind(result.meta.last_row_id)
+              .first();
+
+          return json(
+            {
+              ok: true,
+              message:
+                "پوشه با موفقیت ایجاد شد",
+              folder,
+            },
+            200,
+            cors
+          );
+        }
+
+        // -------------------------------------------------------
+        // UPDATE
+        // -------------------------------------------------------
+        if (action === "update") {
+
+          const folderId =
+            Number(body.folderId);
+
+          const name =
+            String(
+              body.name || ""
+            ).trim();
+
+          if (
+            !Number.isInteger(folderId) ||
+            folderId <= 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "folderId نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          if (!name) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "نام پوشه الزامی است",
+              },
+              400,
+              cors
+            );
+          }
+
+          const exists =
+            await env.DB
+              .prepare(`
+                SELECT id
+                FROM question_folders
+                WHERE name = ?
+                  AND id != ?
+                LIMIT 1
+              `)
+              .bind(name, folderId)
+              .first();
+
+          if (exists) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "پوشه‌ای با این نام وجود دارد",
+              },
+              400,
+              cors
+            );
+          }
+
+          await env.DB
+            .prepare(`
+              UPDATE question_folders
+              SET name = ?
+              WHERE id = ?
+            `)
+            .bind(name, folderId)
+            .run();
+
+          return json(
+            {
+              ok: true,
+              message:
+                "نام پوشه با موفقیت تغییر کرد",
+            },
+            200,
+            cors
+          );
+        }
+
+        // -------------------------------------------------------
+        // TOGGLE
+        // -------------------------------------------------------
+        if (action === "toggle") {
+
+          const folderId =
+            Number(body.folderId);
+
+          const active =
+            body.active === true ||
+            body.active === 1 ||
+            body.active === "1"
+              ? 1
+              : 0;
+
+          if (
+            !Number.isInteger(folderId) ||
+            folderId <= 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "folderId نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          await env.DB
+            .prepare(`
+              UPDATE question_folders
+              SET active = ?
+              WHERE id = ?
+            `)
+            .bind(active, folderId)
+            .run();
+
+          return json(
+            {
+              ok: true,
+              message:
+                active
+                  ? "پوشه فعال شد"
+                  : "پوشه غیرفعال شد",
+            },
+            200,
+            cors
+          );
+        }
+
+        // -------------------------------------------------------
+        // DELETE
+        // -------------------------------------------------------
+        if (action === "delete") {
+
+          const folderId =
+            Number(body.folderId);
+
+          if (
+            !Number.isInteger(folderId) ||
+            folderId <= 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "folderId نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          const count =
+            await env.DB
+              .prepare(`
+                SELECT COUNT(*) AS count
+                FROM questions
+                WHERE folder_id = ?
+              `)
+              .bind(folderId)
+              .first();
+
+          if (
+            Number(count?.count || 0) > 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "این پوشه هنوز دارای سؤال است. ابتدا سؤال‌ها را منتقل کنید.",
+              },
+              400,
+              cors
+            );
+          }
+
+          await env.DB
+            .prepare(`
+              DELETE FROM exam_folder_rules
+              WHERE folder_id = ?
+            `)
+            .bind(folderId)
+            .run();
+
+          await env.DB
+            .prepare(`
+              DELETE FROM question_folders
+              WHERE id = ?
+            `)
+            .bind(folderId)
+            .run();
+
+          return json(
+            {
+              ok: true,
+              message:
+                "پوشه حذف شد",
+            },
+            200,
+            cors
+          );
+        }
+
+        return json(
+          {
+            ok: false,
+            error:
+              "action نامعتبر است",
+          },
+          400,
+          cors
+        );
+      }
+
+
+      // =========================================================
+      // GET /api/teacher/questions
+      // =========================================================
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/teacher/questions"
+      ) {
+        const examId =
+          Number(
+            url.searchParams.get("examId") || 1
+          );
+
+        const folderParam =
+          url.searchParams.get("folderId");
+
+        const search =
+          String(
+            url.searchParams.get("search") || ""
+          ).trim();
+
+        const activeParam =
+          url.searchParams.get("active");
+
+        let sql = `
+          SELECT
+            q.id,
+            q.exam_id,
+            q.question_text,
+            q.option_a,
+            q.option_b,
+            q.option_c,
+            q.option_d,
+            q.correct_index,
+            q.duration_seconds,
+            q.folder_id,
+            q.active,
+            f.name AS folder_name
+          FROM questions q
+          LEFT JOIN question_folders f
+            ON f.id = q.folder_id
+          WHERE q.exam_id = ?
+        `;
+
+        const binds = [examId];
+
+        if (
+          folderParam !== null &&
+          folderParam !== "" &&
+          folderParam !== "all"
+        ) {
+          const folderId =
+            Number(folderParam);
+
+          if (
+            Number.isInteger(folderId) &&
+            folderId > 0
+          ) {
+            sql += `
+              AND q.folder_id = ?
+            `;
+            binds.push(folderId);
+          }
+        }
+
+        if (search) {
+          sql += `
+            AND q.question_text LIKE ?
+          `;
+          binds.push(`%${search}%`);
+        }
+
+        if (
+          activeParam === "0" ||
+          activeParam === "1"
+        ) {
+          sql += `
+            AND q.active = ?
+          `;
+          binds.push(
+            Number(activeParam)
+          );
+        }
+
+        sql += `
+          ORDER BY q.id DESC
+        `;
+
+        const result =
+          await env.DB
+            .prepare(sql)
+            .bind(...binds)
+            .all();
+
+        return json(
+          {
+            ok: true,
+            examId,
+
+            questions:
+              (result.results || []).map(
+                q => teacherQuestion(q)
+              ),
+          },
+          200,
+          cors
+        );
+      }
+
+
+      // =========================================================
+      // POST /api/teacher/questions
+      // create / update / toggle / move / delete
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/questions"
+      ) {
+        const body =
+          await request.json();
+
+        const action =
+          String(
+            body.action || "create"
+          ).trim();
+
+        // =======================================================
+        // CREATE / UPDATE
+        // =======================================================
+        if (
+          action === "create" ||
+          action === "update"
+        ) {
+
+          const examId =
+            Number(
+              body.examId || 1
+            );
+
+          const questionId =
+            Number(
+              body.questionId
+            );
+
+          const questionText =
+            String(
+              body.questionText ??
+              body.question ??
+              ""
+            ).trim();
+
+          const optionsResult =
+            normalizeOptionsFromBody(body);
+
+          if (
+            !Number.isInteger(examId) ||
+            examId <= 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "examId نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          if (!questionText) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "متن سؤال الزامی است",
+              },
+              400,
+              cors
+            );
+          }
+
+          if (!optionsResult.ok) {
+            return json(
+              {
+                ok: false,
+                error:
+                  optionsResult.error,
+              },
+              400,
+              cors
+            );
+          }
+
+          const options =
+            optionsResult.options;
+
+          const correctIndex =
+            Number(
+              body.correctIndex
+            );
+
+          if (
+            !Number.isInteger(correctIndex) ||
+            correctIndex < 0 ||
+            correctIndex >= options.length
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "پاسخ صحیح نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          const durationSeconds =
+            Number(
+              body.durationSeconds ??
+              body.duration_seconds ??
+              30
+            );
+
+          if (
+            !Number.isInteger(durationSeconds) ||
+            durationSeconds <= 0 ||
+            durationSeconds > 3600
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "زمان سؤال باید بین 1 تا 3600 ثانیه باشد",
+              },
+              400,
+              cors
+            );
+          }
+
+          let folderId = null;
+
+          if (
+            body.folderId !== null &&
+            body.folderId !== undefined &&
+            body.folderId !== "" &&
+            Number(body.folderId) > 0
+          ) {
+            folderId =
+              Number(body.folderId);
+
+            const folder =
+              await env.DB
+                .prepare(`
+                  SELECT id
+                  FROM question_folders
+                  WHERE id = ?
+                    AND active = 1
+                `)
+                .bind(folderId)
+                .first();
+
+            if (!folder) {
+              return json(
+                {
+                  ok: false,
+                  error:
+                    "پوشه انتخاب‌شده معتبر یا فعال نیست",
+                },
+                400,
+                cors
+              );
+            }
+          }
+
+          const optionA =
+            options[0] || "";
+
+          const optionB =
+            options[1] || "";
+
+          const optionC =
+            options[2] || "";
+
+          const optionD =
+            options[3] || "";
+
+          // -----------------------------------------------------
+          // CREATE
+          // -----------------------------------------------------
+          if (action === "create") {
+
+            const result =
+              await env.DB
+                .prepare(`
+                  INSERT INTO questions (
+                    exam_id,
+                    question_text,
+                    option_a,
+                    option_b,
+                    option_c,
+                    option_d,
+                    correct_index,
+                    duration_seconds,
+                    folder_id,
+                    active
+                  )
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                `)
+                .bind(
+                  examId,
+                  questionText,
+                  optionA,
+                  optionB,
+                  optionC,
+                  optionD,
+                  correctIndex,
+                  durationSeconds,
+                  folderId
+                )
+                .run();
+
+            const question =
+              await env.DB
+                .prepare(`
+                  SELECT
+                    q.*,
+                    f.name AS folder_name
+                  FROM questions q
+                  LEFT JOIN question_folders f
+                    ON f.id = q.folder_id
+                  WHERE q.id = ?
+                `)
+                .bind(result.meta.last_row_id)
+                .first();
+
+            return json(
+              {
+                ok: true,
+                message:
+                  "سؤال با موفقیت ایجاد شد",
+                question:
+                  teacherQuestion(question),
+              },
+              200,
+              cors
+            );
+          }
+
+          // -----------------------------------------------------
+          // UPDATE
+          // -----------------------------------------------------
+          if (action === "update") {
+
+            if (
+              !Number.isInteger(questionId) ||
+              questionId <= 0
+            ) {
+              return json(
+                {
+                  ok: false,
+                  error:
+                    "questionId نامعتبر است",
+                },
+                400,
+                cors
+              );
+            }
+
+            const exists =
+              await env.DB
+                .prepare(`
+                  SELECT id
+                  FROM questions
+                  WHERE id = ?
+                    AND exam_id = ?
+                `)
+                .bind(
+                  questionId,
+                  examId
+                )
+                .first();
+
+            if (!exists) {
+              return json(
+                {
+                  ok: false,
+                  error:
+                    "سؤال پیدا نشد",
+                },
+                404,
+                cors
+              );
+            }
+
+            await env.DB
+              .prepare(`
+                UPDATE questions
+                SET
+                  question_text = ?,
+                  option_a = ?,
+                  option_b = ?,
+                  option_c = ?,
+                  option_d = ?,
+                  correct_index = ?,
+                  duration_seconds = ?,
+                  folder_id = ?
+                WHERE id = ?
+                  AND exam_id = ?
+              `)
+              .bind(
+                questionText,
+                optionA,
+                optionB,
+                optionC,
+                optionD,
+                correctIndex,
+                durationSeconds,
+                folderId,
+                questionId,
+                examId
+              )
+              .run();
+
+            const question =
+              await env.DB
+                .prepare(`
+                  SELECT
+                    q.*,
+                    f.name AS folder_name
+                  FROM questions q
+                  LEFT JOIN question_folders f
+                    ON f.id = q.folder_id
+                  WHERE q.id = ?
+                `)
+                .bind(questionId)
+                .first();
+
+            return json(
+              {
+                ok: true,
+                message:
+                  "سؤال با موفقیت ویرایش شد",
+                question:
+                  teacherQuestion(question),
+              },
+              200,
+              cors
+            );
+          }
+        }
+
+
+        // =======================================================
+        // TOGGLE
+        // =======================================================
+        if (action === "toggle") {
+
+          const questionId =
+            Number(body.questionId);
+
+          const active =
+            body.active === true ||
+            body.active === 1 ||
+            body.active === "1"
+              ? 1
+              : 0;
+
+          if (
+            !Number.isInteger(questionId) ||
+            questionId <= 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "questionId نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          await env.DB
+            .prepare(`
+              UPDATE questions
+              SET active = ?
+              WHERE id = ?
+            `)
+            .bind(
+              active,
+              questionId
+            )
+            .run();
+
+          return json(
+            {
+              ok: true,
+              message:
+                active
+                  ? "سؤال فعال شد"
+                  : "سؤال غیرفعال شد",
+            },
+            200,
+            cors
+          );
+        }
+
+
+        // =======================================================
+        // MOVE
+        // =======================================================
+        if (action === "move") {
+
+          const questionId =
+            Number(body.questionId);
+
+          let folderId = null;
+
+          if (
+            body.folderId !== null &&
+            body.folderId !== undefined &&
+            body.folderId !== "" &&
+            Number(body.folderId) > 0
+          ) {
+            folderId =
+              Number(body.folderId);
+
+            const folder =
+              await env.DB
+                .prepare(`
+                  SELECT id
+                  FROM question_folders
+                  WHERE id = ?
+                    AND active = 1
+                `)
+                .bind(folderId)
+                .first();
+
+            if (!folder) {
+              return json(
+                {
+                  ok: false,
+                  error:
+                    "پوشه معتبر نیست",
+                },
+                400,
+                cors
+              );
+            }
+          }
+
+          await env.DB
+            .prepare(`
+              UPDATE questions
+              SET folder_id = ?
+              WHERE id = ?
+            `)
+            .bind(
+              folderId,
+              questionId
+            )
+            .run();
+
+          return json(
+            {
+              ok: true,
+              message:
+                "سؤال به پوشه جدید منتقل شد",
+            },
+            200,
+            cors
+          );
+        }
+
+
+        // =======================================================
+        // DELETE
+        // =======================================================
+        if (action === "delete") {
+
+          const questionId =
+            Number(body.questionId);
+
+          if (
+            !Number.isInteger(questionId) ||
+            questionId <= 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "questionId نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          // اگر سؤال در آزمون دستی ثبت شده باشد
+          // ابتدا ارتباط دستی آن حذف می‌شود.
+          await env.DB
+            .prepare(`
+              DELETE FROM exam_manual_questions
+              WHERE question_id = ?
+            `)
+            .bind(questionId)
+            .run();
+
+          // اگر snapshot قبلی داشته باشد، حذف واقعی
+          // ممکن است باعث از بین رفتن FK در آینده شود.
+          // فعلاً مطابق ساختار فعلی حذف می‌کنیم.
+          await env.DB
+            .prepare(`
+              DELETE FROM questions
+              WHERE id = ?
+            `)
+            .bind(questionId)
+            .run();
+
+          return json(
+            {
+              ok: true,
+              message:
+                "سؤال حذف شد",
+            },
+            200,
+            cors
+          );
+        }
+
+
+        return json(
+          {
+            ok: false,
+            error:
+              "action نامعتبر است",
+          },
+          400,
+          cors
+        );
+      }
+
+
+      // =========================================================
+      // GET /api/teacher/exam-rules
+      // =========================================================
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/teacher/exam-rules"
+      ) {
+        const examId =
+          Number(
+            url.searchParams.get("examId") || 1
+          );
+
+        const result =
+          await env.DB
+            .prepare(`
+              SELECT
+                efr.id,
+                efr.exam_id,
+                efr.folder_id,
+                efr.selection_count,
+                efr.selection_mode,
+                f.name AS folder_name
+              FROM exam_folder_rules efr
+              JOIN question_folders f
+                ON f.id = efr.folder_id
+              WHERE efr.exam_id = ?
+              ORDER BY efr.id
+            `)
+            .bind(examId)
+            .all();
+
+        return json(
+          {
+            ok: true,
+            examId,
+            rules:
+              (result.results || []).map(row => ({
+                id: row.id,
+                examId: row.exam_id,
+                folderId: row.folder_id,
+                folderName: row.folder_name,
+                selectionCount:
+                  Number(
+                    row.selection_count || 0
+                  ),
+                selectionMode:
+                  row.selection_mode || "random",
+              })),
+          },
+          200,
+          cors
+        );
+      }
+
+
+      // =========================================================
+      // POST /api/teacher/exam-rules
+      // create / update / delete
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/exam-rules"
+      ) {
+        const body =
+          await request.json();
+
+        const action =
+          String(
+            body.action || "create"
+          ).trim();
+
+        const examId =
+          Number(
+            body.examId || 1
+          );
+
+        // -------------------------------------------------------
+        // CREATE / UPDATE
+        // -------------------------------------------------------
+        if (
+          action === "create" ||
+          action === "update"
+        ) {
+
+          const folderId =
+            Number(body.folderId);
+
+          const selectionCount =
+            Number(
+              body.selectionCount ??
+              body.selection_count ??
+              0
+            );
+
+          const selectionMode =
+            String(
+              body.selectionMode ??
+              body.selection_mode ??
+              "random"
+            ).trim();
+
+          if (
+            !Number.isInteger(examId) ||
+            examId <= 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "examId نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          if (
+            !Number.isInteger(folderId) ||
+            folderId <= 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "folderId نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          if (
+            !Number.isInteger(selectionCount) ||
+            selectionCount < 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "تعداد سؤال نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          if (
+            selectionMode !== "random" &&
+            selectionMode !== "manual"
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "روش انتخاب باید random یا manual باشد",
+              },
+              400,
+              cors
+            );
+          }
+
+          const folder =
+            await env.DB
+              .prepare(`
+                SELECT id
+                FROM question_folders
+                WHERE id = ?
+              `)
+              .bind(folderId)
+              .first();
+
+          if (!folder) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "پوشه پیدا نشد",
+              },
+              404,
+              cors
+            );
+          }
+
+          // -----------------------------------------------------
+          // UPDATE
+          // -----------------------------------------------------
+          if (action === "update") {
+
+            const ruleId =
+              Number(body.ruleId);
+
+            if (
+              !Number.isInteger(ruleId) ||
+              ruleId <= 0
+            ) {
+              return json(
+                {
+                  ok: false,
+                  error:
+                    "ruleId نامعتبر است",
+                },
+                400,
+                cors
+              );
+            }
+
+            await env.DB
+              .prepare(`
+                UPDATE exam_folder_rules
+                SET
+                  folder_id = ?,
+                  selection_count = ?,
+                  selection_mode = ?
+                WHERE id = ?
+                  AND exam_id = ?
+              `)
+              .bind(
+                folderId,
+                selectionCount,
+                selectionMode,
+                ruleId,
+                examId
+              )
+              .run();
+
+            return json(
+              {
+                ok: true,
+                message:
+                  "قانون آزمون ویرایش شد",
+              },
+              200,
+              cors
+            );
+          }
+
+          // -----------------------------------------------------
+          // جلوگیری از ثبت دوباره همان پوشه
+          // -----------------------------------------------------
+          const duplicate =
+            await env.DB
+              .prepare(`
+                SELECT id
+                FROM exam_folder_rules
+                WHERE exam_id = ?
+                  AND folder_id = ?
+                LIMIT 1
+              `)
+              .bind(
+                examId,
+                folderId
+              )
+              .first();
+
+          if (duplicate) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "این پوشه قبلاً برای آزمون ثبت شده است",
+              },
+              400,
+              cors
+            );
+          }
+
+          const result =
+            await env.DB
+              .prepare(`
+                INSERT INTO exam_folder_rules (
+                  exam_id,
+                  folder_id,
+                  selection_count,
+                  selection_mode
+                )
+                VALUES (?, ?, ?, ?)
+              `)
+              .bind(
+                examId,
+                folderId,
+                selectionCount,
+                selectionMode
+              )
+              .run();
+
+          return json(
+            {
+              ok: true,
+              message:
+                "قانون انتخاب سؤال اضافه شد",
+              ruleId:
+                result.meta.last_row_id,
+            },
+            200,
+            cors
+          );
+        }
+
+
+        // -------------------------------------------------------
+        // DELETE
+        // -------------------------------------------------------
+        if (action === "delete") {
+
+          const ruleId =
+            Number(body.ruleId);
+
+          if (
+            !Number.isInteger(ruleId) ||
+            ruleId <= 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "ruleId نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          await env.DB
+            .prepare(`
+              DELETE FROM exam_folder_rules
+              WHERE id = ?
+                AND exam_id = ?
+            `)
+            .bind(
+              ruleId,
+              examId
+            )
+            .run();
+
+          return json(
+            {
+              ok: true,
+              message:
+                "قانون حذف شد",
+            },
+            200,
+            cors
+          );
+        }
+
+        return json(
+          {
+            ok: false,
+            error:
+              "action نامعتبر است",
+          },
+          400,
+          cors
+        );
+      }
+
+
+      // =========================================================
+      // GET /api/teacher/manual-questions
+      // =========================================================
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/teacher/manual-questions"
+      ) {
+        const examId =
+          Number(
+            url.searchParams.get("examId") || 1
+          );
+
+        const folderParam =
+          url.searchParams.get("folderId");
+
+        let sql = `
+          SELECT
+            emq.exam_id,
+            emq.question_id,
+            emq.sort_order,
+            q.question_text,
+            q.folder_id,
+            f.name AS folder_name
+          FROM exam_manual_questions emq
+          JOIN questions q
+            ON q.id = emq.question_id
+          LEFT JOIN question_folders f
+            ON f.id = q.folder_id
+          WHERE emq.exam_id = ?
+        `;
+
+        const binds = [examId];
+
+        if (
+          folderParam !== null &&
+          folderParam !== ""
+        ) {
+          const folderId =
+            Number(folderParam);
+
+          if (
+            Number.isInteger(folderId) &&
+            folderId > 0
+          ) {
+            sql += `
+              AND q.folder_id = ?
+            `;
+            binds.push(folderId);
+          }
+        }
+
+        sql += `
+          ORDER BY
+            emq.sort_order,
+            emq.question_id
+        `;
+
+        const result =
+          await env.DB
+            .prepare(sql)
+            .bind(...binds)
+            .all();
+
+        return json(
+          {
+            ok: true,
+            examId,
+            questions:
+              result.results || [],
+          },
+          200,
+          cors
+        );
+      }
+
+
+      // =========================================================
+      // POST /api/teacher/manual-questions
+      // add / remove / reorder
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/manual-questions"
+      ) {
+        const body =
+          await request.json();
+
+        const action =
+          String(
+            body.action || "add"
+          ).trim();
+
+        const examId =
+          Number(
+            body.examId || 1
+          );
+
+        const questionId =
+          Number(body.questionId);
+
+        if (
+          !Number.isInteger(examId) ||
+          examId <= 0
+        ) {
+          return json(
+            {
+              ok: false,
+              error:
+                "examId نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+
+        if (
+          !Number.isInteger(questionId) ||
+          questionId <= 0
+        ) {
+          return json(
+            {
+              ok: false,
+              error:
+                "questionId نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+
+        // -------------------------------------------------------
+        // ADD
+        // -------------------------------------------------------
+        if (action === "add") {
+
+          const question =
+            await env.DB
+              .prepare(`
+                SELECT
+                  id,
+                  exam_id
+                FROM questions
+                WHERE id = ?
+                  AND exam_id = ?
+                  AND active = 1
+              `)
+              .bind(
+                questionId,
+                examId
+              )
+              .first();
+
+          if (!question) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "سؤال فعال برای این آزمون پیدا نشد",
+              },
+              404,
+              cors
+            );
+          }
+
+          const exists =
+            await env.DB
+              .prepare(`
+                SELECT
+                  exam_id,
+                  question_id
+                FROM exam_manual_questions
+                WHERE exam_id = ?
+                  AND question_id = ?
+              `)
+              .bind(
+                examId,
+                questionId
+              )
+              .first();
+
+          if (exists) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "این سؤال قبلاً اضافه شده است",
+              },
+              400,
+              cors
+            );
+          }
+
+          const maxOrder =
+            await env.DB
+              .prepare(`
+                SELECT
+                  COALESCE(
+                    MAX(sort_order),
+                    -1
+                  ) AS max_order
+                FROM exam_manual_questions
+                WHERE exam_id = ?
+              `)
+              .bind(examId)
+              .first();
+
+          const sortOrder =
+            Number(
+              maxOrder?.max_order ?? -1
+            ) + 1;
+
+          await env.DB
+            .prepare(`
+              INSERT INTO exam_manual_questions (
+                exam_id,
+                question_id,
+                sort_order
+              )
+              VALUES (?, ?, ?)
+            `)
+            .bind(
+              examId,
+              questionId,
+              sortOrder
+            )
+            .run();
+
+          return json(
+            {
+              ok: true,
+              message:
+                "سؤال به انتخاب دستی اضافه شد",
+            },
+            200,
+            cors
+          );
+        }
+
+
+        // -------------------------------------------------------
+        // REMOVE
+        // -------------------------------------------------------
+        if (action === "remove") {
+
+          await env.DB
+            .prepare(`
+              DELETE FROM exam_manual_questions
+              WHERE exam_id = ?
+                AND question_id = ?
+            `)
+            .bind(
+              examId,
+              questionId
+            )
+            .run();
+
+          return json(
+            {
+              ok: true,
+              message:
+                "سؤال از انتخاب دستی حذف شد",
+            },
+            200,
+            cors
+          );
+        }
+
+
+        // -------------------------------------------------------
+        // REORDER
+        // -------------------------------------------------------
+        if (action === "reorder") {
+
+          const items =
+            Array.isArray(body.items)
+              ? body.items
+              : [];
+
+          if (!items.length) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "لیست ترتیب خالی است",
+              },
+              400,
+              cors
+            );
+          }
+
+          const statements = [];
+
+          for (
+            let i = 0;
+            i < items.length;
+            i++
+          ) {
+            const qid =
+              Number(
+                items[i]?.questionId
+              );
+
+            if (
+              !Number.isInteger(qid) ||
+              qid <= 0
+            ) {
+              continue;
+            }
+
+            statements.push(
+              env.DB
+                .prepare(`
+                  UPDATE exam_manual_questions
+                  SET sort_order = ?
+                  WHERE exam_id = ?
+                    AND question_id = ?
+                `)
+                .bind(
+                  i,
+                  examId,
+                  qid
+                )
+            );
+          }
+
+          if (statements.length) {
+            await env.DB.batch(
+              statements
+            );
+          }
+
+          return json(
+            {
+              ok: true,
+              message:
+                "ترتیب سؤال‌ها ذخیره شد",
+            },
+            200,
+            cors
+          );
+        }
+
+        return json(
+          {
+            ok: false,
+            error:
+              "action نامعتبر است",
+          },
+          400,
           cors
         );
       }
@@ -655,9 +2376,7 @@ export default {
         return json(
           {
             ok: true,
-
             orderId,
-
             amount,
 
             pricing: {
@@ -819,9 +2538,7 @@ export default {
           );
         }
 
-        if (
-          order.status !== "paid"
-        ) {
+        if (order.status !== "paid") {
           return json(
             {
               ok: false,
@@ -847,9 +2564,7 @@ export default {
 
         if (existingAttempt) {
 
-          if (
-            existingAttempt.finished_at
-          ) {
+          if (existingAttempt.finished_at) {
             return json(
               {
                 ok: false,
@@ -869,9 +2584,7 @@ export default {
                 WHERE attempt_id = ?
                 ORDER BY question_order
               `)
-              .bind(
-                existingAttempt.id
-              )
+              .bind(existingAttempt.id)
               .all();
 
           if (
@@ -881,8 +2594,7 @@ export default {
 
             let currentQuestion =
               Number(
-                existingAttempt.current_question ||
-                0
+                existingAttempt.current_question || 0
               );
 
             if (
@@ -894,13 +2606,9 @@ export default {
             }
 
             const current =
-              snapshots.results[
-                currentQuestion
-              ];
+              snapshots.results[currentQuestion];
 
-            if (
-              !current.started_at
-            ) {
+            if (!current.started_at) {
 
               const now =
                 new Date().toISOString();
@@ -931,14 +2639,12 @@ export default {
                 )
                 .run();
 
-              current.started_at =
-                now;
+              current.started_at = now;
             }
 
             return json(
               {
                 ok: true,
-
                 resumed: true,
 
                 attemptId:
@@ -953,68 +2659,12 @@ export default {
                   current.started_at,
 
                 question:
-                  publicSnapshotQuestion(
-                    current
-                  ),
+                  publicSnapshotQuestion(current),
               },
               200,
               cors
             );
           }
-
-          const questions =
-            await selectQuestionsForExam(
-              env,
-              order.exam_id
-            );
-
-          const legacyIndex =
-            Math.min(
-              Math.max(
-                Number(
-                  existingAttempt.current_question ||
-                  0
-                ),
-                0
-              ),
-              Math.max(
-                questions.length - 1,
-                0
-              )
-            );
-
-          const legacyQuestion =
-            questions[
-              legacyIndex
-            ];
-
-          return json(
-            {
-              ok: true,
-
-              resumed: true,
-
-              attemptId:
-                existingAttempt.id,
-
-              currentQuestion:
-                legacyIndex,
-
-              totalQuestions:
-                questions.length,
-
-              questionStartedAt:
-                existingAttempt.question_started_at ||
-                existingAttempt.started_at,
-
-              question:
-                publicQuestion(
-                  legacyQuestion
-                ),
-            },
-            200,
-            cors
-          );
         }
 
         const questions =
@@ -1069,7 +2719,9 @@ export default {
         ) {
 
           const q =
-            questions[i];
+            normalizeQuestionForSnapshot(
+              questions[i]
+            );
 
           statements.push(
             env.DB
@@ -1099,9 +2751,7 @@ export default {
                 q.option_c,
                 q.option_d,
                 q.correct_index,
-                Number(
-                  q.duration_seconds || 30
-                ),
+                q.duration_seconds,
                 i === 0
                   ? startedAt
                   : null
@@ -1110,15 +2760,12 @@ export default {
         }
 
         if (statements.length) {
-          await env.DB.batch(
-            statements
-          );
+          await env.DB.batch(statements);
         }
 
         return json(
           {
             ok: true,
-
             resumed: false,
 
             attemptId,
@@ -1133,7 +2780,9 @@ export default {
 
             question:
               publicQuestion(
-                questions[0]
+                normalizeQuestionForSnapshot(
+                  questions[0]
+                )
               ),
           },
           200,
@@ -1167,15 +2816,11 @@ export default {
           body.selectedIndex === undefined ||
           body.selectedIndex === ""
             ? null
-            : Number(
-                body.selectedIndex
-              );
+            : Number(body.selectedIndex);
 
         if (
           !attemptId ||
-          !Number.isInteger(
-            questionIndex
-          )
+          !Number.isInteger(questionIndex)
         ) {
           return json(
             {
@@ -1191,9 +2836,7 @@ export default {
         if (
           selectedIndex !== null &&
           (
-            !Number.isInteger(
-              selectedIndex
-            ) ||
+            !Number.isInteger(selectedIndex) ||
             selectedIndex < 0 ||
             selectedIndex > 3
           )
@@ -1237,8 +2880,7 @@ export default {
         }
 
         if (
-          attempt.order_status !==
-          "paid"
+          attempt.order_status !== "paid"
         ) {
           return json(
             {
@@ -1251,9 +2893,7 @@ export default {
           );
         }
 
-        if (
-          attempt.finished_at
-        ) {
+        if (attempt.finished_at) {
           return json(
             {
               ok: false,
@@ -1267,13 +2907,11 @@ export default {
 
         const currentQuestion =
           Number(
-            attempt.current_question ||
-            0
+            attempt.current_question || 0
           );
 
         if (
-          questionIndex !==
-          currentQuestion
+          questionIndex !== currentQuestion
         ) {
           return json(
             {
@@ -1286,7 +2924,7 @@ export default {
           );
         }
 
-        let snapshot =
+        const snapshot =
           await env.DB
             .prepare(`
               SELECT *
@@ -1300,268 +2938,61 @@ export default {
             )
             .first();
 
-        if (snapshot) {
-
-          const startedAt =
-            snapshot.started_at ||
-            attempt.question_started_at ||
-            attempt.started_at;
-
-          const startedMs =
-            new Date(
-              startedAt
-            ).getTime();
-
-          const nowMs =
-            Date.now();
-
-          let elapsedSeconds =
-            Math.max(
-              0,
-              Math.floor(
-                (
-                  nowMs -
-                  startedMs
-                ) / 1000
-              )
-            );
-
-          const durationSeconds =
-            Number(
-              snapshot.duration_seconds_snapshot ||
-              30
-            );
-
-          let timedOut =
-            elapsedSeconds >=
-            durationSeconds;
-
-          if (timedOut) {
-            selectedIndex = null;
-
-            elapsedSeconds =
-              durationSeconds;
-          }
-
-          let isCorrect = null;
-
-          if (
-            selectedIndex !== null
-          ) {
-            isCorrect =
-              selectedIndex ===
-              Number(
-                snapshot.correct_index_snapshot
-              )
-                ? 1
-                : 0;
-          }
-
-          const answeredAt =
-            new Date().toISOString();
-
-          await env.DB
-            .prepare(`
-              UPDATE attempt_questions
-              SET
-                selected_index = ?,
-                answered_at = ?,
-                elapsed_seconds = ?,
-                is_correct = ?
-              WHERE attempt_id = ?
-                AND question_order = ?
-            `)
-            .bind(
-              selectedIndex,
-              answeredAt,
-              elapsedSeconds,
-              isCorrect,
-              attemptId,
-              questionIndex
-            )
-            .run();
-
-          const nextQuestion =
-            questionIndex + 1;
-
-          const totalQuestionsResult =
-            await env.DB
-              .prepare(`
-                SELECT COUNT(*) AS count
-                FROM attempt_questions
-                WHERE attempt_id = ?
-              `)
-              .bind(
-                attemptId
-              )
-              .first();
-
-          const totalQuestions =
-            Number(
-              totalQuestionsResult?.count ||
-              0
-            );
-
-          if (
-            nextQuestion >=
-            totalQuestions
-          ) {
-
-            await env.DB
-              .prepare(`
-                UPDATE attempts
-                SET
-                  current_question = ?,
-                  finished_at = ?
-                WHERE id = ?
-              `)
-              .bind(
-                totalQuestions,
-                answeredAt,
-                attemptId
-              )
-              .run();
-
-            return json(
-              {
-                ok: true,
-
-                finished: true,
-
-                nextQuestion:
-                  totalQuestions,
-
-                currentQuestion:
-                  totalQuestions,
-
-                totalQuestions,
-
-                timedOut,
-              },
-              200,
-              cors
-            );
-          }
-
-          await env.DB
-            .prepare(`
-              UPDATE attempt_questions
-              SET started_at = ?
-              WHERE attempt_id = ?
-                AND question_order = ?
-            `)
-            .bind(
-              answeredAt,
-              attemptId,
-              nextQuestion
-            )
-            .run();
-
-          await env.DB
-            .prepare(`
-              UPDATE attempts
-              SET
-                current_question = ?,
-                question_started_at = ?
-              WHERE id = ?
-            `)
-            .bind(
-              nextQuestion,
-              answeredAt,
-              attemptId
-            )
-            .run();
-
-          const next =
-            await env.DB
-              .prepare(`
-                SELECT *
-                FROM attempt_questions
-                WHERE attempt_id = ?
-                  AND question_order = ?
-              `)
-              .bind(
-                attemptId,
-                nextQuestion
-              )
-              .first();
-
-          return json(
-            {
-              ok: true,
-
-              finished: false,
-
-              nextQuestion,
-
-              currentQuestion:
-                nextQuestion,
-
-              totalQuestions,
-
-              timedOut,
-
-              questionStartedAt:
-                next.started_at,
-
-              question:
-                publicSnapshotQuestion(
-                  next
-                ),
-            },
-            200,
-            cors
-          );
-        }
-
-        const question =
-          await getQuestion(
-            env,
-            attempt.exam_id,
-            questionIndex
-          );
-
-        if (!question) {
+        if (!snapshot) {
           return json(
             {
               ok: false,
               error:
-                "سوال پیدا نشد",
+                "سؤال آزمون پیدا نشد",
             },
             404,
             cors
           );
         }
 
-        const questionStarted =
+        const startedAt =
+          snapshot.started_at ||
           attempt.question_started_at ||
           attempt.started_at;
 
-        const elapsedSeconds =
+        const startedMs =
+          new Date(startedAt).getTime();
+
+        const nowMs =
+          Date.now();
+
+        let elapsedSeconds =
           Math.max(
             0,
             Math.floor(
-              (
-                Date.now() -
-                new Date(
-                  questionStarted
-                ).getTime()
-              ) / 1000
+              (nowMs - startedMs) / 1000
             )
           );
 
         const durationSeconds =
           Number(
-            question.duration_seconds ||
-            30
+            snapshot.duration_seconds_snapshot || 30
           );
 
         let timedOut =
-          elapsedSeconds >=
-          durationSeconds;
+          elapsedSeconds >= durationSeconds;
 
         if (timedOut) {
           selectedIndex = null;
+          elapsedSeconds =
+            durationSeconds;
+        }
+
+        let isCorrect = null;
+
+        if (selectedIndex !== null) {
+          isCorrect =
+            selectedIndex ===
+            Number(
+              snapshot.correct_index_snapshot
+            )
+              ? 1
+              : 0;
         }
 
         const answeredAt =
@@ -1569,38 +3000,45 @@ export default {
 
         await env.DB
           .prepare(`
-            INSERT INTO attempt_answers (
-              attempt_id,
-              question_index,
-              selected_index,
-              answered_at
-            )
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(attempt_id, question_index)
-            DO UPDATE SET
-              selected_index = excluded.selected_index,
-              answered_at = excluded.answered_at
+            UPDATE attempt_questions
+            SET
+              selected_index = ?,
+              answered_at = ?,
+              elapsed_seconds = ?,
+              is_correct = ?
+            WHERE attempt_id = ?
+              AND question_order = ?
           `)
           .bind(
-            attemptId,
-            questionIndex,
             selectedIndex,
-            answeredAt
+            answeredAt,
+            elapsedSeconds,
+            isCorrect,
+            attemptId,
+            questionIndex
           )
           .run();
 
-        const questions =
-          await selectQuestionsForExam(
-            env,
-            attempt.exam_id
+        const totalQuestionsResult =
+          await env.DB
+            .prepare(`
+              SELECT COUNT(*) AS count
+              FROM attempt_questions
+              WHERE attempt_id = ?
+            `)
+            .bind(attemptId)
+            .first();
+
+        const totalQuestions =
+          Number(
+            totalQuestionsResult?.count || 0
           );
 
         const nextQuestion =
           questionIndex + 1;
 
         if (
-          nextQuestion >=
-          questions.length
+          nextQuestion >= totalQuestions
         ) {
 
           await env.DB
@@ -1612,7 +3050,7 @@ export default {
               WHERE id = ?
             `)
             .bind(
-              questions.length,
+              totalQuestions,
               answeredAt,
               attemptId
             )
@@ -1621,17 +3059,15 @@ export default {
           return json(
             {
               ok: true,
-
               finished: true,
 
               nextQuestion:
-                questions.length,
+                totalQuestions,
 
               currentQuestion:
-                questions.length,
+                totalQuestions,
 
-              totalQuestions:
-                questions.length,
+              totalQuestions,
 
               timedOut,
             },
@@ -1639,6 +3075,20 @@ export default {
             cors
           );
         }
+
+        await env.DB
+          .prepare(`
+            UPDATE attempt_questions
+            SET started_at = ?
+            WHERE attempt_id = ?
+              AND question_order = ?
+          `)
+          .bind(
+            answeredAt,
+            attemptId,
+            nextQuestion
+          )
+          .run();
 
         await env.DB
           .prepare(`
@@ -1655,10 +3105,23 @@ export default {
           )
           .run();
 
+        const next =
+          await env.DB
+            .prepare(`
+              SELECT *
+              FROM attempt_questions
+              WHERE attempt_id = ?
+                AND question_order = ?
+            `)
+            .bind(
+              attemptId,
+              nextQuestion
+            )
+            .first();
+
         return json(
           {
             ok: true,
-
             finished: false,
 
             nextQuestion,
@@ -1666,20 +3129,15 @@ export default {
             currentQuestion:
               nextQuestion,
 
-            totalQuestions:
-              questions.length,
+            totalQuestions,
 
             timedOut,
 
             questionStartedAt:
-              answeredAt,
+              next.started_at,
 
             question:
-              publicQuestion(
-                questions[
-                  nextQuestion
-                ]
-              ),
+              publicSnapshotQuestion(next),
           },
           200,
           cors
@@ -1736,9 +3194,7 @@ export default {
           );
         }
 
-        if (
-          attempt.finished_at
-        ) {
+        if (attempt.finished_at) {
           return json(
             await buildResult(
               env,
@@ -1780,12 +3236,8 @@ export default {
               empty++;
 
             } else if (
-              Number(
-                row.selected_index
-              ) ===
-              Number(
-                row.correct_index_snapshot
-              )
+              Number(row.selected_index) ===
+              Number(row.correct_index_snapshot)
             ) {
               correct++;
 
@@ -1858,9 +3310,7 @@ export default {
 
         const examId =
           Number(
-            url.searchParams.get(
-              "examId"
-            ) || 1
+            url.searchParams.get("examId") || 1
           );
 
         const result =
@@ -1920,34 +3370,27 @@ export default {
             .all();
 
         const students =
-          (
-            result.results || []
-          ).map(row => {
+          (result.results || []).map(row => {
 
             let status;
 
             if (
-              row.payment_status !==
-              "paid"
+              row.payment_status !== "paid"
             ) {
-              status =
-                "unpaid";
+              status = "unpaid";
 
             } else if (
               !row.attempt_id
             ) {
-              status =
-                "paid_not_started";
+              status = "paid_not_started";
 
             } else if (
               !row.finished_at
             ) {
-              status =
-                "in_progress";
+              status = "in_progress";
 
             } else {
-              status =
-                "finished";
+              status = "finished";
             }
 
             const correct =
@@ -2044,9 +3487,7 @@ export default {
 
         const attemptId =
           String(
-            url.searchParams.get(
-              "attemptId"
-            ) || ""
+            url.searchParams.get("attemptId") || ""
           ).trim();
 
         if (!attemptId) {
@@ -2111,34 +3552,24 @@ export default {
             .all();
 
         const questions =
-          (
-            rows.results || []
-          ).map(row => {
+          (rows.results || []).map(row => {
 
-            let result =
-              "empty";
+            let result = "empty";
 
             if (
               row.selected_index !== null &&
               row.selected_index !== undefined
             ) {
-
               result =
-                Number(
-                  row.selected_index
-                ) ===
-                Number(
-                  row.correct_index_snapshot
-                )
+                Number(row.selected_index) ===
+                Number(row.correct_index_snapshot)
                   ? "correct"
                   : "wrong";
             }
 
             return {
               number:
-                Number(
-                  row.question_order
-                ) + 1,
+                Number(row.question_order) + 1,
 
               questionId:
                 row.question_id,
@@ -2146,18 +3577,28 @@ export default {
               question:
                 row.question_text_snapshot,
 
-              options: [
+              options: compactOptions([
                 row.option_a_snapshot,
                 row.option_b_snapshot,
                 row.option_c_snapshot,
                 row.option_d_snapshot,
-              ],
+              ]).options,
 
               selectedIndex:
                 row.selected_index,
 
               correctIndex:
-                row.correct_index_snapshot,
+                remapCorrectIndex(
+                  [
+                    row.option_a_snapshot,
+                    row.option_b_snapshot,
+                    row.option_c_snapshot,
+                    row.option_d_snapshot,
+                  ],
+                  Number(
+                    row.correct_index_snapshot
+                  )
+                ),
 
               result,
 
@@ -2165,7 +3606,9 @@ export default {
                 result === "correct",
 
               durationSeconds:
-                row.duration_seconds_snapshot,
+                Number(
+                  row.duration_seconds_snapshot || 30
+                ),
 
               startedAt:
                 row.started_at || null,
@@ -2177,31 +3620,23 @@ export default {
                 row.elapsed_seconds === null ||
                 row.elapsed_seconds === undefined
                   ? null
-                  : Number(
-                      row.elapsed_seconds
-                    ),
+                  : Number(row.elapsed_seconds),
             };
           });
 
         const correct =
           questions.filter(
-            q =>
-              q.result ===
-              "correct"
+            q => q.result === "correct"
           ).length;
 
         const wrong =
           questions.filter(
-            q =>
-              q.result ===
-              "wrong"
+            q => q.result === "wrong"
           ).length;
 
         const empty =
           questions.filter(
-            q =>
-              q.result ===
-              "empty"
+            q => q.result === "empty"
           ).length;
 
         const total =
@@ -2279,15 +3714,12 @@ export default {
       // =========================================================
       if (
         request.method === "DELETE" &&
-        url.pathname ===
-          "/api/teacher/student"
+        url.pathname === "/api/teacher/student"
       ) {
 
         const orderId =
           String(
-            url.searchParams.get(
-              "orderId"
-            ) || ""
+            url.searchParams.get("orderId") || ""
           ).trim();
 
         if (!orderId) {
@@ -2432,14 +3864,12 @@ export default {
 
               attemptQuestions:
                 Number(
-                  attemptQuestionsCount?.count ||
-                  0
+                  attemptQuestionsCount?.count || 0
                 ),
 
               attemptAnswers:
                 Number(
-                  attemptAnswersCount?.count ||
-                  0
+                  attemptAnswersCount?.count || 0
                 ),
             },
           },
@@ -2454,15 +3884,12 @@ export default {
       // =========================================================
       if (
         request.method === "DELETE" &&
-        url.pathname ===
-          "/api/teacher/students"
+        url.pathname === "/api/teacher/students"
       ) {
 
         const examId =
           Number(
-            url.searchParams.get(
-              "examId"
-            ) || 1
+            url.searchParams.get("examId") || 1
           );
 
         if (
@@ -2599,14 +4026,12 @@ export default {
 
               attemptQuestions:
                 Number(
-                  attemptQuestionsCount?.count ||
-                  0
+                  attemptQuestionsCount?.count || 0
                 ),
 
               attemptAnswers:
                 Number(
-                  attemptAnswersCount?.count ||
-                  0
+                  attemptAnswersCount?.count || 0
                 ),
             },
           },
@@ -2620,9 +4045,7 @@ export default {
       // Static files
       // =========================================================
       if (env.ASSETS) {
-        return env.ASSETS.fetch(
-          request
-        );
+        return env.ASSETS.fetch(request);
       }
 
       return json(
@@ -2689,52 +4112,30 @@ function getEffectivePrice(
     );
 
   const discountStartAt =
-    exam?.discount_start_at ||
-    null;
+    exam?.discount_start_at || null;
 
   const discountEndAt =
-    exam?.discount_end_at ||
-    null;
+    exam?.discount_end_at || null;
 
-  if (
-    !discountEnabled
-  ) {
+  if (!discountEnabled) {
     return {
       basePrice,
-      finalPrice:
-        basePrice,
-
-      discountEnabled:
-        false,
-
-      discountActive:
-        false,
-
-      discountPercent:
-        0,
-
+      finalPrice: basePrice,
+      discountEnabled: false,
+      discountActive: false,
+      discountPercent: 0,
       discountStartAt,
       discountEndAt,
     };
   }
 
-  if (
-    discountPercent <= 0
-  ) {
+  if (discountPercent <= 0) {
     return {
       basePrice,
-      finalPrice:
-        basePrice,
-
-      discountEnabled:
-        true,
-
-      discountActive:
-        false,
-
-      discountPercent:
-        0,
-
+      finalPrice: basePrice,
+      discountEnabled: true,
+      discountActive: false,
+      discountPercent: 0,
       discountStartAt,
       discountEndAt,
     };
@@ -2746,36 +4147,23 @@ function getEffectivePrice(
   ) {
     return {
       basePrice,
-      finalPrice:
-        basePrice,
-
-      discountEnabled:
-        true,
-
-      discountActive:
-        false,
-
+      finalPrice: basePrice,
+      discountEnabled: true,
+      discountActive: false,
       discountPercent,
-
       discountStartAt,
       discountEndAt,
     };
   }
 
   const nowMs =
-    new Date(
-      now
-    ).getTime();
+    new Date(now).getTime();
 
   const startMs =
-    new Date(
-      discountStartAt
-    ).getTime();
+    new Date(discountStartAt).getTime();
 
   const endMs =
-    new Date(
-      discountEndAt
-    ).getTime();
+    new Date(discountEndAt).getTime();
 
   if (
     !Number.isFinite(nowMs) ||
@@ -2784,17 +4172,10 @@ function getEffectivePrice(
   ) {
     return {
       basePrice,
-      finalPrice:
-        basePrice,
-
-      discountEnabled:
-        true,
-
-      discountActive:
-        false,
-
+      finalPrice: basePrice,
+      discountEnabled: true,
+      discountActive: false,
       discountPercent,
-
       discountStartAt,
       discountEndAt,
     };
@@ -2807,17 +4188,10 @@ function getEffectivePrice(
   if (!discountActive) {
     return {
       basePrice,
-      finalPrice:
-        basePrice,
-
-      discountEnabled:
-        true,
-
-      discountActive:
-        false,
-
+      finalPrice: basePrice,
+      discountEnabled: true,
+      discountActive: false,
       discountPercent,
-
       discountStartAt,
       discountEndAt,
     };
@@ -2837,17 +4211,10 @@ function getEffectivePrice(
 
   return {
     basePrice,
-
     finalPrice,
-
-    discountEnabled:
-      true,
-
-    discountActive:
-      true,
-
+    discountEnabled: true,
+    discountActive: true,
     discountPercent,
-
     discountStartAt,
     discountEndAt,
   };
@@ -2917,8 +4284,7 @@ async function selectQuestionsForExam(
     let rows = [];
 
     if (
-      rule.selection_mode ===
-      "manual"
+      rule.selection_mode === "manual"
     ) {
 
       const result =
@@ -2972,20 +4338,125 @@ async function selectQuestionsForExam(
         result.results || [];
     }
 
-    if (
-      rows.length < count
-    ) {
+    if (rows.length < count) {
       throw new Error(
         `در پوشه ${rule.folder_id} به تعداد ${count} سوال فعال وجود ندارد`
       );
     }
 
-    selected.push(
-      ...rows
-    );
+    selected.push(...rows);
   }
 
   return selected;
+}
+
+
+// =============================================================
+// نرمال‌سازی گزینه‌ها
+//
+// گزینه‌های خالی حذف می‌شوند و correct_index متناسب
+// با گزینه‌های باقی‌مانده اصلاح می‌شود.
+// =============================================================
+function compactOptions(
+  values,
+  correctIndex = null
+) {
+
+  const options = [];
+  let newCorrectIndex = null;
+
+  for (
+    let i = 0;
+    i < values.length;
+    i++
+  ) {
+
+    const value =
+      String(
+        values[i] ?? ""
+      ).trim();
+
+    if (!value) {
+      continue;
+    }
+
+    if (
+      correctIndex !== null &&
+      Number(correctIndex) === i
+    ) {
+      newCorrectIndex =
+        options.length;
+    }
+
+    options.push(value);
+  }
+
+  return {
+    options,
+    correctIndex:
+      newCorrectIndex,
+  };
+}
+
+
+// =============================================================
+// نرمال‌سازی سؤال برای Snapshot
+// =============================================================
+function normalizeQuestionForSnapshot(q) {
+
+  if (!q) {
+    return null;
+  }
+
+  const compact =
+    compactOptions(
+      [
+        q.option_a,
+        q.option_b,
+        q.option_c,
+        q.option_d,
+      ],
+      Number(q.correct_index)
+    );
+
+  const options =
+    compact.options;
+
+  return {
+    id:
+      q.id,
+
+    question_text:
+      q.question_text,
+
+    option_a:
+      options[0] || "",
+
+    option_b:
+      options[1] || "",
+
+    option_c:
+      options[2] || "",
+
+    option_d:
+      options[3] || "",
+
+    correct_index:
+      compact.correctIndex === null
+        ? 0
+        : compact.correctIndex,
+
+    duration_seconds:
+      Number(
+        q.duration_seconds || 30
+      ),
+
+    folder_id:
+      q.folder_id ?? null,
+
+    active:
+      q.active,
+  };
 }
 
 
@@ -2998,43 +4469,48 @@ function publicQuestion(q) {
     return null;
   }
 
+  const normalized =
+    normalizeQuestionForSnapshot(q);
+
+  const options =
+    [
+      normalized.option_a,
+      normalized.option_b,
+      normalized.option_c,
+      normalized.option_d,
+    ].filter(Boolean);
+
   const duration =
     Number(
-      q.duration_seconds || 30
+      normalized.duration_seconds || 30
     );
 
   return {
-
     id:
-      q.id,
+      normalized.id,
 
     question:
-      q.question_text,
+      normalized.question_text,
 
-    options: [
-      q.option_a,
-      q.option_b,
-      q.option_c,
-      q.option_d,
-    ],
+    options,
 
     durationSeconds:
       duration,
 
     question_text:
-      q.question_text,
+      normalized.question_text,
 
     option_a:
-      q.option_a,
+      normalized.option_a,
 
     option_b:
-      q.option_b,
+      normalized.option_b,
 
     option_c:
-      q.option_c,
+      normalized.option_c,
 
     option_d:
-      q.option_d,
+      normalized.option_d,
 
     duration_seconds:
       duration,
@@ -3051,10 +4527,19 @@ function publicSnapshotQuestion(q) {
     return null;
   }
 
+  const values = [
+    q.option_a_snapshot,
+    q.option_b_snapshot,
+    q.option_c_snapshot,
+    q.option_d_snapshot,
+  ];
+
+  const compact =
+    compactOptions(values);
+
   const duration =
     Number(
-      q.duration_seconds_snapshot ||
-      30
+      q.duration_seconds_snapshot || 30
     );
 
   return {
@@ -3065,12 +4550,8 @@ function publicSnapshotQuestion(q) {
     question:
       q.question_text_snapshot,
 
-    options: [
-      q.option_a_snapshot,
-      q.option_b_snapshot,
-      q.option_c_snapshot,
-      q.option_d_snapshot,
-    ],
+    options:
+      compact.options,
 
     durationSeconds:
       duration,
@@ -3079,16 +4560,16 @@ function publicSnapshotQuestion(q) {
       q.question_text_snapshot,
 
     option_a:
-      q.option_a_snapshot,
+      q.option_a_snapshot || "",
 
     option_b:
-      q.option_b_snapshot,
+      q.option_b_snapshot || "",
 
     option_c:
-      q.option_c_snapshot,
+      q.option_c_snapshot || "",
 
     option_d:
-      q.option_d_snapshot,
+      q.option_d_snapshot || "",
 
     duration_seconds:
       duration,
@@ -3097,7 +4578,211 @@ function publicSnapshotQuestion(q) {
 
 
 // =============================================================
-// گرفتن سوال در حالت legacy
+// سؤال برای teacher
+// پاسخ صحیح در پنل معلم نمایش داده می‌شود.
+// =============================================================
+function teacherQuestion(q) {
+
+  if (!q) {
+    return null;
+  }
+
+  const compact =
+    compactOptions(
+      [
+        q.option_a,
+        q.option_b,
+        q.option_c,
+        q.option_d,
+      ],
+      Number(q.correct_index)
+    );
+
+  return {
+    id:
+      q.id,
+
+    examId:
+      q.exam_id,
+
+    question:
+      q.question_text,
+
+    questionText:
+      q.question_text,
+
+    options:
+      compact.options,
+
+    optionA:
+      q.option_a || "",
+
+    optionB:
+      q.option_b || "",
+
+    optionC:
+      q.option_c || "",
+
+    optionD:
+      q.option_d || "",
+
+    correctIndex:
+      compact.correctIndex === null
+        ? 0
+        : compact.correctIndex,
+
+    durationSeconds:
+      Number(
+        q.duration_seconds || 30
+      ),
+
+    folderId:
+      q.folder_id ?? null,
+
+    folderName:
+      q.folder_name || null,
+
+    active:
+      Number(q.active || 0) === 1,
+  };
+}
+
+
+// =============================================================
+// ساخت گزینه‌ها از Body
+//
+// اجازه:
+// 2 گزینه = A,B
+// 3 گزینه = A,B,C
+// 4 گزینه = A,B,C,D
+//
+// سوراخ بین گزینه‌ها مجاز نیست.
+// =============================================================
+function normalizeOptionsFromBody(body) {
+
+  const raw = [
+    body.optionA ??
+      body.option_a ??
+      "",
+
+    body.optionB ??
+      body.option_b ??
+      "",
+
+    body.optionC ??
+      body.option_c ??
+      "",
+
+    body.optionD ??
+      body.option_d ??
+      "",
+  ].map(
+    value =>
+      String(value ?? "").trim()
+  );
+
+  let count =
+    body.optionCount ??
+    body.optionsCount ??
+    body.option_count;
+
+  if (
+    count !== undefined &&
+    count !== null &&
+    count !== ""
+  ) {
+    count =
+      Number(count);
+
+    if (
+      !Number.isInteger(count) ||
+      count < 2 ||
+      count > 4
+    ) {
+      return {
+        ok: false,
+        error:
+          "تعداد گزینه باید 2، 3 یا 4 باشد",
+      };
+    }
+
+    for (
+      let i = count;
+      i < 4;
+      i++
+    ) {
+      raw[i] = "";
+    }
+  }
+
+  let actualCount = 0;
+
+  for (
+    let i = 0;
+    i < 4;
+    i++
+  ) {
+    if (raw[i]) {
+      actualCount++;
+    } else {
+      break;
+    }
+  }
+
+  if (
+    actualCount < 2 ||
+    actualCount > 4
+  ) {
+    return {
+      ok: false,
+      error:
+        "سؤال باید حداقل 2 و حداکثر 4 گزینه داشته باشد",
+    };
+  }
+
+  for (
+    let i = actualCount;
+    i < 4;
+    i++
+  ) {
+    if (raw[i]) {
+      return {
+        ok: false,
+        error:
+          "گزینه‌ها باید پشت سر هم از A شروع شوند",
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    options: raw,
+  };
+}
+
+
+// =============================================================
+// اصلاح correct index برای گزینه‌های فشرده‌شده
+// =============================================================
+function remapCorrectIndex(
+  values,
+  originalIndex
+) {
+
+  const compact =
+    compactOptions(
+      values,
+      originalIndex
+    );
+
+  return compact.correctIndex === null
+    ? 0
+    : compact.correctIndex;
+}
+
+
+// =============================================================
+// گرفتن سوال legacy
 // =============================================================
 async function getQuestion(
   env,
@@ -3112,9 +4797,8 @@ async function getQuestion(
     );
 
   return (
-    questions[
-      questionIndex
-    ] || null
+    questions[questionIndex] ||
+    null
   );
 }
 
@@ -3128,26 +4812,17 @@ function calculateScore20(
 ) {
 
   correct =
-    Number(
-      correct || 0
-    );
+    Number(correct || 0);
 
   total =
-    Number(
-      total || 0
-    );
+    Number(total || 0);
 
-  if (
-    total <= 0
-  ) {
+  if (total <= 0) {
     return 0;
   }
 
   const score =
-    (
-      correct /
-      total
-    ) * 20;
+    (correct / total) * 20;
 
   return Math.round(
     score * 10
@@ -3198,74 +4873,71 @@ async function buildResult(
   let empty = 0;
 
   const sheet =
-    questions.map(
-      row => {
+    questions.map(row => {
 
-        let result =
-          "empty";
+      let result = "empty";
+
+      if (
+        row.selected_index !== null &&
+        row.selected_index !== undefined
+      ) {
 
         if (
-          row.selected_index !== null &&
-          row.selected_index !== undefined
+          Number(row.selected_index) ===
+          Number(row.correct_index_snapshot)
         ) {
 
-          if (
-            Number(
-              row.selected_index
-            ) ===
-            Number(
-              row.correct_index_snapshot
-            )
-          ) {
-
-            correct++;
-
-            result =
-              "correct";
-
-          } else {
-
-            wrong++;
-
-            result =
-              "wrong";
-          }
+          correct++;
+          result = "correct";
 
         } else {
 
-          empty++;
+          wrong++;
+          result = "wrong";
         }
 
-        return {
-
-          number:
-            Number(
-              row.question_order
-            ) + 1,
-
-          question:
-            row.question_text_snapshot,
-
-          options: [
-            row.option_a_snapshot,
-            row.option_b_snapshot,
-            row.option_c_snapshot,
-            row.option_d_snapshot,
-          ],
-
-          selectedIndex:
-            row.selected_index,
-
-          correctIndex:
-            row.correct_index_snapshot,
-
-          result,
-
-          elapsedSeconds:
-            row.elapsed_seconds,
-        };
+      } else {
+        empty++;
       }
-    );
+
+      const compact =
+        compactOptions([
+          row.option_a_snapshot,
+          row.option_b_snapshot,
+          row.option_c_snapshot,
+          row.option_d_snapshot,
+        ]);
+
+      return {
+
+        number:
+          Number(row.question_order) + 1,
+
+        question:
+          row.question_text_snapshot,
+
+        options:
+          compact.options,
+
+        selectedIndex:
+          row.selected_index,
+
+        correctIndex:
+          Number(
+            row.correct_index_snapshot
+          ),
+
+        result,
+
+        elapsedSeconds:
+          row.elapsed_seconds,
+
+        durationSeconds:
+          Number(
+            row.duration_seconds_snapshot || 30
+          ),
+      };
+    });
 
   const total =
     questions.length;
@@ -3358,9 +5030,7 @@ async function buildLegacyResult(
   ) {
 
     answerMap.set(
-      Number(
-        answer.question_index
-      ),
+      Number(answer.question_index),
       answer.selected_index
     );
   }
@@ -3370,70 +5040,65 @@ async function buildLegacyResult(
   let empty = 0;
 
   const sheet =
-    questions.map(
-      (q, index) => {
+    questions.map((q, index) => {
 
-        const selectedIndex =
-          answerMap.has(index)
-            ? answerMap.get(index)
-            : null;
+      const selectedIndex =
+        answerMap.has(index)
+          ? answerMap.get(index)
+          : null;
 
-        let result =
-          "empty";
+      const normalized =
+        normalizeQuestionForSnapshot(q);
 
-        if (
-          selectedIndex === null ||
-          selectedIndex === undefined
-        ) {
+      let result = "empty";
 
-          empty++;
+      if (
+        selectedIndex === null ||
+        selectedIndex === undefined
+      ) {
 
-        } else if (
-          Number(
-            selectedIndex
-          ) ===
-          Number(
-            q.correct_index
-          )
-        ) {
+        empty++;
 
-          correct++;
+      } else if (
+        Number(selectedIndex) ===
+        Number(normalized.correct_index)
+      ) {
 
-          result =
-            "correct";
+        correct++;
+        result = "correct";
 
-        } else {
+      } else {
 
-          wrong++;
-
-          result =
-            "wrong";
-        }
-
-        return {
-
-          number:
-            index + 1,
-
-          question:
-            q.question_text,
-
-          options: [
-            q.option_a,
-            q.option_b,
-            q.option_c,
-            q.option_d,
-          ],
-
-          selectedIndex,
-
-          correctIndex:
-            q.correct_index,
-
-          result,
-        };
+        wrong++;
+        result = "wrong";
       }
-    );
+
+      return {
+
+        number:
+          index + 1,
+
+        question:
+          normalized.question_text,
+
+        options: [
+          normalized.option_a,
+          normalized.option_b,
+          normalized.option_c,
+          normalized.option_d,
+        ].filter(Boolean),
+
+        selectedIndex,
+
+        correctIndex:
+          normalized.correct_index,
+
+        result,
+
+        durationSeconds:
+          normalized.duration_seconds,
+      };
+    });
 
   const total =
     questions.length;
@@ -3523,9 +5188,7 @@ function normalizePhone(
 ) {
 
   let phone =
-    String(
-      value || ""
-    )
+    String(value || "")
       .trim()
       .replace(/\s+/g, "")
       .replace(/-/g, "");
@@ -3533,7 +5196,6 @@ function normalizePhone(
   if (
     phone.startsWith("+98")
   ) {
-
     phone =
       "0" +
       phone.slice(3);
@@ -3543,7 +5205,6 @@ function normalizePhone(
     phone.startsWith("98") &&
     phone.length === 12
   ) {
-
     phone =
       "0" +
       phone.slice(2);
