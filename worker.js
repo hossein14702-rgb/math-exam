@@ -1362,7 +1362,6 @@ export default {
               finishedAt:
                 row.finished_at || null,
 
-              // همیشه نمره واقعی از ۲۰
               score:
                 calculatedScore,
 
@@ -1391,6 +1390,312 @@ export default {
           ok: true,
           examId,
           students
+        });
+      }
+
+
+      // =====================================================
+      // پنل معلم - جزئیات کامل یک آزمون
+      // =====================================================
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/teacher/attempt"
+      ) {
+
+        const attemptId =
+          String(
+            url.searchParams.get("attemptId") || ""
+          ).trim();
+
+        if (!attemptId) {
+          return json({
+            ok: false,
+            error: "شناسه آزمون ارسال نشده است."
+          }, 400);
+        }
+
+
+        // -----------------------------------------------
+        // اطلاعات دانش‌آموز و آزمون
+        // -----------------------------------------------
+        const attempt =
+          await env.DB.prepare(`
+            SELECT
+              a.id AS attempt_id,
+              a.order_id,
+              a.started_at,
+              a.finished_at,
+              a.score,
+              a.correct_count,
+              a.wrong_count,
+              a.empty_count,
+
+              o.exam_id,
+              o.name,
+              o.phone,
+              o.amount,
+              o.status AS payment_status,
+              o.created_at AS order_created_at,
+              o.paid_at
+
+            FROM attempts a
+
+            JOIN orders o
+              ON o.id = a.order_id
+
+            WHERE a.id = ?
+
+            LIMIT 1
+          `)
+            .bind(attemptId)
+            .first();
+
+
+        if (!attempt) {
+          return json({
+            ok: false,
+            error: "آزمون پیدا نشد."
+          }, 404);
+        }
+
+
+        // -----------------------------------------------
+        // سؤال‌های Snapshot شده
+        // -----------------------------------------------
+        const questions =
+          await env.DB.prepare(`
+            SELECT
+              id,
+              question_id,
+              question_order,
+
+              question_text_snapshot,
+
+              option_a_snapshot,
+              option_b_snapshot,
+              option_c_snapshot,
+              option_d_snapshot,
+
+              correct_index_snapshot,
+              duration_seconds_snapshot,
+
+              selected_index,
+              started_at,
+              answered_at,
+              elapsed_seconds,
+              is_correct
+
+            FROM attempt_questions
+
+            WHERE attempt_id = ?
+
+            ORDER BY question_order ASC
+          `)
+            .bind(attemptId)
+            .all();
+
+
+        const questionRows =
+          questions.results || [];
+
+
+        // -----------------------------------------------
+        // آماده‌سازی اطلاعات هر سؤال
+        // -----------------------------------------------
+        const questionDetails =
+          questionRows.map(q => {
+
+            const selected =
+              q.selected_index === null ||
+              q.selected_index === undefined
+                ? null
+                : Number(
+                    q.selected_index
+                  );
+
+
+            const correct =
+              Number(
+                q.correct_index_snapshot
+              );
+
+
+            let result = "unanswered";
+
+
+            if (selected !== null) {
+
+              if (
+                selected === correct
+              ) {
+                result = "correct";
+              } else {
+                result = "wrong";
+              }
+            }
+
+
+            return {
+
+              number:
+                Number(q.question_order) + 1,
+
+              questionId:
+                q.question_id,
+
+              question:
+                q.question_text_snapshot,
+
+              options: [
+                q.option_a_snapshot,
+                q.option_b_snapshot,
+                q.option_c_snapshot,
+                q.option_d_snapshot
+              ],
+
+              selectedIndex:
+                selected,
+
+              correctIndex:
+                correct,
+
+              result,
+
+              isCorrect:
+                result === "correct",
+
+              durationSeconds:
+                Number(
+                  q.duration_seconds_snapshot || 30
+                ),
+
+              startedAt:
+                q.started_at || null,
+
+              answeredAt:
+                q.answered_at || null,
+
+              elapsedSeconds:
+                q.elapsed_seconds === null ||
+                q.elapsed_seconds === undefined
+                  ? null
+                  : Number(
+                      q.elapsed_seconds
+                    )
+            };
+          });
+
+
+        // -----------------------------------------------
+        // اگر تعداد پاسخ‌ها هنوز ذخیره نشده باشد
+        // دوباره از سؤال‌ها محاسبه می‌کنیم
+        // -----------------------------------------------
+        let correctCount = 0;
+        let wrongCount = 0;
+        let emptyCount = 0;
+
+
+        for (
+          const q of questionDetails
+        ) {
+
+          if (
+            q.result === "correct"
+          ) {
+
+            correctCount++;
+
+          } else if (
+            q.result === "wrong"
+          ) {
+
+            wrongCount++;
+
+          } else {
+
+            emptyCount++;
+          }
+        }
+
+
+        const total =
+          questionDetails.length;
+
+
+        const calculatedScore =
+          total > 0
+            ? calculateScore20(
+                correctCount,
+                total
+              )
+            : 0;
+
+
+        return json({
+
+          ok: true,
+
+          student: {
+            name:
+              attempt.name,
+
+            phone:
+              attempt.phone
+          },
+
+          payment: {
+
+            amount:
+              Number(
+                attempt.amount || 0
+              ),
+
+            status:
+              attempt.payment_status,
+
+            createdAt:
+              attempt.order_created_at,
+
+            paidAt:
+              attempt.paid_at || null
+          },
+
+          attempt: {
+
+            id:
+              attempt.attempt_id,
+
+            orderId:
+              attempt.order_id,
+
+            examId:
+              Number(
+                attempt.exam_id
+              ),
+
+            startedAt:
+              attempt.started_at,
+
+            finishedAt:
+              attempt.finished_at,
+
+            score:
+              calculatedScore,
+
+            correct:
+              correctCount,
+
+            wrong:
+              wrongCount,
+
+            empty:
+              emptyCount,
+
+            total
+          },
+
+          questions:
+            questionDetails
         });
       }
 
