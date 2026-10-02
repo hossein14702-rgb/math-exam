@@ -2,432 +2,459 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // -----------------------------
+    // CORS
+    // -----------------------------
+    const cors = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    };
+
     if (request.method === "OPTIONS") {
       return new Response(null, {
-        headers: corsHeaders()
+        status: 204,
+        headers: cors,
       });
     }
 
     try {
 
-      // =====================================================
-      // دریافت آزمون
-      // =====================================================
-      if (
-        request.method === "GET" &&
-        url.pathname === "/api/exam"
-      ) {
-        const examId = Number(
-          url.searchParams.get("id") || 1
-        );
+      // =========================================================
+      // GET /api/exam
+      // =========================================================
+      if (request.method === "GET" && url.pathname === "/api/exam") {
+        const examId = Number(url.searchParams.get("id") || 1);
 
-        const exam = await env.DB.prepare(`
-          SELECT
-            id,
-            title,
-            price,
-            duration_seconds
-          FROM exams
-          WHERE id = ?
-            AND active = 1
-        `)
+        const exam = await env.DB
+          .prepare(`
+            SELECT
+              id,
+              title,
+              price,
+              duration_seconds,
+              active
+            FROM exams
+            WHERE id = ?
+          `)
           .bind(examId)
           .first();
 
         if (!exam) {
-          return json({
-            ok: false,
-            error: "آزمون پیدا نشد."
-          }, 404);
+          return json(
+            {
+              ok: false,
+              error: "آزمون پیدا نشد",
+            },
+            404,
+            cors
+          );
         }
 
-        const questions = await env.DB.prepare(`
-          SELECT
-            id,
-            question_text,
-            option_a,
-            option_b,
-            option_c,
-            option_d,
-            duration_seconds
-          FROM questions
-          WHERE exam_id = ?
-          ORDER BY id
-        `)
+        const result = await env.DB
+          .prepare(`
+            SELECT
+              id,
+              question_text,
+              option_a,
+              option_b,
+              option_c,
+              option_d,
+              correct_index,
+              duration_seconds,
+              folder_id,
+              active
+            FROM questions
+            WHERE exam_id = ?
+              AND active = 1
+            ORDER BY id
+          `)
           .bind(examId)
           .all();
 
-        return json({
-          ok: true,
-          exam,
-          questions: questions.results || []
-        });
+        return json(
+          {
+            ok: true,
+            exam,
+            questions: result.results || [],
+          },
+          200,
+          cors
+        );
       }
 
 
-      // =====================================================
-      // ایجاد سفارش
-      // =====================================================
+      // =========================================================
+      // POST /api/create-order
+      // =========================================================
       if (
         request.method === "POST" &&
         url.pathname === "/api/create-order"
       ) {
         const body = await request.json();
 
-        const examId = Number(body.examId);
         const name = String(body.name || "").trim();
         const phone = normalizePhone(body.phone);
+        const examId = Number(body.examId || 1);
 
-        if (!examId || !name || !phone) {
-          return json({
-            ok: false,
-            error: "اطلاعات ناقص است."
-          }, 400);
+        if (!name || !phone) {
+          return json(
+            {
+              ok: false,
+              error: "نام و شماره موبایل الزامی است",
+            },
+            400,
+            cors
+          );
         }
 
-        if (!/^09\d{9}$/.test(phone)) {
-          return json({
-            ok: false,
-            error: "شماره موبایل صحیح نیست."
-          }, 400);
-        }
-
-        const exam = await env.DB.prepare(`
-          SELECT
-            id,
-            title,
-            price
-          FROM exams
-          WHERE id = ?
-            AND active = 1
-        `)
+        const exam = await env.DB
+          .prepare(`
+            SELECT id, price, active
+            FROM exams
+            WHERE id = ?
+          `)
           .bind(examId)
           .first();
 
         if (!exam) {
-          return json({
-            ok: false,
-            error: "آزمون پیدا نشد."
-          }, 404);
+          return json(
+            {
+              ok: false,
+              error: "آزمون پیدا نشد",
+            },
+            404,
+            cors
+          );
+        }
+
+        if (!exam.active) {
+          return json(
+            {
+              ok: false,
+              error: "این آزمون فعال نیست",
+            },
+            400,
+            cors
+          );
         }
 
         const orderId = crypto.randomUUID();
+        const createdAt = new Date().toISOString();
 
-        await env.DB.prepare(`
-          INSERT INTO orders (
-            id,
-            exam_id,
-            name,
-            phone,
-            amount,
-            status,
-            created_at
-          )
-          VALUES (?, ?, ?, ?, ?, 'pending', ?)
-        `)
+        await env.DB
+          .prepare(`
+            INSERT INTO orders (
+              id,
+              exam_id,
+              name,
+              phone,
+              amount,
+              status,
+              created_at
+            )
+            VALUES (?, ?, ?, ?, ?, 'pending', ?)
+          `)
           .bind(
             orderId,
-            exam.id,
+            examId,
             name,
             phone,
             exam.price,
-            new Date().toISOString()
+            createdAt
           )
           .run();
 
-        return json({
-          ok: true,
-          orderId,
-          amount: exam.price,
-          examTitle: exam.title
-        });
+        return json(
+          {
+            ok: true,
+            orderId,
+            amount: exam.price,
+          },
+          200,
+          cors
+        );
       }
 
 
-      // =====================================================
-      // پرداخت آزمایشی
-      // =====================================================
+      // =========================================================
+      // POST /api/demo-pay
+      // =========================================================
       if (
         request.method === "POST" &&
         url.pathname === "/api/demo-pay"
       ) {
         const body = await request.json();
 
-        const orderId = String(
-          body.orderId || ""
-        );
+        const orderId = String(body.orderId || "").trim();
 
         if (!orderId) {
-          return json({
-            ok: false,
-            error: "شناسه سفارش ارسال نشده."
-          }, 400);
+          return json(
+            {
+              ok: false,
+              error: "orderId الزامی است",
+            },
+            400,
+            cors
+          );
         }
 
-        const order = await env.DB.prepare(`
-          SELECT
-            id,
-            status
-          FROM orders
-          WHERE id = ?
-        `)
+        const order = await env.DB
+          .prepare(`
+            SELECT id, status
+            FROM orders
+            WHERE id = ?
+          `)
           .bind(orderId)
           .first();
 
         if (!order) {
-          return json({
-            ok: false,
-            error: "سفارش پیدا نشد."
-          }, 404);
+          return json(
+            {
+              ok: false,
+              error: "سفارش پیدا نشد",
+            },
+            404,
+            cors
+          );
         }
 
-        await env.DB.prepare(`
-          UPDATE orders
-          SET
-            status = 'paid',
-            paid_at = ?
-          WHERE id = ?
-        `)
-          .bind(
-            new Date().toISOString(),
-            orderId
-          )
+        const paidAt = new Date().toISOString();
+
+        await env.DB
+          .prepare(`
+            UPDATE orders
+            SET
+              status = 'paid',
+              paid_at = ?
+            WHERE id = ?
+          `)
+          .bind(paidAt, orderId)
           .run();
 
-        return json({
-          ok: true,
-          paid: true,
-          message: "پرداخت آزمایشی با موفقیت انجام شد."
-        });
+        return json(
+          {
+            ok: true,
+            orderId,
+            status: "paid",
+            paidAt,
+          },
+          200,
+          cors
+        );
       }
 
 
-      // =====================================================
-      // شروع آزمون
-      // =====================================================
+      // =========================================================
+      // POST /api/start
+      // =========================================================
       if (
         request.method === "POST" &&
         url.pathname === "/api/start"
       ) {
         const body = await request.json();
 
-        const orderId = String(
-          body.orderId || ""
-        );
+        const orderId = String(body.orderId || "").trim();
 
         if (!orderId) {
-          return json({
-            ok: false,
-            error: "شناسه سفارش ارسال نشده."
-          }, 400);
+          return json(
+            {
+              ok: false,
+              error: "orderId الزامی است",
+            },
+            400,
+            cors
+          );
         }
 
-        const order = await env.DB.prepare(`
-          SELECT
-            id,
-            exam_id,
-            status
-          FROM orders
-          WHERE id = ?
-        `)
+        const order = await env.DB
+          .prepare(`
+            SELECT *
+            FROM orders
+            WHERE id = ?
+          `)
           .bind(orderId)
           .first();
 
         if (!order) {
-          return json({
-            ok: false,
-            error: "سفارش پیدا نشد."
-          }, 404);
+          return json(
+            {
+              ok: false,
+              error: "سفارش پیدا نشد",
+            },
+            404,
+            cors
+          );
         }
 
         if (order.status !== "paid") {
-          return json({
-            ok: false,
-            error: "ابتدا باید پرداخت انجام شود."
-          }, 403);
+          return json(
+            {
+              ok: false,
+              error: "ابتدا باید پرداخت انجام شود",
+            },
+            400,
+            cors
+          );
         }
 
-
-        // =================================================
+        // -------------------------------------------------------
         // اگر قبلاً آزمون شروع شده
-        // =================================================
-        const existing = await env.DB.prepare(`
-          SELECT
-            id,
-            started_at,
-            current_question,
-            question_started_at,
-            finished_at
-          FROM attempts
-          WHERE order_id = ?
-          ORDER BY started_at DESC
-          LIMIT 1
-        `)
+        // -------------------------------------------------------
+        const existingAttempt = await env.DB
+          .prepare(`
+            SELECT *
+            FROM attempts
+            WHERE order_id = ?
+            ORDER BY started_at DESC
+            LIMIT 1
+          `)
           .bind(orderId)
           .first();
 
-        if (existing) {
+        if (existingAttempt) {
 
-          if (existing.finished_at) {
-            return json({
-              ok: false,
-              error: "این آزمون قبلاً به پایان رسیده است."
-            }, 400);
+          if (existingAttempt.finished_at) {
+            return json(
+              {
+                ok: false,
+                error: "این آزمون قبلاً تمام شده است",
+              },
+              400,
+              cors
+            );
           }
 
-
-          const savedQuestions = await env.DB.prepare(`
-            SELECT
-              id,
-              question_id,
-              question_order,
-              question_text_snapshot,
-              option_a_snapshot,
-              option_b_snapshot,
-              option_c_snapshot,
-              option_d_snapshot,
-              duration_seconds_snapshot,
-              started_at
-            FROM attempt_questions
-            WHERE attempt_id = ?
-            ORDER BY question_order
-          `)
-            .bind(existing.id)
+          const snapshots = await env.DB
+            .prepare(`
+              SELECT *
+              FROM attempt_questions
+              WHERE attempt_id = ?
+              ORDER BY question_order
+            `)
+            .bind(existingAttempt.id)
             .all();
 
-          const savedRows =
-            savedQuestions.results || [];
-
-          if (savedRows.length > 0) {
-
-            const currentIndex =
-              Number(existing.current_question || 0);
+          if (snapshots.results && snapshots.results.length > 0) {
 
             let currentQuestion =
-              savedRows.find(
-                q =>
-                  Number(q.question_order) ===
-                  currentIndex
-              );
+              Number(existingAttempt.current_question || 0);
 
-            if (!currentQuestion) {
-              return json({
-                ok: false,
-                error: "سؤال فعلی پیدا نشد."
-              }, 400);
+            if (
+              currentQuestion < 0 ||
+              currentQuestion >= snapshots.results.length
+            ) {
+              currentQuestion = 0;
             }
 
-            let questionStartedAt =
-              currentQuestion.started_at;
+            const current = snapshots.results[currentQuestion];
 
-            if (!questionStartedAt) {
+            if (!current.started_at) {
+              const now = new Date().toISOString();
 
-              questionStartedAt =
-                new Date().toISOString();
-
-              await env.DB.prepare(`
-                UPDATE attempt_questions
-                SET started_at = ?
-                WHERE id = ?
-              `)
+              await env.DB
+                .prepare(`
+                  UPDATE attempt_questions
+                  SET started_at = ?
+                  WHERE attempt_id = ?
+                    AND question_order = ?
+                `)
                 .bind(
-                  questionStartedAt,
-                  currentQuestion.id
-                )
-                .run();
-
-              await env.DB.prepare(`
-                UPDATE attempts
-                SET question_started_at = ?
-                WHERE id = ?
-              `)
-                .bind(
-                  questionStartedAt,
-                  existing.id
-                )
-                .run();
-            }
-
-            return json({
-              ok: true,
-              attemptId: existing.id,
-              startedAt: existing.started_at,
-              currentQuestion: currentIndex,
-              questionStartedAt,
-              alreadyStarted: true,
-              question:
-                publicSnapshotQuestion(
+                  now,
+                  existingAttempt.id,
                   currentQuestion
                 )
-            });
-          }
+                .run();
 
+              await env.DB
+                .prepare(`
+                  UPDATE attempts
+                  SET question_started_at = ?
+                  WHERE id = ?
+                `)
+                .bind(
+                  now,
+                  existingAttempt.id
+                )
+                .run();
 
-          const currentIndex =
-            Number(existing.current_question || 0);
+              current.started_at = now;
+            }
 
-          const currentQuestion =
-            await getQuestion(
-              env,
-              order.exam_id,
-              currentIndex
+            return json(
+              {
+                ok: true,
+                resumed: true,
+                attemptId: existingAttempt.id,
+                currentQuestion,
+                totalQuestions: snapshots.results.length,
+                question: publicSnapshotQuestion(current),
+              },
+              200,
+              cors
             );
-
-          if (!currentQuestion) {
-            return json({
-              ok: false,
-              error: "سؤال فعلی پیدا نشد."
-            }, 400);
           }
 
-          return json({
-            ok: true,
-            attemptId: existing.id,
-            startedAt: existing.started_at,
-            currentQuestion: currentIndex,
-            questionStartedAt:
-              existing.question_started_at,
-            alreadyStarted: true,
-            question:
-              publicQuestion(currentQuestion)
-          });
-        }
-
-
-        // =================================================
-        // آزمون جدید
-        // =================================================
-        const selectedQuestions =
-          await selectQuestionsForExam(
+          // -----------------------------------------------------
+          // Legacy attempt
+          // -----------------------------------------------------
+          const questions = await selectQuestionsForExam(
             env,
             order.exam_id
           );
 
-        if (!selectedQuestions.length) {
-          return json({
-            ok: false,
-            error:
-              "برای این آزمون سؤال قابل انتخاب وجود ندارد."
-          }, 400);
+          return json(
+            {
+              ok: true,
+              resumed: true,
+              attemptId: existingAttempt.id,
+              currentQuestion:
+                Number(existingAttempt.current_question || 0),
+              totalQuestions: questions.length,
+              question: publicQuestion(
+                questions[
+                  Number(existingAttempt.current_question || 0)
+                ]
+              ),
+            },
+            200,
+            cors
+          );
         }
 
-        const attemptId =
-          crypto.randomUUID();
+        // -------------------------------------------------------
+        // ایجاد آزمون جدید
+        // -------------------------------------------------------
+        const questions = await selectQuestionsForExam(
+          env,
+          order.exam_id
+        );
 
-        const startedAt =
-          new Date().toISOString();
+        if (!questions.length) {
+          return json(
+            {
+              ok: false,
+              error: "برای این آزمون سوالی وجود ندارد",
+            },
+            400,
+            cors
+          );
+        }
 
+        const attemptId = crypto.randomUUID();
+        const startedAt = new Date().toISOString();
 
-        await env.DB.prepare(`
-          INSERT INTO attempts (
-            id,
-            order_id,
-            started_at,
-            current_question,
-            question_started_at
-          )
-          VALUES (?, ?, ?, 0, ?)
-        `)
+        await env.DB
+          .prepare(`
+            INSERT INTO attempts (
+              id,
+              order_id,
+              started_at,
+              current_question,
+              question_started_at
+            )
+            VALUES (?, ?, ?, 0, ?)
+          `)
           .bind(
             attemptId,
             orderId,
@@ -436,302 +463,405 @@ export default {
           )
           .run();
 
+        const statements = [];
 
-        for (
-          let i = 0;
-          i < selectedQuestions.length;
-          i++
-        ) {
+        for (let i = 0; i < questions.length; i++) {
 
-          const q =
-            selectedQuestions[i];
+          const q = questions[i];
 
-          await env.DB.prepare(`
-            INSERT INTO attempt_questions (
-              attempt_id,
-              question_id,
-              question_order,
-              question_text_snapshot,
-              option_a_snapshot,
-              option_b_snapshot,
-              option_c_snapshot,
-              option_d_snapshot,
-              correct_index_snapshot,
-              duration_seconds_snapshot,
-              started_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `)
-            .bind(
-              attemptId,
-              q.id,
-              i,
-              q.question_text,
-              q.option_a,
-              q.option_b,
-              q.option_c,
-              q.option_d,
-              q.correct_index,
-              Number(
-                q.duration_seconds || 30
-              ),
-              i === 0
-                ? startedAt
-                : null
-            )
-            .run();
+          statements.push(
+            env.DB
+              .prepare(`
+                INSERT INTO attempt_questions (
+                  attempt_id,
+                  question_id,
+                  question_order,
+                  question_text_snapshot,
+                  option_a_snapshot,
+                  option_b_snapshot,
+                  option_c_snapshot,
+                  option_d_snapshot,
+                  correct_index_snapshot,
+                  duration_seconds_snapshot,
+                  started_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `)
+              .bind(
+                attemptId,
+                q.id,
+                i,
+                q.question_text,
+                q.option_a,
+                q.option_b,
+                q.option_c,
+                q.option_d,
+                q.correct_index,
+                Number(q.duration_seconds || 30),
+                i === 0 ? startedAt : null
+              )
+          );
         }
 
+        if (statements.length) {
+          await env.DB.batch(statements);
+        }
 
-        const firstQuestion =
-          selectedQuestions[0];
-
-        return json({
-          ok: true,
-          attemptId,
-          startedAt,
-          currentQuestion: 0,
-          questionStartedAt: startedAt,
-          alreadyStarted: false,
-          question:
-            publicQuestion(
-              firstQuestion
-            )
-        });
+        return json(
+          {
+            ok: true,
+            resumed: false,
+            attemptId,
+            currentQuestion: 0,
+            totalQuestions: questions.length,
+            question: publicQuestion(questions[0]),
+          },
+          200,
+          cors
+        );
       }
 
 
-      // =====================================================
-      // ثبت پاسخ یک سؤال
-      // =====================================================
+      // =========================================================
+      // POST /api/answer
+      // =========================================================
       if (
         request.method === "POST" &&
         url.pathname === "/api/answer"
       ) {
         const body = await request.json();
 
-        const attemptId = String(
-          body.attemptId || ""
-        );
+        const attemptId = String(body.attemptId || "").trim();
+        const questionIndex = Number(body.questionIndex);
+        let selectedIndex =
+          body.selectedIndex === null ||
+          body.selectedIndex === undefined ||
+          body.selectedIndex === ""
+            ? null
+            : Number(body.selectedIndex);
 
-        const questionIndex =
-          Number(body.questionIndex);
-
-        let selectedIndex = null;
-
-        if (
-          body.selectedIndex !== null &&
-          body.selectedIndex !== undefined &&
-          body.selectedIndex !== ""
-        ) {
-          selectedIndex =
-            Number(body.selectedIndex);
+        if (!attemptId || !Number.isInteger(questionIndex)) {
+          return json(
+            {
+              ok: false,
+              error: "اطلاعات پاسخ ناقص است",
+            },
+            400,
+            cors
+          );
         }
 
-        if (!attemptId) {
-          return json({
-            ok: false,
-            error: "شناسه آزمون ارسال نشده."
-          }, 400);
-        }
-
-        if (
-          !Number.isInteger(questionIndex) ||
-          questionIndex < 0
-        ) {
-          return json({
-            ok: false,
-            error: "شماره سؤال نامعتبر است."
-          }, 400);
-        }
-
-        if (
-          selectedIndex !== null &&
-          (
-            !Number.isInteger(selectedIndex) ||
-            selectedIndex < 0 ||
-            selectedIndex > 3
-          )
-        ) {
-          return json({
-            ok: false,
-            error: "گزینه انتخابی نامعتبر است."
-          }, 400);
-        }
-
-
-        const attempt = await env.DB.prepare(`
-          SELECT
-            a.id,
-            a.order_id,
-            a.started_at,
-            a.finished_at,
-            a.current_question,
-            a.question_started_at,
-            o.exam_id,
-            o.status
-          FROM attempts a
-          JOIN orders o
-            ON o.id = a.order_id
-          WHERE a.id = ?
-        `)
+        const attempt = await env.DB
+          .prepare(`
+            SELECT
+              a.*,
+              o.status AS order_status,
+              o.exam_id
+            FROM attempts a
+            JOIN orders o
+              ON o.id = a.order_id
+            WHERE a.id = ?
+          `)
           .bind(attemptId)
           .first();
 
         if (!attempt) {
-          return json({
-            ok: false,
-            error: "آزمون پیدا نشد."
-          }, 404);
+          return json(
+            {
+              ok: false,
+              error: "آزمون پیدا نشد",
+            },
+            404,
+            cors
+          );
         }
 
-        if (attempt.status !== "paid") {
-          return json({
-            ok: false,
-            error: "پرداخت تأیید نشده است."
-          }, 403);
+        if (attempt.order_status !== "paid") {
+          return json(
+            {
+              ok: false,
+              error: "پرداخت معتبر نیست",
+            },
+            400,
+            cors
+          );
         }
 
         if (attempt.finished_at) {
-          return json({
-            ok: false,
-            error: "آزمون قبلاً به پایان رسیده است."
-          }, 400);
+          return json(
+            {
+              ok: false,
+              error: "آزمون تمام شده است",
+            },
+            400,
+            cors
+          );
         }
 
-        if (
-          Number(attempt.current_question) !==
-          questionIndex
-        ) {
-          return json({
-            ok: false,
-            error:
-              "این سؤال دیگر قابل پاسخ‌گویی نیست."
-          }, 409);
+        const currentQuestion =
+          Number(attempt.current_question || 0);
+
+        if (questionIndex !== currentQuestion) {
+          return json(
+            {
+              ok: false,
+              error: "شماره سوال صحیح نیست",
+            },
+            400,
+            cors
+          );
         }
 
-
-        let question =
-          await env.DB.prepare(`
-            SELECT
-              id,
-              question_id,
-              question_order,
-              question_text_snapshot,
-              option_a_snapshot,
-              option_b_snapshot,
-              option_c_snapshot,
-              option_d_snapshot,
-              correct_index_snapshot,
-              duration_seconds_snapshot,
-              started_at
+        let snapshot = await env.DB
+          .prepare(`
+            SELECT *
             FROM attempt_questions
             WHERE attempt_id = ?
               AND question_order = ?
           `)
-            .bind(
-              attemptId,
-              questionIndex
+          .bind(
+            attemptId,
+            questionIndex
+          )
+          .first();
+
+        // -------------------------------------------------------
+        // Snapshot path
+        // -------------------------------------------------------
+        if (snapshot) {
+
+          const startedAt =
+            snapshot.started_at ||
+            attempt.question_started_at ||
+            attempt.started_at;
+
+          const startedMs =
+            new Date(startedAt).getTime();
+
+          const nowMs = Date.now();
+
+          let elapsedSeconds = Math.max(
+            0,
+            Math.floor(
+              (nowMs - startedMs) / 1000
             )
-            .first();
+          );
 
-
-        let isSnapshot = true;
-
-        if (!question) {
-
-          isSnapshot = false;
-
-          question =
-            await getQuestion(
-              env,
-              attempt.exam_id,
-              questionIndex
+          const durationSeconds =
+            Number(
+              snapshot.duration_seconds_snapshot || 30
             );
 
-          if (!question) {
-            return json({
-              ok: false,
-              error: "سؤال پیدا نشد."
-            }, 404);
+          let timedOut =
+            elapsedSeconds >= durationSeconds;
+
+          if (timedOut) {
+            selectedIndex = null;
+            elapsedSeconds = durationSeconds;
           }
-        }
 
+          let isCorrect = null;
 
-        const now =
-          new Date();
-
-
-        const questionStarted =
-          isSnapshot
-            ? new Date(
-                question.started_at ||
-                attempt.question_started_at
-              )
-            : new Date(
-                attempt.question_started_at
-              );
-
-
-        const elapsedSeconds =
-          (
-            now.getTime() -
-            questionStarted.getTime()
-          ) / 1000;
-
-
-        const duration =
-          isSnapshot
-            ? Number(
-                question.duration_seconds_snapshot ||
-                30
-              )
-            : Number(
-                question.duration_seconds ||
-                30
-              );
-
-
-        if (elapsedSeconds > duration) {
-          selectedIndex = null;
-        }
-
-
-        if (isSnapshot) {
-
-          const isCorrect =
+          if (
             selectedIndex !== null &&
-            selectedIndex ===
-              Number(
-                question.correct_index_snapshot
-              )
-              ? 1
-              : 0;
+            selectedIndex >= 0 &&
+            selectedIndex <= 3
+          ) {
+            isCorrect =
+              selectedIndex ===
+              Number(snapshot.correct_index_snapshot)
+                ? 1
+                : 0;
+          }
 
+          const answeredAt =
+            new Date().toISOString();
 
-          await env.DB.prepare(`
-            UPDATE attempt_questions
-            SET
-              selected_index = ?,
-              answered_at = ?,
-              elapsed_seconds = ?,
-              is_correct = ?
-            WHERE attempt_id = ?
-              AND question_order = ?
-          `)
+          await env.DB
+            .prepare(`
+              UPDATE attempt_questions
+              SET
+                selected_index = ?,
+                answered_at = ?,
+                elapsed_seconds = ?,
+                is_correct = ?
+              WHERE attempt_id = ?
+                AND question_order = ?
+            `)
             .bind(
               selectedIndex,
-              now.toISOString(),
-              Math.round(elapsedSeconds),
+              answeredAt,
+              elapsedSeconds,
               isCorrect,
               attemptId,
               questionIndex
             )
             .run();
 
-        } else {
+          const nextQuestion =
+            questionIndex + 1;
 
-          await env.DB.prepare(`
+          const totalQuestionsResult =
+            await env.DB
+              .prepare(`
+                SELECT COUNT(*) AS count
+                FROM attempt_questions
+                WHERE attempt_id = ?
+              `)
+              .bind(attemptId)
+              .first();
+
+          const totalQuestions =
+            Number(
+              totalQuestionsResult?.count || 0
+            );
+
+          // -----------------------------------------------------
+          // پایان آزمون
+          // -----------------------------------------------------
+          if (
+            nextQuestion >= totalQuestions
+          ) {
+
+            await env.DB
+              .prepare(`
+                UPDATE attempts
+                SET
+                  current_question = ?,
+                  finished_at = ?
+                WHERE id = ?
+              `)
+              .bind(
+                totalQuestions,
+                answeredAt,
+                attemptId
+              )
+              .run();
+
+            return json(
+              {
+                ok: true,
+                finished: true,
+                nextQuestion: totalQuestions,
+                totalQuestions,
+                timedOut,
+              },
+              200,
+              cors
+            );
+          }
+
+          // -----------------------------------------------------
+          // شروع سوال بعدی
+          // -----------------------------------------------------
+          await env.DB
+            .prepare(`
+              UPDATE attempt_questions
+              SET started_at = ?
+              WHERE attempt_id = ?
+                AND question_order = ?
+            `)
+            .bind(
+              answeredAt,
+              attemptId,
+              nextQuestion
+            )
+            .run();
+
+          await env.DB
+            .prepare(`
+              UPDATE attempts
+              SET
+                current_question = ?,
+                question_started_at = ?
+              WHERE id = ?
+            `)
+            .bind(
+              nextQuestion,
+              answeredAt,
+              attemptId
+            )
+            .run();
+
+          const next =
+            await env.DB
+              .prepare(`
+                SELECT *
+                FROM attempt_questions
+                WHERE attempt_id = ?
+                  AND question_order = ?
+              `)
+              .bind(
+                attemptId,
+                nextQuestion
+              )
+              .first();
+
+          return json(
+            {
+              ok: true,
+              finished: false,
+              nextQuestion,
+              totalQuestions,
+              timedOut,
+              question:
+                publicSnapshotQuestion(next),
+            },
+            200,
+            cors
+          );
+        }
+
+        // -------------------------------------------------------
+        // Legacy path
+        // -------------------------------------------------------
+        const question =
+          await getQuestion(
+            env,
+            attempt.exam_id,
+            questionIndex
+          );
+
+        if (!question) {
+          return json(
+            {
+              ok: false,
+              error: "سوال پیدا نشد",
+            },
+            404,
+            cors
+          );
+        }
+
+        const questionStarted =
+          attempt.question_started_at ||
+          attempt.started_at;
+
+        const elapsedSeconds = Math.max(
+          0,
+          Math.floor(
+            (
+              Date.now() -
+              new Date(questionStarted).getTime()
+            ) / 1000
+          )
+        );
+
+        const durationSeconds =
+          Number(question.duration_seconds || 30);
+
+        let timedOut =
+          elapsedSeconds >= durationSeconds;
+
+        if (timedOut) {
+          selectedIndex = null;
+        }
+
+        const answeredAt =
+          new Date().toISOString();
+
+        await env.DB
+          .prepare(`
             INSERT INTO attempt_answers (
               attempt_id,
               question_index,
@@ -739,354 +869,184 @@ export default {
               answered_at
             )
             VALUES (?, ?, ?, ?)
+            ON CONFLICT(attempt_id, question_index)
+            DO UPDATE SET
+              selected_index = excluded.selected_index,
+              answered_at = excluded.answered_at
           `)
-            .bind(
-              attemptId,
-              questionIndex,
-              selectedIndex,
-              now.toISOString()
-            )
-            .run();
-        }
+          .bind(
+            attemptId,
+            questionIndex,
+            selectedIndex,
+            answeredAt
+          )
+          .run();
 
+        const questions =
+          await selectQuestionsForExam(
+            env,
+            attempt.exam_id
+          );
 
-        const nextIndex =
+        const nextQuestion =
           questionIndex + 1;
 
+        if (
+          nextQuestion >= questions.length
+        ) {
 
-        if (isSnapshot) {
-
-          const nextQuestion =
-            await env.DB.prepare(`
-              SELECT
-                id,
-                question_id,
-                question_order,
-                question_text_snapshot,
-                option_a_snapshot,
-                option_b_snapshot,
-                option_c_snapshot,
-                option_d_snapshot,
-                correct_index_snapshot,
-                duration_seconds_snapshot,
-                started_at
-              FROM attempt_questions
-              WHERE attempt_id = ?
-                AND question_order = ?
-            `)
-              .bind(
-                attemptId,
-                nextIndex
-              )
-              .first();
-
-
-          if (nextQuestion) {
-
-            const nextStartedAt =
-              now.toISOString();
-
-
-            await env.DB.prepare(`
-              UPDATE attempt_questions
-              SET started_at = ?
-              WHERE attempt_id = ?
-                AND question_order = ?
-            `)
-              .bind(
-                nextStartedAt,
-                attemptId,
-                nextIndex
-              )
-              .run();
-
-
-            await env.DB.prepare(`
+          await env.DB
+            .prepare(`
               UPDATE attempts
               SET
                 current_question = ?,
-                question_started_at = ?
+                finished_at = ?
               WHERE id = ?
             `)
-              .bind(
-                nextIndex,
-                nextStartedAt,
-                attemptId
-              )
-              .run();
-
-
-            return json({
-              ok: true,
-              finished: false,
-              timedOut:
-                elapsedSeconds > duration,
-              currentQuestion:
-                nextIndex,
-              questionStartedAt:
-                nextStartedAt,
-              question:
-                publicSnapshotQuestion(
-                  nextQuestion
-                )
-            });
-          }
-
-
-          // پایان آزمون
-          const finishedAt =
-            now.toISOString();
-
-          await env.DB.prepare(`
-            UPDATE attempts
-            SET
-              current_question = ?,
-              question_started_at = NULL,
-              finished_at = ?
-            WHERE id = ?
-          `)
             .bind(
-              nextIndex,
-              finishedAt,
+              questions.length,
+              answeredAt,
               attemptId
             )
             .run();
 
-
-          return json({
-            ok: true,
-            finished: true,
-            timedOut:
-              elapsedSeconds > duration
-          });
+          return json(
+            {
+              ok: true,
+              finished: true,
+              nextQuestion: questions.length,
+              totalQuestions: questions.length,
+              timedOut,
+            },
+            200,
+            cors
+          );
         }
 
-
-        const nextQuestion =
-          await getQuestion(
-            env,
-            attempt.exam_id,
-            nextIndex
-          );
-
-
-        if (nextQuestion) {
-
-          await env.DB.prepare(`
+        await env.DB
+          .prepare(`
             UPDATE attempts
             SET
               current_question = ?,
               question_started_at = ?
             WHERE id = ?
           `)
-            .bind(
-              nextIndex,
-              now.toISOString(),
-              attemptId
-            )
-            .run();
-
-
-          return json({
-            ok: true,
-            finished: false,
-            timedOut:
-              elapsedSeconds > duration,
-            currentQuestion:
-              nextIndex,
-            questionStartedAt:
-              now.toISOString(),
-            question:
-              publicQuestion(
-                nextQuestion
-              )
-          });
-        }
-
-
-        const finishedAt =
-          now.toISOString();
-
-        await env.DB.prepare(`
-          UPDATE attempts
-          SET
-            current_question = ?,
-            question_started_at = NULL,
-            finished_at = ?
-          WHERE id = ?
-        `)
           .bind(
-            nextIndex,
-            finishedAt,
+            nextQuestion,
+            answeredAt,
             attemptId
           )
           .run();
 
-
-        return json({
-          ok: true,
-          finished: true,
-          timedOut:
-            elapsedSeconds > duration
-        });
+        return json(
+          {
+            ok: true,
+            finished: false,
+            nextQuestion,
+            totalQuestions: questions.length,
+            timedOut,
+            question:
+              publicQuestion(
+                questions[nextQuestion]
+              ),
+          },
+          200,
+          cors
+        );
       }
 
 
-      // =====================================================
-      // پایان و محاسبه نتیجه
-      // =====================================================
+      // =========================================================
+      // POST /api/submit
+      // =========================================================
       if (
         request.method === "POST" &&
         url.pathname === "/api/submit"
       ) {
         const body = await request.json();
 
-        const attemptId = String(
-          body.attemptId || ""
-        );
+        const attemptId =
+          String(body.attemptId || "").trim();
 
         if (!attemptId) {
-          return json({
-            ok: false,
-            error: "شناسه آزمون ارسال نشده."
-          }, 400);
-        }
-
-
-        const attempt = await env.DB.prepare(`
-          SELECT
-            a.id,
-            a.order_id,
-            a.started_at,
-            a.finished_at,
-            o.exam_id,
-            o.status
-          FROM attempts a
-          JOIN orders o
-            ON o.id = a.order_id
-          WHERE a.id = ?
-        `)
-          .bind(attemptId)
-          .first();
-
-
-        if (!attempt) {
-          return json({
-            ok: false,
-            error: "آزمون پیدا نشد."
-          }, 404);
-        }
-
-
-        if (attempt.status !== "paid") {
-          return json({
-            ok: false,
-            error: "پرداخت تأیید نشده است."
-          }, 403);
-        }
-
-
-        if (attempt.finished_at) {
-          return await buildResult(
-            env,
-            attemptId
+          return json(
+            {
+              ok: false,
+              error: "attemptId الزامی است",
+            },
+            400,
+            cors
           );
         }
 
+        const attempt =
+          await env.DB
+            .prepare(`
+              SELECT *
+              FROM attempts
+              WHERE id = ?
+            `)
+            .bind(attemptId)
+            .first();
 
-        const savedQuestions =
-          await env.DB.prepare(`
-            SELECT
-              question_order,
-              question_text_snapshot,
-              option_a_snapshot,
-              option_b_snapshot,
-              option_c_snapshot,
-              option_d_snapshot,
-              correct_index_snapshot,
-              selected_index,
-              elapsed_seconds
-            FROM attempt_questions
-            WHERE attempt_id = ?
-            ORDER BY question_order
-          `)
+        if (!attempt) {
+          return json(
+            {
+              ok: false,
+              error: "آزمون پیدا نشد",
+            },
+            404,
+            cors
+          );
+        }
+
+        if (attempt.finished_at) {
+          return json(
+            await buildResult(env, attemptId),
+            200,
+            cors
+          );
+        }
+
+        const rows =
+          await env.DB
+            .prepare(`
+              SELECT *
+              FROM attempt_questions
+              WHERE attempt_id = ?
+              ORDER BY question_order
+            `)
             .bind(attemptId)
             .all();
 
-
-        const savedRows =
-          savedQuestions.results || [];
-
-
-        if (savedRows.length > 0) {
+        if (
+          rows.results &&
+          rows.results.length > 0
+        ) {
 
           let correct = 0;
           let wrong = 0;
           let empty = 0;
 
-          const sheet = [];
+          for (const row of rows.results) {
 
-
-          for (const q of savedRows) {
-
-            const selected =
-              q.selected_index === null ||
-              q.selected_index === undefined
-                ? null
-                : Number(
-                    q.selected_index
-                  );
-
-
-            const correctIndex =
-              Number(
-                q.correct_index_snapshot
-              );
-
-
-            if (selected === null) {
+            if (
+              row.selected_index === null ||
+              row.selected_index === undefined
+            ) {
               empty++;
             } else if (
-              selected === correctIndex
+              Number(row.selected_index) ===
+              Number(row.correct_index_snapshot)
             ) {
               correct++;
             } else {
               wrong++;
             }
-
-
-            sheet.push({
-              number:
-                Number(q.question_order) + 1,
-
-              question:
-                q.question_text_snapshot,
-
-              selected,
-
-              correct:
-                correctIndex,
-
-              elapsedSeconds:
-                q.elapsed_seconds === null
-                  ? null
-                  : Number(
-                      q.elapsed_seconds
-                    ),
-
-              options: [
-                q.option_a_snapshot,
-                q.option_b_snapshot,
-                q.option_c_snapshot,
-                q.option_d_snapshot
-              ]
-            });
           }
 
-
           const total =
-            savedRows.length;
-
+            rows.results.length;
 
           const score =
             calculateScore20(
@@ -1094,21 +1054,20 @@ export default {
               total
             );
 
-
           const finishedAt =
             new Date().toISOString();
 
-
-          await env.DB.prepare(`
-            UPDATE attempts
-            SET
-              finished_at = ?,
-              score = ?,
-              correct_count = ?,
-              wrong_count = ?,
-              empty_count = ?
-            WHERE id = ?
-          `)
+          await env.DB
+            .prepare(`
+              UPDATE attempts
+              SET
+                finished_at = ?,
+                score = ?,
+                correct_count = ?,
+                wrong_count = ?,
+                empty_count = ?
+              WHERE id = ?
+            `)
             .bind(
               finishedAt,
               score,
@@ -1119,178 +1078,135 @@ export default {
             )
             .run();
 
-
-          return json({
-            ok: true,
-
-            result: {
-              total,
-              correct,
-              wrong,
-              empty,
-              score,
-              startedAt: attempt.started_at,
-              finishedAt: finishedAt
-            },
-
-            sheet
-          });
+          return json(
+            await buildResult(
+              env,
+              attemptId
+            ),
+            200,
+            cors
+          );
         }
 
-
-        return await buildLegacyResult(
-          env,
-          attempt
+        return json(
+          await buildLegacyResult(
+            env,
+            attemptId
+          ),
+          200,
+          cors
         );
       }
 
 
-      // =====================================================
-      // پنل معلم - لیست دانش‌آموزان
-      // =====================================================
+      // =========================================================
+      // GET /api/teacher/students
+      // =========================================================
       if (
         request.method === "GET" &&
         url.pathname === "/api/teacher/students"
       ) {
 
-        const examId = Number(
-          url.searchParams.get("examId") || 1
-        );
+        const examId =
+          Number(
+            url.searchParams.get("examId") || 1
+          );
 
-        if (!examId) {
-          return json({
-            ok: false,
-            error: "شناسه آزمون نامعتبر است."
-          }, 400);
-        }
+        const result =
+          await env.DB
+            .prepare(`
+              SELECT
+                o.id AS order_id,
+                o.exam_id,
+                o.name,
+                o.phone,
+                o.amount,
+                o.status AS payment_status,
+                o.created_at,
+                o.paid_at,
 
+                a.id AS attempt_id,
+                a.started_at,
+                a.finished_at,
 
-        const rows = await env.DB.prepare(`
-          SELECT
-            o.id AS order_id,
-            o.exam_id,
-            o.name,
-            o.phone,
-            o.amount,
-            o.status AS payment_status,
-            o.created_at,
-            o.paid_at,
+                (
+                  SELECT COUNT(*)
+                  FROM attempt_questions aq
+                  WHERE aq.attempt_id = a.id
+                    AND aq.is_correct = 1
+                ) AS correct_count,
 
-            a.id AS attempt_id,
-            a.started_at,
-            a.finished_at,
-            a.score,
-            a.correct_count,
-            a.wrong_count,
-            a.empty_count
+                (
+                  SELECT COUNT(*)
+                  FROM attempt_questions aq
+                  WHERE aq.attempt_id = a.id
+                    AND aq.is_correct = 0
+                ) AS wrong_count,
 
-          FROM orders o
+                (
+                  SELECT COUNT(*)
+                  FROM attempt_questions aq
+                  WHERE aq.attempt_id = a.id
+                    AND aq.selected_index IS NULL
+                ) AS empty_count
 
-          LEFT JOIN attempts a
-            ON a.id = (
-              SELECT a2.id
-              FROM attempts a2
-              WHERE a2.order_id = o.id
-              ORDER BY a2.started_at DESC
-              LIMIT 1
-            )
+              FROM orders o
 
-          WHERE o.exam_id = ?
+              LEFT JOIN attempts a
+                ON a.id = (
+                  SELECT a2.id
+                  FROM attempts a2
+                  WHERE a2.order_id = o.id
+                  ORDER BY a2.started_at DESC
+                  LIMIT 1
+                )
 
-          ORDER BY
-            CASE
-              WHEN o.paid_at IS NULL THEN o.created_at
-              ELSE o.paid_at
-            END DESC
-        `)
-          .bind(examId)
-          .all();
+              WHERE o.exam_id = ?
 
+              ORDER BY o.created_at DESC
+            `)
+            .bind(examId)
+            .all();
 
         const students =
-          (rows.results || []).map(row => {
+          (result.results || []).map(row => {
 
-            let status = "unpaid";
-
+            let status;
 
             if (row.payment_status !== "paid") {
-
               status = "unpaid";
-
             } else if (!row.attempt_id) {
-
               status = "paid_not_started";
-
-            } else if (
-              row.attempt_id &&
-              !row.finished_at
-            ) {
-
+            } else if (!row.finished_at) {
               status = "in_progress";
-
-            } else if (
-              row.attempt_id &&
-              row.finished_at
-            ) {
-
+            } else {
               status = "finished";
             }
 
+            const correct =
+              Number(row.correct_count || 0);
 
-            let calculatedScore = null;
+            const wrong =
+              Number(row.wrong_count || 0);
 
-            if (
-              row.correct_count !== null &&
-              row.correct_count !== undefined
-            ) {
+            const empty =
+              Number(row.empty_count || 0);
 
-              const correct =
-                Number(
-                  row.correct_count || 0
-                );
+            const total =
+              correct + wrong + empty;
 
-              const wrong =
-                Number(
-                  row.wrong_count || 0
-                );
-
-              const empty =
-                Number(
-                  row.empty_count || 0
-                );
-
-              const total =
-                correct +
-                wrong +
-                empty;
-
-              calculatedScore =
-                calculateScore20(
-                  correct,
-                  total
-                );
-            }
-
+            const score =
+              total > 0
+                ? calculateScore20(correct, total)
+                : null;
 
             return {
-
-              orderId:
-                row.order_id,
-
-              attemptId:
-                row.attempt_id || null,
-
-              examId:
-                Number(row.exam_id),
-
-              name:
-                row.name,
-
-              phone:
-                row.phone,
-
-              amount:
-                Number(row.amount || 0),
+              orderId: row.order_id,
+              attemptId: row.attempt_id || null,
+              examId: row.exam_id,
+              name: row.name,
+              phone: row.phone,
+              amount: row.amount,
 
               paymentStatus:
                 row.payment_status,
@@ -1301,7 +1217,7 @@ export default {
                 row.created_at,
 
               paidAt:
-                row.paid_at || null,
+                row.paid_at,
 
               startedAt:
                 row.started_at || null,
@@ -1309,41 +1225,29 @@ export default {
               finishedAt:
                 row.finished_at || null,
 
-              score:
-                calculatedScore,
+              score,
 
-              correct:
-                row.correct_count === null ||
-                row.correct_count === undefined
-                  ? null
-                  : Number(row.correct_count),
-
-              wrong:
-                row.wrong_count === null ||
-                row.wrong_count === undefined
-                  ? null
-                  : Number(row.wrong_count),
-
-              empty:
-                row.empty_count === null ||
-                row.empty_count === undefined
-                  ? null
-                  : Number(row.empty_count)
+              correct,
+              wrong,
+              empty,
             };
           });
 
-
-        return json({
-          ok: true,
-          examId,
-          students
-        });
+        return json(
+          {
+            ok: true,
+            examId,
+            students,
+          },
+          200,
+          cors
+        );
       }
 
 
-      // =====================================================
-      // پنل معلم - جزئیات کامل یک آزمون
-      // =====================================================
+      // =========================================================
+      // GET /api/teacher/attempt
+      // =========================================================
       if (
         request.method === "GET" &&
         url.pathname === "/api/teacher/attempt"
@@ -1355,147 +1259,102 @@ export default {
           ).trim();
 
         if (!attemptId) {
-          return json({
-            ok: false,
-            error: "شناسه آزمون ارسال نشده است."
-          }, 400);
+          return json(
+            {
+              ok: false,
+              error: "attemptId الزامی است",
+            },
+            400,
+            cors
+          );
         }
 
+        const data =
+          await env.DB
+            .prepare(`
+              SELECT
+                a.id AS attempt_id,
+                a.order_id,
+                a.started_at,
+                a.finished_at,
 
-        const attempt =
-          await env.DB.prepare(`
-            SELECT
-              a.id AS attempt_id,
-              a.order_id,
-              a.started_at,
-              a.finished_at,
-              a.score,
-              a.correct_count,
-              a.wrong_count,
-              a.empty_count,
+                o.exam_id,
+                o.name,
+                o.phone,
+                o.amount,
+                o.status AS payment_status,
+                o.created_at,
+                o.paid_at
 
-              o.exam_id,
-              o.name,
-              o.phone,
-              o.amount,
-              o.status AS payment_status,
-              o.created_at AS order_created_at,
-              o.paid_at
+              FROM attempts a
+              JOIN orders o
+                ON o.id = a.order_id
 
-            FROM attempts a
-
-            JOIN orders o
-              ON o.id = a.order_id
-
-            WHERE a.id = ?
-
-            LIMIT 1
-          `)
+              WHERE a.id = ?
+            `)
             .bind(attemptId)
             .first();
 
-
-        if (!attempt) {
-          return json({
-            ok: false,
-            error: "آزمون پیدا نشد."
-          }, 404);
+        if (!data) {
+          return json(
+            {
+              ok: false,
+              error: "آزمون پیدا نشد",
+            },
+            404,
+            cors
+          );
         }
 
-
-        const questions =
-          await env.DB.prepare(`
-            SELECT
-              id,
-              question_id,
-              question_order,
-
-              question_text_snapshot,
-
-              option_a_snapshot,
-              option_b_snapshot,
-              option_c_snapshot,
-              option_d_snapshot,
-
-              correct_index_snapshot,
-              duration_seconds_snapshot,
-
-              selected_index,
-              started_at,
-              answered_at,
-              elapsed_seconds,
-              is_correct
-
-            FROM attempt_questions
-
-            WHERE attempt_id = ?
-
-            ORDER BY question_order ASC
-          `)
+        const rows =
+          await env.DB
+            .prepare(`
+              SELECT *
+              FROM attempt_questions
+              WHERE attempt_id = ?
+              ORDER BY question_order
+            `)
             .bind(attemptId)
             .all();
 
+        const questions =
+          (rows.results || []).map(row => {
 
-        const questionRows =
-          questions.results || [];
+            let result = "empty";
 
-
-        const questionDetails =
-          questionRows.map(q => {
-
-            const selected =
-              q.selected_index === null ||
-              q.selected_index === undefined
-                ? null
-                : Number(
-                    q.selected_index
-                  );
-
-
-            const correct =
-              Number(
-                q.correct_index_snapshot
-              );
-
-
-            let result = "unanswered";
-
-
-            if (selected !== null) {
-
-              if (
-                selected === correct
-              ) {
-                result = "correct";
-              } else {
-                result = "wrong";
-              }
+            if (
+              row.selected_index !== null &&
+              row.selected_index !== undefined
+            ) {
+              result =
+                Number(row.selected_index) ===
+                Number(row.correct_index_snapshot)
+                  ? "correct"
+                  : "wrong";
             }
 
-
             return {
-
               number:
-                Number(q.question_order) + 1,
+                Number(row.question_order) + 1,
 
               questionId:
-                q.question_id,
+                row.question_id,
 
               question:
-                q.question_text_snapshot,
+                row.question_text_snapshot,
 
               options: [
-                q.option_a_snapshot,
-                q.option_b_snapshot,
-                q.option_c_snapshot,
-                q.option_d_snapshot
+                row.option_a_snapshot,
+                row.option_b_snapshot,
+                row.option_c_snapshot,
+                row.option_d_snapshot,
               ],
 
               selectedIndex:
-                selected,
+                row.selected_index,
 
               correctIndex:
-                correct,
+                row.correct_index_snapshot,
 
               result,
 
@@ -1503,140 +1362,93 @@ export default {
                 result === "correct",
 
               durationSeconds:
-                Number(
-                  q.duration_seconds_snapshot || 30
-                ),
+                row.duration_seconds_snapshot,
 
               startedAt:
-                q.started_at || null,
+                row.started_at || null,
 
               answeredAt:
-                q.answered_at || null,
+                row.answered_at || null,
 
               elapsedSeconds:
-                q.elapsed_seconds === null ||
-                q.elapsed_seconds === undefined
+                row.elapsed_seconds === null ||
+                row.elapsed_seconds === undefined
                   ? null
-                  : Number(
-                      q.elapsed_seconds
-                    )
+                  : Number(row.elapsed_seconds),
             };
           });
 
+        const correct =
+          questions.filter(
+            q => q.result === "correct"
+          ).length;
 
-        let correctCount = 0;
-        let wrongCount = 0;
-        let emptyCount = 0;
+        const wrong =
+          questions.filter(
+            q => q.result === "wrong"
+          ).length;
 
-
-        for (
-          const q of questionDetails
-        ) {
-
-          if (
-            q.result === "correct"
-          ) {
-
-            correctCount++;
-
-          } else if (
-            q.result === "wrong"
-          ) {
-
-            wrongCount++;
-
-          } else {
-
-            emptyCount++;
-          }
-        }
-
+        const empty =
+          questions.filter(
+            q => q.result === "empty"
+          ).length;
 
         const total =
-          questionDetails.length;
+          questions.length;
 
-
-        const calculatedScore =
+        const score =
           total > 0
-            ? calculateScore20(
-                correctCount,
-                total
-              )
+            ? calculateScore20(correct, total)
             : 0;
 
+        return json(
+          {
+            ok: true,
 
-        return json({
+            student: {
+              name: data.name,
+              phone: data.phone,
+            },
 
-          ok: true,
+            payment: {
+              amount: data.amount,
+              status: data.payment_status,
+              createdAt: data.created_at,
+              paidAt: data.paid_at,
+            },
 
-          student: {
-            name:
-              attempt.name,
+            attempt: {
+              id: data.attempt_id,
+              orderId: data.order_id,
+              examId: data.exam_id,
 
-            phone:
-              attempt.phone
+              startedAt:
+                data.started_at,
+
+              finishedAt:
+                data.finished_at,
+
+              score,
+
+              correct,
+              wrong,
+              empty,
+
+              total,
+            },
+
+            questions,
           },
-
-          payment: {
-
-            amount:
-              Number(
-                attempt.amount || 0
-              ),
-
-            status:
-              attempt.payment_status,
-
-            createdAt:
-              attempt.order_created_at,
-
-            paidAt:
-              attempt.paid_at || null
-          },
-
-          attempt: {
-
-            id:
-              attempt.attempt_id,
-
-            orderId:
-              attempt.order_id,
-
-            examId:
-              Number(
-                attempt.exam_id
-              ),
-
-            startedAt:
-              attempt.started_at,
-
-            finishedAt:
-              attempt.finished_at,
-
-            score:
-              calculatedScore,
-
-            correct:
-              correctCount,
-
-            wrong:
-              wrongCount,
-
-            empty:
-              emptyCount,
-
-            total
-          },
-
-          questions:
-            questionDetails
-        });
+          200,
+          cors
+        );
       }
 
 
-      // =====================================================
+      // =========================================================
+      // DELETE /api/teacher/student
       // حذف یک دانش‌آموز
-      // =====================================================
+      // =========================================================
       if (
         request.method === "DELETE" &&
         url.pathname === "/api/teacher/student"
@@ -1647,136 +1459,153 @@ export default {
             url.searchParams.get("orderId") || ""
           ).trim();
 
-
-        const examId =
-          Number(
-            url.searchParams.get("examId") || 0
-          );
-
-
         if (!orderId) {
-          return json({
-            ok: false,
-            error: "شناسه دانش‌آموز ارسال نشده است."
-          }, 400);
+          return json(
+            {
+              ok: false,
+              error: "orderId الزامی است",
+            },
+            400,
+            cors
+          );
         }
 
-
-        if (!examId) {
-          return json({
-            ok: false,
-            error: "شناسه آزمون نامعتبر است."
-          }, 400);
-        }
-
-
-        // -----------------------------------------------
-        // بررسی سفارش
-        // -----------------------------------------------
         const order =
-          await env.DB.prepare(`
-            SELECT
-              id,
-              exam_id,
-              name,
-              phone
-            FROM orders
-            WHERE id = ?
-              AND exam_id = ?
-            LIMIT 1
-          `)
-            .bind(
-              orderId,
-              examId
-            )
+          await env.DB
+            .prepare(`
+              SELECT
+                id,
+                exam_id,
+                name,
+                phone
+              FROM orders
+              WHERE id = ?
+            `)
+            .bind(orderId)
             .first();
 
-
         if (!order) {
-          return json({
-            ok: false,
-            error: "دانش‌آموز پیدا نشد."
-          }, 404);
+          return json(
+            {
+              ok: false,
+              error: "دانش‌آموز پیدا نشد",
+            },
+            404,
+            cors
+          );
         }
 
-
-        // -----------------------------------------------
-        // پیدا کردن تمام Attemptهای سفارش
-        // -----------------------------------------------
-        const attempts =
-          await env.DB.prepare(`
-            SELECT id
-            FROM attempts
-            WHERE order_id = ?
-          `)
+        const attemptCount =
+          await env.DB
+            .prepare(`
+              SELECT COUNT(*) AS count
+              FROM attempts
+              WHERE order_id = ?
+            `)
             .bind(orderId)
-            .all();
+            .first();
 
+        const attemptQuestionsCount =
+          await env.DB
+            .prepare(`
+              SELECT COUNT(*) AS count
+              FROM attempt_questions aq
+              JOIN attempts a
+                ON a.id = aq.attempt_id
+              WHERE a.order_id = ?
+            `)
+            .bind(orderId)
+            .first();
 
-        const attemptRows =
-          attempts.results || [];
+        const attemptAnswersCount =
+          await env.DB
+            .prepare(`
+              SELECT COUNT(*) AS count
+              FROM attempt_answers aa
+              JOIN attempts a
+                ON a.id = aa.attempt_id
+              WHERE a.order_id = ?
+            `)
+            .bind(orderId)
+            .first();
 
+        await env.DB.batch([
 
-        // -----------------------------------------------
-        // حذف اطلاعات مربوط به Attemptها
-        // -----------------------------------------------
-        for (const attempt of attemptRows) {
+          env.DB
+            .prepare(`
+              DELETE FROM attempt_answers
+              WHERE attempt_id IN (
+                SELECT id
+                FROM attempts
+                WHERE order_id = ?
+              )
+            `)
+            .bind(orderId),
 
-          await env.DB.prepare(`
-            DELETE FROM attempt_answers
-            WHERE attempt_id = ?
-          `)
-            .bind(attempt.id)
-            .run();
+          env.DB
+            .prepare(`
+              DELETE FROM attempt_questions
+              WHERE attempt_id IN (
+                SELECT id
+                FROM attempts
+                WHERE order_id = ?
+              )
+            `)
+            .bind(orderId),
 
+          env.DB
+            .prepare(`
+              DELETE FROM attempts
+              WHERE order_id = ?
+            `)
+            .bind(orderId),
 
-          await env.DB.prepare(`
-            DELETE FROM attempt_questions
-            WHERE attempt_id = ?
-          `)
-            .bind(attempt.id)
-            .run();
+          env.DB
+            .prepare(`
+              DELETE FROM orders
+              WHERE id = ?
+            `)
+            .bind(orderId),
+        ]);
 
+        return json(
+          {
+            ok: true,
 
-          await env.DB.prepare(`
-            DELETE FROM attempts
-            WHERE id = ?
-          `)
-            .bind(attempt.id)
-            .run();
-        }
+            message:
+              "دانش‌آموز و تمام اطلاعات آزمون او حذف شد",
 
+            student: {
+              orderId: order.id,
+              examId: order.exam_id,
+              name: order.name,
+              phone: order.phone,
+            },
 
-        // -----------------------------------------------
-        // حذف سفارش
-        // -----------------------------------------------
-        await env.DB.prepare(`
-          DELETE FROM orders
-          WHERE id = ?
-            AND exam_id = ?
-        `)
-          .bind(
-            orderId,
-            examId
-          )
-          .run();
-
-
-        return json({
-          ok: true,
-          deleted: true,
-          orderId,
-          examId,
-          name: order.name,
-          phone: order.phone,
-          message: "اطلاعات دانش‌آموز با موفقیت حذف شد."
-        });
+            deleted: {
+              orders: 1,
+              attempts:
+                Number(attemptCount?.count || 0),
+              attemptQuestions:
+                Number(
+                  attemptQuestionsCount?.count || 0
+                ),
+              attemptAnswers:
+                Number(
+                  attemptAnswersCount?.count || 0
+                ),
+            },
+          },
+          200,
+          cors
+        );
       }
 
 
-      // =====================================================
+      // =========================================================
+      // DELETE /api/teacher/students
       // حذف تمام دانش‌آموزان یک آزمون
-      // =====================================================
+      // =========================================================
       if (
         request.method === "DELETE" &&
         url.pathname === "/api/teacher/students"
@@ -1784,231 +1613,289 @@ export default {
 
         const examId =
           Number(
-            url.searchParams.get("examId") || 0
+            url.searchParams.get("examId") || 1
           );
 
-
-        if (!examId) {
-          return json({
-            ok: false,
-            error: "شناسه آزمون نامعتبر است."
-          }, 400);
+        if (!Number.isInteger(examId) || examId <= 0) {
+          return json(
+            {
+              ok: false,
+              error: "examId نامعتبر است",
+            },
+            400,
+            cors
+          );
         }
 
-
-        // -----------------------------------------------
-        // پیدا کردن سفارش‌های آزمون
-        // -----------------------------------------------
-        const orders =
-          await env.DB.prepare(`
-            SELECT id
-            FROM orders
-            WHERE exam_id = ?
-          `)
+        const orderCount =
+          await env.DB
+            .prepare(`
+              SELECT COUNT(*) AS count
+              FROM orders
+              WHERE exam_id = ?
+            `)
             .bind(examId)
-            .all();
+            .first();
 
-
-        const orderRows =
-          orders.results || [];
-
-
-        let deletedOrders = 0;
-        let deletedAttempts = 0;
-
-
-        // -----------------------------------------------
-        // حذف تمام اطلاعات وابسته
-        // -----------------------------------------------
-        for (const order of orderRows) {
-
-          const attempts =
-            await env.DB.prepare(`
-              SELECT id
-              FROM attempts
-              WHERE order_id = ?
+        const attemptCount =
+          await env.DB
+            .prepare(`
+              SELECT COUNT(*) AS count
+              FROM attempts a
+              JOIN orders o
+                ON o.id = a.order_id
+              WHERE o.exam_id = ?
             `)
-              .bind(order.id)
-              .all();
+            .bind(examId)
+            .first();
 
+        const attemptQuestionsCount =
+          await env.DB
+            .prepare(`
+              SELECT COUNT(*) AS count
+              FROM attempt_questions aq
+              JOIN attempts a
+                ON a.id = aq.attempt_id
+              JOIN orders o
+                ON o.id = a.order_id
+              WHERE o.exam_id = ?
+            `)
+            .bind(examId)
+            .first();
 
-          const attemptRows =
-            attempts.results || [];
+        const attemptAnswersCount =
+          await env.DB
+            .prepare(`
+              SELECT COUNT(*) AS count
+              FROM attempt_answers aa
+              JOIN attempts a
+                ON a.id = aa.attempt_id
+              JOIN orders o
+                ON o.id = a.order_id
+              WHERE o.exam_id = ?
+            `)
+            .bind(examId)
+            .first();
 
+        await env.DB.batch([
 
-          for (const attempt of attemptRows) {
-
-            await env.DB.prepare(`
+          env.DB
+            .prepare(`
               DELETE FROM attempt_answers
-              WHERE attempt_id = ?
+              WHERE attempt_id IN (
+                SELECT a.id
+                FROM attempts a
+                JOIN orders o
+                  ON o.id = a.order_id
+                WHERE o.exam_id = ?
+              )
             `)
-              .bind(attempt.id)
-              .run();
+            .bind(examId),
 
-
-            await env.DB.prepare(`
+          env.DB
+            .prepare(`
               DELETE FROM attempt_questions
-              WHERE attempt_id = ?
+              WHERE attempt_id IN (
+                SELECT a.id
+                FROM attempts a
+                JOIN orders o
+                  ON o.id = a.order_id
+                WHERE o.exam_id = ?
+              )
             `)
-              .bind(attempt.id)
-              .run();
+            .bind(examId),
 
-
-            await env.DB.prepare(`
+          env.DB
+            .prepare(`
               DELETE FROM attempts
-              WHERE id = ?
+              WHERE order_id IN (
+                SELECT id
+                FROM orders
+                WHERE exam_id = ?
+              )
             `)
-              .bind(attempt.id)
-              .run();
+            .bind(examId),
 
+          env.DB
+            .prepare(`
+              DELETE FROM orders
+              WHERE exam_id = ?
+            `)
+            .bind(examId),
+        ]);
 
-            deletedAttempts++;
-          }
+        return json(
+          {
+            ok: true,
 
+            message:
+              "تمام دانش‌آموزان و اطلاعات آزمون آنها حذف شدند",
 
-          await env.DB.prepare(`
-            DELETE FROM orders
-            WHERE id = ?
-              AND exam_id = ?
-          `)
-            .bind(
-              order.id,
-              examId
-            )
-            .run();
+            examId,
 
+            deleted: {
+              orders:
+                Number(orderCount?.count || 0),
 
-          deletedOrders++;
-        }
+              attempts:
+                Number(attemptCount?.count || 0),
 
+              attemptQuestions:
+                Number(
+                  attemptQuestionsCount?.count || 0
+                ),
 
-        return json({
-          ok: true,
-          deleted: true,
-          examId,
-          deletedOrders,
-          deletedAttempts,
-          message:
-            "تمام اطلاعات شرکت‌کنندگان این آزمون حذف شد."
-        });
+              attemptAnswers:
+                Number(
+                  attemptAnswersCount?.count || 0
+                ),
+            },
+          },
+          200,
+          cors
+        );
       }
 
 
-      // =====================================================
-      // فایل‌های سایت
-      // =====================================================
-      if (!url.pathname.startsWith("/api/")) {
+      // =========================================================
+      // Static files
+      // =========================================================
+      if (env.ASSETS) {
         return env.ASSETS.fetch(request);
       }
 
-
-      return json({
-        ok: false,
-        error: "مسیر درخواست پیدا نشد."
-      }, 404);
-
+      return json(
+        {
+          ok: false,
+          error: "مسیر پیدا نشد",
+        },
+        404,
+        cors
+      );
 
     } catch (error) {
 
       console.error(error);
 
-      return json({
-        ok: false,
-        error: "خطای داخلی سرور.",
-        detail:
-          error?.message ||
-          String(error)
-      }, 500);
+      return json(
+        {
+          ok: false,
+          error:
+            error?.message ||
+            "خطای داخلی سرور",
+        },
+        500,
+        cors
+      );
     }
-  }
+  },
 };
 
 
-// =====================================================
-// انتخاب سؤال برای آزمون
-// =====================================================
+// =============================================================
+// انتخاب سوالات آزمون
+// =============================================================
+async function selectQuestionsForExam(env, examId) {
 
-async function selectQuestionsForExam(
-  env,
-  examId
-) {
-
-  const rules =
-    await env.DB.prepare(`
-      SELECT
-        r.id,
-        r.folder_id,
-        r.selection_count,
-        r.selection_mode,
-        f.name AS folder_name
-      FROM exam_folder_rules r
-      JOIN question_folders f
-        ON f.id = r.folder_id
-      WHERE r.exam_id = ?
-        AND f.active = 1
-        AND r.selection_count > 0
-      ORDER BY r.id
-    `)
+  const rulesResult =
+    await env.DB
+      .prepare(`
+        SELECT
+          efr.folder_id,
+          efr.selection_count,
+          efr.selection_mode
+        FROM exam_folder_rules efr
+        JOIN question_folders f
+          ON f.id = efr.folder_id
+        WHERE efr.exam_id = ?
+          AND f.active = 1
+        ORDER BY efr.id
+      `)
       .bind(examId)
       .all();
 
-  const ruleRows =
-    rules.results || [];
+  const rules =
+    rulesResult.results || [];
+
+  // -----------------------------------------------------------
+  // اگر قانون پوشه‌ای وجود نداشت → حالت قدیمی
+  // -----------------------------------------------------------
+  if (!rules.length) {
+
+    const result =
+      await env.DB
+        .prepare(`
+          SELECT *
+          FROM questions
+          WHERE exam_id = ?
+            AND active = 1
+          ORDER BY id
+        `)
+        .bind(examId)
+        .all();
+
+    return result.results || [];
+  }
 
   const selected = [];
 
-
-  for (const rule of ruleRows) {
+  for (const rule of rules) {
 
     const count =
-      Number(
-        rule.selection_count || 0
-      );
-
+      Number(rule.selection_count || 0);
 
     if (count <= 0) {
       continue;
     }
 
-
-    const mode =
-      String(
-        rule.selection_mode ||
-        "random"
-      ).toLowerCase();
-
-
     let rows = [];
 
+    // ---------------------------------------------------------
+    // manual
+    // ---------------------------------------------------------
+    if (rule.selection_mode === "manual") {
 
-    // ===================================================
-    // حالت دستی
-    // ===================================================
-    if (mode === "manual") {
+      const result =
+        await env.DB
+          .prepare(`
+            SELECT q.*
+            FROM exam_manual_questions emq
+            JOIN questions q
+              ON q.id = emq.question_id
+            WHERE emq.exam_id = ?
+              AND q.exam_id = ?
+              AND q.folder_id = ?
+              AND q.active = 1
+            ORDER BY emq.sort_order, q.id
+            LIMIT ?
+          `)
+          .bind(
+            examId,
+            examId,
+            rule.folder_id,
+            count
+          )
+          .all();
 
-      const manual =
-        await env.DB.prepare(`
-          SELECT
-            q.id,
-            q.question_text,
-            q.option_a,
-            q.option_b,
-            q.option_c,
-            q.option_d,
-            q.correct_index,
-            q.duration_seconds
-          FROM exam_manual_questions m
-          JOIN questions q
-            ON q.id = m.question_id
-          WHERE m.exam_id = ?
-            AND q.folder_id = ?
-            AND (
-              q.active IS NULL
-              OR q.active = 1
-            )
-          ORDER BY m.sort_order, q.id
-          LIMIT ?
-        `)
+      rows =
+        result.results || [];
+
+    } else {
+
+      // -------------------------------------------------------
+      // random
+      // -------------------------------------------------------
+      const result =
+        await env.DB
+          .prepare(`
+            SELECT *
+            FROM questions
+            WHERE exam_id = ?
+              AND folder_id = ?
+              AND active = 1
+            ORDER BY RANDOM()
+            LIMIT ?
+          `)
           .bind(
             examId,
             rule.folder_id,
@@ -2016,347 +1903,230 @@ async function selectQuestionsForExam(
           )
           .all();
 
-
       rows =
-        manual.results || [];
-
-    } else {
-
-      // =================================================
-      // حالت تصادفی
-      // =================================================
-      const random =
-        await env.DB.prepare(`
-          SELECT
-            id,
-            question_text,
-            option_a,
-            option_b,
-            option_c,
-            option_d,
-            correct_index,
-            duration_seconds
-          FROM questions
-          WHERE folder_id = ?
-            AND (
-              active IS NULL
-              OR active = 1
-            )
-          ORDER BY RANDOM()
-          LIMIT ?
-        `)
-          .bind(
-            rule.folder_id,
-            count
-          )
-          .all();
-
-
-      rows =
-        random.results || [];
+        result.results || [];
     }
 
-
     if (rows.length < count) {
+
       throw new Error(
-        `در ${rule.folder_name} فقط ${rows.length} سؤال موجود است ولی ${count} سؤال لازم است.`
+        `در پوشه ${rule.folder_id} به تعداد ${count} سوال فعال وجود ندارد`
       );
     }
 
-
     selected.push(...rows);
   }
-
-
-  // =====================================================
-  // اگر هیچ Rule ثبت نشده بود
-  // =====================================================
-  if (selected.length === 0) {
-
-    const legacy =
-      await env.DB.prepare(`
-        SELECT
-          id,
-          question_text,
-          option_a,
-          option_b,
-          option_c,
-          option_d,
-          correct_index,
-          duration_seconds
-        FROM questions
-        WHERE exam_id = ?
-          AND (
-            active IS NULL
-            OR active = 1
-          )
-        ORDER BY id
-      `)
-        .bind(examId)
-        .all();
-
-
-    return legacy.results || [];
-  }
-
 
   return selected;
 }
 
 
-// =====================================================
-// سؤال عمومی Snapshot
-// =====================================================
+// =============================================================
+// سوال عمومی برای student
+// =============================================================
+function publicQuestion(q) {
 
-function publicSnapshotQuestion(q) {
+  if (!q) {
+    return null;
+  }
 
   return {
-    id:
-      q.question_id,
+    id: q.id,
 
-    question_text:
-      q.question_text_snapshot,
+    question:
+      q.question_text,
 
-    option_a:
-      q.option_a_snapshot,
+    options: [
+      q.option_a,
+      q.option_b,
+      q.option_c,
+      q.option_d,
+    ],
 
-    option_b:
-      q.option_b_snapshot,
-
-    option_c:
-      q.option_c_snapshot,
-
-    option_d:
-      q.option_d_snapshot,
-
-    duration_seconds:
-      Number(
-        q.duration_seconds_snapshot || 30
-      )
+    durationSeconds:
+      Number(q.duration_seconds || 30),
   };
 }
 
 
-// =====================================================
-// سؤال معمولی
-// =====================================================
+// =============================================================
+// سوال snapshot برای student
+// =============================================================
+function publicSnapshotQuestion(q) {
 
+  if (!q) {
+    return null;
+  }
+
+  return {
+    id: q.question_id,
+
+    question:
+      q.question_text_snapshot,
+
+    options: [
+      q.option_a_snapshot,
+      q.option_b_snapshot,
+      q.option_c_snapshot,
+      q.option_d_snapshot,
+    ],
+
+    durationSeconds:
+      Number(
+        q.duration_seconds_snapshot || 30
+      ),
+  };
+}
+
+
+// =============================================================
+// گرفتن سوال در حالت legacy
+// =============================================================
 async function getQuestion(
   env,
   examId,
   questionIndex
 ) {
 
-  return await env.DB.prepare(`
-    SELECT
-      id,
-      question_text,
-      option_a,
-      option_b,
-      option_c,
-      option_d,
-      duration_seconds,
-      correct_index
-    FROM questions
-    WHERE exam_id = ?
-    ORDER BY id
-    LIMIT 1 OFFSET ?
-  `)
-    .bind(
-      examId,
-      questionIndex
-    )
-    .first();
+  const questions =
+    await selectQuestionsForExam(
+      env,
+      examId
+    );
+
+  return (
+    questions[questionIndex] ||
+    null
+  );
 }
 
 
-// =====================================================
-// سؤال عمومی
-// =====================================================
-
-function publicQuestion(q) {
-
-  return {
-    id:
-      q.id,
-
-    question_text:
-      q.question_text,
-
-    option_a:
-      q.option_a,
-
-    option_b:
-      q.option_b,
-
-    option_c:
-      q.option_c,
-
-    option_d:
-      q.option_d,
-
-    duration_seconds:
-      Number(
-        q.duration_seconds || 30
-      )
-  };
-}
-
-
-// =====================================================
-// محاسبه نمره از ۲۰
-// =====================================================
-
+// =============================================================
+// محاسبه نمره از 20
+// =============================================================
 function calculateScore20(
   correct,
   total
 ) {
 
-  const c =
+  correct =
     Number(correct || 0);
 
-  const t =
+  total =
     Number(total || 0);
 
-  if (
-    t <= 0 ||
-    c <= 0
-  ) {
+  if (total <= 0) {
     return 0;
   }
 
-  return Number(
-    (
-      (c / t) *
-      20
-    ).toFixed(2)
-  );
+  const score =
+    (correct / total) * 20;
+
+  return Math.round(
+    score * 10
+  ) / 10;
 }
 
 
-// =====================================================
-// نتیجه آزمون Snapshot
-// =====================================================
-
+// =============================================================
+// ساخت نتیجه
+// =============================================================
 async function buildResult(
   env,
   attemptId
 ) {
 
   const attempt =
-    await env.DB.prepare(`
-      SELECT
-        a.id,
-        a.order_id,
-        a.started_at,
-        a.finished_at
-      FROM attempts a
-      WHERE a.id = ?
-    `)
+    await env.DB
+      .prepare(`
+        SELECT *
+        FROM attempts
+        WHERE id = ?
+      `)
       .bind(attemptId)
       .first();
 
-
   if (!attempt) {
-    return json({
-      ok: false,
-      error: "آزمون پیدا نشد."
-    }, 404);
+    throw new Error("آزمون پیدا نشد");
   }
 
-
-  const questions =
-    await env.DB.prepare(`
-      SELECT
-        question_order,
-        question_text_snapshot,
-        option_a_snapshot,
-        option_b_snapshot,
-        option_c_snapshot,
-        option_d_snapshot,
-        correct_index_snapshot,
-        selected_index,
-        elapsed_seconds
-      FROM attempt_questions
-      WHERE attempt_id = ?
-      ORDER BY question_order
-    `)
+  const rows =
+    await env.DB
+      .prepare(`
+        SELECT *
+        FROM attempt_questions
+        WHERE attempt_id = ?
+        ORDER BY question_order
+      `)
       .bind(attemptId)
       .all();
 
-
-  const rows =
-    questions.results || [];
-
+  const questions =
+    rows.results || [];
 
   let correct = 0;
   let wrong = 0;
   let empty = 0;
 
+  const sheet =
+    questions.map(row => {
 
-  const sheet = [];
+      let result =
+        "empty";
 
+      if (
+        row.selected_index !== null &&
+        row.selected_index !== undefined
+      ) {
 
-  for (const q of rows) {
+        if (
+          Number(row.selected_index) ===
+          Number(row.correct_index_snapshot)
+        ) {
 
-    const selected =
-      q.selected_index === null ||
-      q.selected_index === undefined
-        ? null
-        : Number(
-            q.selected_index
-          );
+          correct++;
+          result = "correct";
 
+        } else {
 
-    const correctIndex =
-      Number(
-        q.correct_index_snapshot
-      );
+          wrong++;
+          result = "wrong";
+        }
 
+      } else {
 
-    if (selected === null) {
-      empty++;
-    } else if (
-      selected === correctIndex
-    ) {
-      correct++;
-    } else {
-      wrong++;
-    }
+        empty++;
+      }
 
+      return {
+        number:
+          Number(row.question_order) + 1,
 
-    sheet.push({
-      number:
-        Number(q.question_order) + 1,
+        question:
+          row.question_text_snapshot,
 
-      question:
-        q.question_text_snapshot,
+        options: [
+          row.option_a_snapshot,
+          row.option_b_snapshot,
+          row.option_c_snapshot,
+          row.option_d_snapshot,
+        ],
 
-      selected,
+        selectedIndex:
+          row.selected_index,
 
-      correct:
-        correctIndex,
+        correctIndex:
+          row.correct_index_snapshot,
 
-      elapsedSeconds:
-        q.elapsed_seconds === null
-          ? null
-          : Number(
-              q.elapsed_seconds
-            ),
+        result,
 
-      options: [
-        q.option_a_snapshot,
-        q.option_b_snapshot,
-        q.option_c_snapshot,
-        q.option_d_snapshot
-      ]
+        elapsedSeconds:
+          row.elapsed_seconds,
+      };
     });
-  }
-
 
   const total =
-    rows.length;
-
+    questions.length;
 
   const score =
     calculateScore20(
@@ -2364,323 +2134,246 @@ async function buildResult(
       total
     );
 
+  return {
+    ok: true,
 
-  if (
-    attempt.finished_at
-  ) {
+    attemptId,
 
-    await env.DB.prepare(`
+    score,
+
+    correct,
+
+    wrong,
+
+    empty,
+
+    total,
+
+    sheet,
+  };
+}
+
+
+// =============================================================
+// نتیجه legacy
+// =============================================================
+async function buildLegacyResult(
+  env,
+  attemptId
+) {
+
+  const attempt =
+    await env.DB
+      .prepare(`
+        SELECT
+          a.*,
+          o.exam_id
+        FROM attempts a
+        JOIN orders o
+          ON o.id = a.order_id
+        WHERE a.id = ?
+      `)
+      .bind(attemptId)
+      .first();
+
+  if (!attempt) {
+    throw new Error("آزمون پیدا نشد");
+  }
+
+  const questions =
+    await selectQuestionsForExam(
+      env,
+      attempt.exam_id
+    );
+
+  const answersResult =
+    await env.DB
+      .prepare(`
+        SELECT *
+        FROM attempt_answers
+        WHERE attempt_id = ?
+        ORDER BY question_index
+      `)
+      .bind(attemptId)
+      .all();
+
+  const answers =
+    answersResult.results || [];
+
+  const answerMap =
+    new Map();
+
+  for (const answer of answers) {
+
+    answerMap.set(
+      Number(answer.question_index),
+      answer.selected_index
+    );
+  }
+
+  let correct = 0;
+  let wrong = 0;
+  let empty = 0;
+
+  const sheet =
+    questions.map((q, index) => {
+
+      const selectedIndex =
+        answerMap.has(index)
+          ? answerMap.get(index)
+          : null;
+
+      let result =
+        "empty";
+
+      if (
+        selectedIndex === null ||
+        selectedIndex === undefined
+      ) {
+
+        empty++;
+
+      } else if (
+        Number(selectedIndex) ===
+        Number(q.correct_index)
+      ) {
+
+        correct++;
+        result = "correct";
+
+      } else {
+
+        wrong++;
+        result = "wrong";
+      }
+
+      return {
+        number: index + 1,
+
+        question:
+          q.question_text,
+
+        options: [
+          q.option_a,
+          q.option_b,
+          q.option_c,
+          q.option_d,
+        ],
+
+        selectedIndex,
+
+        correctIndex:
+          q.correct_index,
+
+        result,
+      };
+    });
+
+  const total =
+    questions.length;
+
+  const score =
+    calculateScore20(
+      correct,
+      total
+    );
+
+  await env.DB
+    .prepare(`
       UPDATE attempts
       SET
+        finished_at =
+          COALESCE(finished_at, ?),
         score = ?,
         correct_count = ?,
         wrong_count = ?,
         empty_count = ?
       WHERE id = ?
     `)
-      .bind(
-        score,
-        correct,
-        wrong,
-        empty,
-        attemptId
-      )
-      .run();
-  }
-
-
-  return json({
-    ok: true,
-
-    result: {
-      total,
-      correct,
-      wrong,
-      empty,
-      score,
-      startedAt: attempt.started_at,
-      finishedAt: attempt.finished_at
-    },
-
-    sheet
-  });
-}
-
-
-// =====================================================
-// نتیجه آزمون‌های قدیمی
-// =====================================================
-
-async function buildLegacyResult(
-  env,
-  attempt
-) {
-
-  const questions =
-    await env.DB.prepare(`
-      SELECT
-        id,
-        question_text,
-        option_a,
-        option_b,
-        option_c,
-        option_d,
-        correct_index
-      FROM questions
-      WHERE exam_id = ?
-      ORDER BY id
-    `)
-      .bind(attempt.exam_id)
-      .all();
-
-
-  const answers =
-    await env.DB.prepare(`
-      SELECT
-        question_index,
-        selected_index
-      FROM attempt_answers
-      WHERE attempt_id = ?
-      ORDER BY question_index
-    `)
-      .bind(attempt.id)
-      .all();
-
-
-  const rows =
-    questions.results || [];
-
-
-  const answerRows =
-    answers.results || [];
-
-
-  const answerMap = {};
-
-
-  for (const a of answerRows) {
-
-    answerMap[
-      Number(a.question_index)
-    ] =
-      a.selected_index === null
-        ? null
-        : Number(
-            a.selected_index
-          );
-  }
-
-
-  let correct = 0;
-  let wrong = 0;
-  let empty = 0;
-
-
-  const sheet = [];
-
-
-  for (
-    let i = 0;
-    i < rows.length;
-    i++
-  ) {
-
-    const q = rows[i];
-
-
-    const selected =
-      Object.prototype.hasOwnProperty.call(
-        answerMap,
-        i
-      )
-        ? answerMap[i]
-        : null;
-
-
-    if (selected === null) {
-      empty++;
-    } else if (
-      selected === Number(q.correct_index)
-    ) {
-      correct++;
-    } else {
-      wrong++;
-    }
-
-
-    sheet.push({
-      number: i + 1,
-
-      question:
-        q.question_text,
-
-      selected,
-
-      correct:
-        Number(q.correct_index),
-
-      options: [
-        q.option_a,
-        q.option_b,
-        q.option_c,
-        q.option_d
-      ]
-    });
-  }
-
-
-  const total =
-    rows.length;
-
-
-  const score =
-    calculateScore20(
-      correct,
-      total
-    );
-
-
-  await env.DB.prepare(`
-    UPDATE attempts
-    SET
-      score = ?,
-      correct_count = ?,
-      wrong_count = ?,
-      empty_count = ?
-    WHERE id = ?
-  `)
     .bind(
+      new Date().toISOString(),
       score,
       correct,
       wrong,
       empty,
-      attempt.id
+      attemptId
     )
     .run();
 
-
-  return json({
+  return {
     ok: true,
 
-    result: {
-      total,
-      correct,
-      wrong,
-      empty,
-      score,
-      startedAt: attempt.started_at,
-      finishedAt: attempt.finished_at
-    },
+    attemptId,
 
-    sheet
-  });
-}
+    score,
 
+    correct,
 
-// =====================================================
-// CORS
-// =====================================================
+    wrong,
 
-function corsHeaders() {
+    empty,
 
-  return {
-    "Access-Control-Allow-Origin": "*",
+    total,
 
-    "Access-Control-Allow-Methods":
-      "GET, POST, DELETE, OPTIONS",
-
-    "Access-Control-Allow-Headers":
-      "Content-Type",
-
-    "Content-Type":
-      "application/json; charset=utf-8"
+    sheet,
   };
 }
 
 
-// =====================================================
-// JSON
-// =====================================================
-
+// =============================================================
+// JSON Response
+// =============================================================
 function json(
   data,
-  status = 200
+  status = 200,
+  cors = {}
 ) {
 
   return new Response(
     JSON.stringify(data),
     {
       status,
-      headers:
-        corsHeaders()
+
+      headers: {
+        "Content-Type":
+          "application/json; charset=UTF-8",
+
+        ...cors,
+      },
     }
   );
 }
 
 
-// =====================================================
-// تبدیل شماره موبایل
-// =====================================================
-
+// =============================================================
+// شماره موبایل
+// =============================================================
 function normalizePhone(value) {
 
   let phone =
-    String(value || "");
-
-  const persian =
-    "۰۱۲۳۴۵۶۷۸۹";
-
-  const arabic =
-    "٠١٢٣٤٥٦٧٨٩";
-
-
-  phone =
-    phone.replace(
-      /[۰-۹]/g,
-      d =>
-        String(
-          persian.indexOf(d)
-        )
-    );
-
-
-  phone =
-    phone.replace(
-      /[٠-٩]/g,
-      d =>
-        String(
-          arabic.indexOf(d)
-        )
-    );
-
-
-  phone =
-    phone.replace(
-      /\D/g,
-      ""
-    );
-
+    String(value || "")
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/-/g, "");
 
   if (
-    phone.startsWith("0098")
+    phone.startsWith("+98")
   ) {
+
     phone =
       "0" +
-      phone.substring(4);
+      phone.slice(3);
   }
-
 
   if (
-    phone.startsWith("98")
+    phone.startsWith("98") &&
+    phone.length === 12
   ) {
+
     phone =
       "0" +
-      phone.substring(2);
+      phone.slice(2);
   }
 
-
-  return phone.substring(
-    0,
-    11
-  );
+  return phone;
 }
