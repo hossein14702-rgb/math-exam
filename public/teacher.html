@@ -58,6 +58,11 @@ button {
     cursor: pointer;
 }
 
+button:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+}
+
 .refresh-btn {
     background: #2563eb;
     color: white;
@@ -298,7 +303,7 @@ button {
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1250px;
+    min-width: 1350px;
 }
 
 th {
@@ -326,6 +331,7 @@ tr:hover td {
     padding: 6px 10px;
     border-radius: 20px;
     font-size: 12px;
+    font-weight: bold;
 }
 
 .status-unpaid {
@@ -333,7 +339,32 @@ tr:hover td {
     color: #991b1b;
 }
 
-.status-paid {
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-payment-paid {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-payment-failed {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-payment-cancelled {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+.status-payment-demo {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.status-not-started {
     background: #fef3c7;
     color: #92400e;
 }
@@ -346,6 +377,11 @@ tr:hover td {
 .status-finished {
     background: #dcfce7;
     color: #166534;
+}
+
+.status-unknown {
+    background: #e5e7eb;
+    color: #4b5563;
 }
 
 .score {
@@ -579,10 +615,6 @@ tr:hover td {
 
 <div class="container">
 
-    <!-- =========================
-         هدر
-    ========================= -->
-
     <div class="header">
 
         <h1>پنل معلم</h1>
@@ -625,6 +657,7 @@ tr:hover td {
 
         <div class="settings-description">
             قیمت اصلی آزمون و شرایط تخفیف را از این بخش تنظیم کنید.
+            ساعت‌های واردشده بر اساس ساعت ایران هستند.
         </div>
 
 
@@ -692,7 +725,7 @@ tr:hover td {
                 class="form-group">
 
                 <label for="discountStart">
-                    شروع تخفیف
+                    شروع تخفیف — ساعت ایران
                 </label>
 
                 <input
@@ -707,7 +740,7 @@ tr:hover td {
                 class="form-group">
 
                 <label for="discountEnd">
-                    پایان تخفیف
+                    پایان تخفیف — ساعت ایران
                 </label>
 
                 <input
@@ -718,8 +751,6 @@ tr:hover td {
 
         </div>
 
-
-        <!-- پیش‌نمایش قیمت -->
 
         <div class="price-preview">
 
@@ -732,9 +763,7 @@ tr:hover td {
                 <div
                     id="previewBasePrice"
                     class="price-card-value">
-
                     —
-
                 </div>
 
             </div>
@@ -749,9 +778,7 @@ tr:hover td {
                 <div
                     id="previewFinalPrice"
                     class="price-card-value">
-
                     —
-
                 </div>
 
             </div>
@@ -874,9 +901,7 @@ tr:hover td {
         <div
             id="loading"
             class="loading">
-
             در حال دریافت اطلاعات...
-
         </div>
 
 
@@ -894,7 +919,8 @@ tr:hover td {
                     <th>مبلغ</th>
                     <th>ثبت سفارش</th>
                     <th>تاریخ پرداخت</th>
-                    <th>وضعیت</th>
+                    <th>وضعیت پرداخت</th>
+                    <th>وضعیت آزمون</th>
                     <th>شروع آزمون</th>
                     <th>پایان آزمون</th>
                     <th>نمره</th>
@@ -998,7 +1024,7 @@ function faNumber(value) {
 
 
 /* =========================
-   تاریخ
+   تاریخ — نمایش با ساعت ایران
 ========================= */
 
 function formatDate(value) {
@@ -1034,7 +1060,8 @@ function formatDate(value) {
 
 
 /* =========================
-   تبدیل ISO به datetime-local
+   ISO به datetime-local
+   با ساعت ثابت ایران
 ========================= */
 
 function isoToLocalInput(value) {
@@ -1051,25 +1078,63 @@ function isoToLocalInput(value) {
             return "";
         }
 
-        const pad = n =>
-            String(n).padStart(2, "0");
+        const parts =
+            new Intl.DateTimeFormat(
+                "en-US",
+                {
+                    timeZone: "Asia/Tehran",
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hourCycle: "h23"
+                }
+            ).formatToParts(date);
+
+
+        const getPart = type => {
+
+            const item =
+                parts.find(
+                    p => p.type === type
+                );
+
+            return item
+                ? item.value
+                : "";
+
+        };
+
 
         const year =
-            date.getFullYear();
+            getPart("year");
 
         const month =
-            pad(date.getMonth() + 1);
+            getPart("month");
 
         const day =
-            pad(date.getDate());
+            getPart("day");
 
-        const hours =
-            pad(date.getHours());
+        const hour =
+            getPart("hour");
 
-        const minutes =
-            pad(date.getMinutes());
+        const minute =
+            getPart("minute");
 
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
+
+        if (
+            !year ||
+            !month ||
+            !day ||
+            !hour ||
+            !minute
+        ) {
+            return "";
+        }
+
+
+        return `${year}-${month}-${day}T${hour}:${minute}`;
 
     } catch (e) {
 
@@ -1081,7 +1146,7 @@ function isoToLocalInput(value) {
 
 
 /* =========================
-   datetime-local به ISO
+   datetime-local ایران به UTC ISO
 ========================= */
 
 function localInputToISO(value) {
@@ -1090,13 +1155,73 @@ function localInputToISO(value) {
         return null;
     }
 
-    const date = new Date(value);
+    try {
 
-    if (isNaN(date.getTime())) {
+        const match =
+            value.match(
+                /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
+            );
+
+
+        if (!match) {
+            return null;
+        }
+
+
+        const year =
+            Number(match[1]);
+
+        const month =
+            Number(match[2]);
+
+        const day =
+            Number(match[3]);
+
+        const hour =
+            Number(match[4]);
+
+        const minute =
+            Number(match[5]);
+
+
+        /*
+         * ساعت ایران در بازه فعلی UTC+03:30 است.
+         * بنابراین برای تبدیل ساعت واردشده به UTC،
+         * ۳ ساعت و ۳۰ دقیقه کم می‌کنیم.
+         */
+
+        const utcMillis =
+            Date.UTC(
+                year,
+                month - 1,
+                day,
+                hour,
+                minute
+            ) -
+            (
+                3.5 *
+                60 *
+                60 *
+                1000
+            );
+
+
+        const date =
+            new Date(utcMillis);
+
+
+        if (isNaN(date.getTime())) {
+            return null;
+        }
+
+
+        return date.toISOString();
+
+    } catch (e) {
+
         return null;
-    }
 
-    return date.toISOString();
+    }
 
 }
 
@@ -1179,14 +1304,26 @@ function calculateDiscountPreview() {
 
     if (enabled) {
 
+        const startISO =
+            localInputToISO(
+                startValue
+            );
+
+        const endISO =
+            localInputToISO(
+                endValue
+            );
+
+
         const start =
-            startValue
-            ? new Date(startValue)
+            startISO
+            ? new Date(startISO)
             : null;
 
+
         const end =
-            endValue
-            ? new Date(endValue)
+            endISO
+            ? new Date(endISO)
             : null;
 
 
@@ -1765,52 +1902,151 @@ async function saveExamSettings() {
 
 
 /* =========================
-   وضعیت
+   وضعیت پرداخت
 ========================= */
 
-function getStatus(status) {
+function getPaymentStatus(paymentStatus) {
 
-    if (status === "unpaid") {
+    const status =
+        String(
+            paymentStatus ||
+            ""
+        ).toLowerCase();
+
+
+    if (status === "paid") {
 
         return `
-            <span class="status status-unpaid">
-                پرداخت نکرده
+            <span class="status status-payment-paid">
+                پرداخت شده
             </span>
         `;
 
     }
 
-    if (status === "paid_not_started") {
+
+    if (status === "pending") {
 
         return `
-            <span class="status status-paid">
-                پرداخت کرده ولی شروع نکرده
+            <span class="status status-pending">
+                در انتظار پرداخت
             </span>
         `;
 
     }
+
+
+    if (status === "failed") {
+
+        return `
+            <span class="status status-payment-failed">
+                پرداخت ناموفق
+            </span>
+        `;
+
+    }
+
+
+    if (status === "cancelled") {
+
+        return `
+            <span class="status status-payment-cancelled">
+                لغو شده
+            </span>
+        `;
+
+    }
+
+
+    if (status === "demo") {
+
+        return `
+            <span class="status status-payment-demo">
+                پرداخت آزمایشی
+            </span>
+        `;
+
+    }
+
+
+    if (!status) {
+
+        return `
+            <span class="status status-unknown">
+                نامشخص
+            </span>
+        `;
+
+    }
+
+
+    return `
+        <span class="status status-unknown">
+            ${escapeHtml(paymentStatus)}
+        </span>
+    `;
+
+}
+
+
+/* =========================
+   وضعیت آزمون
+========================= */
+
+function getExamStatus(status) {
+
+    if (
+        status === "unpaid" ||
+        status === "paid_not_started"
+    ) {
+
+        return `
+            <span class="status status-not-started">
+                شروع نشده
+            </span>
+        `;
+
+    }
+
 
     if (status === "in_progress") {
 
         return `
             <span class="status status-progress">
-                آزمون در حال انجام
+                در حال انجام
             </span>
         `;
 
     }
+
 
     if (status === "finished") {
 
         return `
             <span class="status status-finished">
-                آزمون تمام شده
+                تمام شده
             </span>
         `;
 
     }
 
-    return status || "—";
+
+    return `
+        <span class="status status-unknown">
+            ${escapeHtml(status || "نامشخص")}
+        </span>
+    `;
+
+}
+
+
+/* =========================
+   وضعیت کلی قدیمی
+========================= */
+
+function getStatus(status) {
+
+    return getExamStatus(status);
 
 }
 
@@ -2115,7 +2351,13 @@ async function loadStudents() {
                     </td>
 
                     <td>
-                        ${getStatus(
+                        ${getPaymentStatus(
+                            student.paymentStatus
+                        )}
+                    </td>
+
+                    <td>
+                        ${getExamStatus(
                             student.status
                         )}
                     </td>
@@ -2178,7 +2420,7 @@ async function loadStudents() {
 
                                 <button
                                     class="detail-btn"
-                                    onclick="showAttempt('${student.attemptId}')">
+                                    onclick="showAttempt('${escapeHtml(student.attemptId)}')">
 
                                     مشاهده
 
@@ -2193,7 +2435,7 @@ async function loadStudents() {
                         <button
                             class="delete-btn"
                             onclick="deleteStudent(
-                                '${student.orderId}',
+                                '${escapeHtml(student.orderId)}',
                                 '${escapeHtml(
                                     student.name || ""
                                 )}'
@@ -2355,6 +2597,20 @@ function renderAttempt(data) {
         data.questions || [];
 
 
+    const paymentStatus =
+        getPaymentStatus(
+            payment.status
+        );
+
+
+    const examStatus =
+        attempt.finishedAt
+        ? getExamStatus("finished")
+        : attempt.startedAt
+        ? getExamStatus("in_progress")
+        : getExamStatus("paid_not_started");
+
+
     let html = `
 
         <div class="student-summary">
@@ -2411,6 +2667,7 @@ function renderAttempt(data) {
                             "en-US"
                         )
                     )}
+                    تومان
 
                 </div>
 
@@ -2425,14 +2682,22 @@ function renderAttempt(data) {
 
                 <div class="summary-value">
 
-                    ${
-                        payment.status ===
-                        "paid"
+                    ${paymentStatus}
 
-                        ? "پرداخت شده"
+                </div>
 
-                        : "پرداخت نشده"
-                    }
+            </div>
+
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    وضعیت آزمون
+                </div>
+
+                <div class="summary-value">
+
+                    ${examStatus}
 
                 </div>
 
@@ -2642,9 +2907,16 @@ function renderAttempt(data) {
             question.selectedIndex !== null &&
             question.selectedIndex !== undefined
 
-            ? question.options[
-                question.selectedIndex
-            ]
+            ? (
+                question.options &&
+                question.options[
+                    question.selectedIndex
+                ]
+                ? question.options[
+                    question.selectedIndex
+                ]
+                : "—"
+            )
 
             : "بدون پاسخ";
 
@@ -2653,9 +2925,16 @@ function renderAttempt(data) {
             question.correctIndex !== null &&
             question.correctIndex !== undefined
 
-            ? question.options[
-                question.correctIndex
-            ]
+            ? (
+                question.options &&
+                question.options[
+                    question.correctIndex
+                ]
+                ? question.options[
+                    question.correctIndex
+                ]
+                : "—"
+            )
 
             : "—";
 
