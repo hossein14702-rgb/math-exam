@@ -76,6 +76,192 @@ button {
     background: #b91c1c;
 }
 
+/* =========================
+   تنظیمات قیمت
+========================= */
+
+.settings-box {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.07);
+    margin-bottom: 20px;
+}
+
+.settings-title {
+    margin: 0 0 5px;
+    font-size: 20px;
+}
+
+.settings-description {
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.form-group.full {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: bold;
+    color: #374151;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    padding: 11px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    background: white;
+    outline: none;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+
+.discount-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 13px;
+    min-height: 45px;
+}
+
+.discount-toggle input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.discount-toggle label {
+    cursor: pointer;
+    margin: 0;
+}
+
+.discount-fields {
+    display: contents;
+}
+
+.price-preview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.price-card {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.price-card-title {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 7px;
+}
+
+.price-card-value {
+    font-size: 19px;
+    font-weight: bold;
+}
+
+.final-price-card {
+    background: #ecfdf5;
+}
+
+.final-price-card .price-card-value {
+    color: #166534;
+}
+
+.discount-status {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.discount-active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.discount-inactive {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.discount-disabled {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+.settings-actions {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.save-settings-btn {
+    background: #16a34a;
+    color: white;
+}
+
+.save-settings-btn:hover {
+    background: #15803d;
+}
+
+.settings-message {
+    font-size: 13px;
+    display: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.settings-success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.settings-error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.discount-disabled-area {
+    opacity: .5;
+    pointer-events: none;
+}
+
+/* =========================
+   آمار
+========================= */
+
 .stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -212,7 +398,7 @@ tr:hover td {
 }
 
 /* =========================
-   مودال جزئیات
+   مودال
 ========================= */
 
 .modal {
@@ -340,6 +526,18 @@ tr:hover td {
         grid-template-columns: repeat(2, 1fr);
     }
 
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group.full {
+        grid-column: auto;
+    }
+
+    .price-preview {
+        grid-template-columns: 1fr;
+    }
+
     .header h1 {
         font-size: 21px;
     }
@@ -381,19 +579,23 @@ tr:hover td {
 
 <div class="container">
 
+    <!-- =========================
+         هدر
+    ========================= -->
+
     <div class="header">
 
         <h1>پنل معلم</h1>
 
         <p>
-            مدیریت وضعیت شرکت‌کنندگان آزمون ریاضی
+            مدیریت آزمون ریاضی، قیمت، تخفیف و شرکت‌کنندگان
         </p>
 
         <div class="controls">
 
             <button
                 class="refresh-btn"
-                onclick="loadStudents()">
+                onclick="loadAll()">
                 🔄 بروزرسانی
             </button>
 
@@ -411,9 +613,198 @@ tr:hover td {
     <div id="errorBox" class="error"></div>
 
 
+    <!-- =========================
+         تنظیمات قیمت و تخفیف
+    ========================= -->
+
+    <div class="settings-box">
+
+        <h2 class="settings-title">
+            تنظیمات قیمت آزمون
+        </h2>
+
+        <div class="settings-description">
+            قیمت اصلی آزمون و شرایط تخفیف را از این بخش تنظیم کنید.
+        </div>
+
+
+        <div class="settings-grid">
+
+            <div class="form-group">
+
+                <label for="basePrice">
+                    قیمت اصلی آزمون
+                </label>
+
+                <input
+                    id="basePrice"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="مثلاً 50000">
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    وضعیت تخفیف
+                </label>
+
+                <div class="discount-toggle">
+
+                    <input
+                        id="discountEnabled"
+                        type="checkbox"
+                        onchange="toggleDiscountFields()">
+
+                    <label for="discountEnabled">
+                        فعال کردن تخفیف
+                    </label>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="discountPercentGroup"
+                class="form-group">
+
+                <label for="discountPercent">
+                    درصد تخفیف
+                </label>
+
+                <input
+                    id="discountPercent"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    placeholder="مثلاً 20">
+
+            </div>
+
+
+            <div
+                id="discountStartGroup"
+                class="form-group">
+
+                <label for="discountStart">
+                    شروع تخفیف
+                </label>
+
+                <input
+                    id="discountStart"
+                    type="datetime-local">
+
+            </div>
+
+
+            <div
+                id="discountEndGroup"
+                class="form-group">
+
+                <label for="discountEnd">
+                    پایان تخفیف
+                </label>
+
+                <input
+                    id="discountEnd"
+                    type="datetime-local">
+
+            </div>
+
+        </div>
+
+
+        <!-- پیش‌نمایش قیمت -->
+
+        <div class="price-preview">
+
+            <div class="price-card">
+
+                <div class="price-card-title">
+                    قیمت اصلی
+                </div>
+
+                <div
+                    id="previewBasePrice"
+                    class="price-card-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+
+            <div class="price-card final-price-card">
+
+                <div class="price-card-title">
+                    قیمت نهایی فعلی
+                </div>
+
+                <div
+                    id="previewFinalPrice"
+                    class="price-card-value">
+
+                    —
+
+                </div>
+
+            </div>
+
+
+            <div class="price-card">
+
+                <div class="price-card-title">
+                    وضعیت تخفیف
+                </div>
+
+                <div id="discountStatus">
+
+                    <span class="discount-status discount-disabled">
+                        غیرفعال
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="settings-actions">
+
+            <button
+                class="save-settings-btn"
+                onclick="saveExamSettings()">
+
+                💾 ذخیره تنظیمات
+
+            </button>
+
+
+            <div
+                id="settingsMessage"
+                class="settings-message">
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         آمار
+    ========================= -->
+
     <div class="stats">
 
         <div class="stat">
+
             <div class="stat-title">
                 کل شرکت‌کنندگان
             </div>
@@ -423,10 +814,12 @@ tr:hover td {
                 id="totalCount">
                 ۰
             </div>
+
         </div>
 
 
         <div class="stat">
+
             <div class="stat-title">
                 در حال انجام
             </div>
@@ -436,10 +829,12 @@ tr:hover td {
                 id="progressCount">
                 ۰
             </div>
+
         </div>
 
 
         <div class="stat">
+
             <div class="stat-title">
                 تمام شده
             </div>
@@ -449,10 +844,12 @@ tr:hover td {
                 id="finishedCount">
                 ۰
             </div>
+
         </div>
 
 
         <div class="stat">
+
             <div class="stat-title">
                 پرداخت نکرده
             </div>
@@ -462,10 +859,15 @@ tr:hover td {
                 id="unpaidCount">
                 ۰
             </div>
+
         </div>
 
     </div>
 
+
+    <!-- =========================
+         جدول دانش‌آموزان
+    ========================= -->
 
     <div class="table-box">
 
@@ -553,8 +955,7 @@ tr:hover td {
         </div>
 
 
-        <div
-            id="attemptContent">
+        <div id="attemptContent">
 
             <div class="modal-loading">
                 در حال دریافت جزئیات...
@@ -592,6 +993,7 @@ function faNumber(value) {
         /\d/g,
         d => "۰۱۲۳۴۵۶۷۸۹"[d]
     );
+
 }
 
 
@@ -627,6 +1029,738 @@ function formatDate(value) {
         return "—";
 
     }
+
+}
+
+
+/* =========================
+   تبدیل ISO به datetime-local
+========================= */
+
+function isoToLocalInput(value) {
+
+    if (!value) {
+        return "";
+    }
+
+    try {
+
+        const date = new Date(value);
+
+        if (isNaN(date.getTime())) {
+            return "";
+        }
+
+        const pad = n =>
+            String(n).padStart(2, "0");
+
+        const year =
+            date.getFullYear();
+
+        const month =
+            pad(date.getMonth() + 1);
+
+        const day =
+            pad(date.getDate());
+
+        const hours =
+            pad(date.getHours());
+
+        const minutes =
+            pad(date.getMinutes());
+
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    } catch (e) {
+
+        return "";
+
+    }
+
+}
+
+
+/* =========================
+   datetime-local به ISO
+========================= */
+
+function localInputToISO(value) {
+
+    if (!value) {
+        return null;
+    }
+
+    const date = new Date(value);
+
+    if (isNaN(date.getTime())) {
+        return null;
+    }
+
+    return date.toISOString();
+
+}
+
+
+/* =========================
+   فرمت قیمت
+========================= */
+
+function formatPrice(value) {
+
+    const number =
+        Number(value || 0);
+
+    return (
+        number.toLocaleString("fa-IR") +
+        " تومان"
+    );
+
+}
+
+
+/* =========================
+   وضعیت تخفیف
+========================= */
+
+function calculateDiscountPreview() {
+
+    const basePrice =
+        Math.max(
+            0,
+            Math.round(
+                Number(
+                    document.getElementById(
+                        "basePrice"
+                    ).value || 0
+                )
+            )
+        );
+
+
+    const enabled =
+        document.getElementById(
+            "discountEnabled"
+        ).checked;
+
+
+    const percent =
+        Math.max(
+            0,
+            Math.min(
+                100,
+                Number(
+                    document.getElementById(
+                        "discountPercent"
+                    ).value || 0
+                )
+            )
+        );
+
+
+    const startValue =
+        document.getElementById(
+            "discountStart"
+        ).value;
+
+
+    const endValue =
+        document.getElementById(
+            "discountEnd"
+        ).value;
+
+
+    let finalPrice =
+        basePrice;
+
+
+    let status =
+        "disabled";
+
+
+    if (enabled) {
+
+        const start =
+            startValue
+            ? new Date(startValue)
+            : null;
+
+        const end =
+            endValue
+            ? new Date(endValue)
+            : null;
+
+
+        if (
+            start &&
+            end &&
+            !isNaN(start.getTime()) &&
+            !isNaN(end.getTime()) &&
+            end > start &&
+            percent > 0
+        ) {
+
+            const now =
+                new Date();
+
+
+            if (
+                now >= start &&
+                now <= end
+            ) {
+
+                finalPrice =
+                    Math.max(
+                        0,
+                        Math.round(
+                            basePrice *
+                            (
+                                1 -
+                                percent / 100
+                            )
+                        )
+                    );
+
+                status =
+                    "active";
+
+            }
+            else {
+
+                status =
+                    "inactive";
+
+            }
+
+        }
+        else {
+
+            status =
+                "inactive";
+
+        }
+
+    }
+
+
+    document.getElementById(
+        "previewBasePrice"
+    ).textContent =
+        formatPrice(basePrice);
+
+
+    document.getElementById(
+        "previewFinalPrice"
+    ).textContent =
+        formatPrice(finalPrice);
+
+
+    const statusBox =
+        document.getElementById(
+            "discountStatus"
+        );
+
+
+    if (status === "active") {
+
+        statusBox.innerHTML = `
+            <span class="discount-status discount-active">
+                فعال
+            </span>
+        `;
+
+    }
+    else if (status === "inactive") {
+
+        statusBox.innerHTML = `
+            <span class="discount-status discount-inactive">
+                خارج از بازه
+            </span>
+        `;
+
+    }
+    else {
+
+        statusBox.innerHTML = `
+            <span class="discount-status discount-disabled">
+                غیرفعال
+            </span>
+        `;
+
+    }
+
+}
+
+
+/* =========================
+   فعال/غیرفعال کردن فیلدهای تخفیف
+========================= */
+
+function toggleDiscountFields() {
+
+    const enabled =
+        document.getElementById(
+            "discountEnabled"
+        ).checked;
+
+
+    const ids = [
+        "discountPercentGroup",
+        "discountStartGroup",
+        "discountEndGroup"
+    ];
+
+
+    ids.forEach(id => {
+
+        const element =
+            document.getElementById(id);
+
+        if (!element) {
+            return;
+        }
+
+        if (enabled) {
+
+            element.classList.remove(
+                "discount-disabled-area"
+            );
+
+        }
+        else {
+
+            element.classList.add(
+                "discount-disabled-area"
+            );
+
+        }
+
+    });
+
+
+    calculateDiscountPreview();
+
+}
+
+
+/* =========================
+   پیام تنظیمات
+========================= */
+
+function showSettingsMessage(
+    message,
+    type = "success"
+) {
+
+    const box =
+        document.getElementById(
+            "settingsMessage"
+        );
+
+
+    box.textContent =
+        message;
+
+
+    box.className =
+        "settings-message " +
+        (
+            type === "success"
+            ? "settings-success"
+            : "settings-error"
+        );
+
+
+    box.style.display =
+        "block";
+
+
+    setTimeout(() => {
+
+        box.style.display =
+            "none";
+
+    }, 4000);
+
+}
+
+
+/* =========================
+   بارگذاری تنظیمات آزمون
+========================= */
+
+async function loadExamSettings() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE}/api/teacher/exam-settings?examId=${EXAM_ID}&_=${Date.now()}`
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "خطا در دریافت تنظیمات: " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (!data.ok) {
+
+            throw new Error(
+                data.error ||
+                "دریافت تنظیمات ناموفق بود."
+            );
+
+        }
+
+
+        const exam =
+            data.exam || data.settings || data;
+
+
+        const price =
+            exam.price ??
+            exam.basePrice ??
+            0;
+
+
+        const discountEnabled =
+            Number(
+                exam.discountEnabled ??
+                exam.discount_enabled ??
+                0
+            ) === 1;
+
+
+        const discountPercent =
+            exam.discountPercent ??
+            exam.discount_percent ??
+            0;
+
+
+        const discountStartAt =
+            exam.discountStartAt ??
+            exam.discount_start_at ??
+            null;
+
+
+        const discountEndAt =
+            exam.discountEndAt ??
+            exam.discount_end_at ??
+            null;
+
+
+        document.getElementById(
+            "basePrice"
+        ).value =
+            price;
+
+
+        document.getElementById(
+            "discountEnabled"
+        ).checked =
+            discountEnabled;
+
+
+        document.getElementById(
+            "discountPercent"
+        ).value =
+            discountPercent;
+
+
+        document.getElementById(
+            "discountStart"
+        ).value =
+            isoToLocalInput(
+                discountStartAt
+            );
+
+
+        document.getElementById(
+            "discountEnd"
+        ).value =
+            isoToLocalInput(
+                discountEndAt
+            );
+
+
+        toggleDiscountFields();
+
+        calculateDiscountPreview();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        showSettingsMessage(
+            "خطا در دریافت تنظیمات قیمت: " +
+            (
+                error.message || ""
+            ),
+            "error"
+        );
+
+    }
+
+}
+
+
+/* =========================
+   ذخیره تنظیمات
+========================= */
+
+async function saveExamSettings() {
+
+    const basePrice =
+        Math.round(
+            Number(
+                document.getElementById(
+                    "basePrice"
+                ).value
+            )
+        );
+
+
+    const discountEnabled =
+        document.getElementById(
+            "discountEnabled"
+        ).checked;
+
+
+    const discountPercent =
+        Number(
+            document.getElementById(
+                "discountPercent"
+            ).value || 0
+        );
+
+
+    const startValue =
+        document.getElementById(
+            "discountStart"
+        ).value;
+
+
+    const endValue =
+        document.getElementById(
+            "discountEnd"
+        ).value;
+
+
+    if (
+        !Number.isFinite(basePrice) ||
+        basePrice <= 0
+    ) {
+
+        showSettingsMessage(
+            "قیمت اصلی باید بیشتر از صفر باشد.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        discountPercent < 0 ||
+        discountPercent > 100 ||
+        !Number.isFinite(discountPercent)
+    ) {
+
+        showSettingsMessage(
+            "درصد تخفیف باید بین صفر تا صد باشد.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    let discountStartAt =
+        null;
+
+    let discountEndAt =
+        null;
+
+
+    if (discountEnabled) {
+
+        if (
+            !startValue ||
+            !endValue
+        ) {
+
+            showSettingsMessage(
+                "برای تخفیف فعال، تاریخ شروع و پایان الزامی است.",
+                "error"
+            );
+
+            return;
+
+        }
+
+
+        discountStartAt =
+            localInputToISO(
+                startValue
+            );
+
+
+        discountEndAt =
+            localInputToISO(
+                endValue
+            );
+
+
+        if (
+            !discountStartAt ||
+            !discountEndAt
+        ) {
+
+            showSettingsMessage(
+                "تاریخ شروع یا پایان معتبر نیست.",
+                "error"
+            );
+
+            return;
+
+        }
+
+
+        if (
+            new Date(discountEndAt) <=
+            new Date(discountStartAt)
+        ) {
+
+            showSettingsMessage(
+                "تاریخ پایان باید بعد از تاریخ شروع باشد.",
+                "error"
+            );
+
+            return;
+
+        }
+
+    }
+
+
+    const button =
+        document.querySelector(
+            ".save-settings-btn"
+        );
+
+
+    const oldText =
+        button.textContent;
+
+
+    button.disabled =
+        true;
+
+    button.textContent =
+        "⏳ در حال ذخیره...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE}/api/teacher/exam-settings`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        examId:
+                            EXAM_ID,
+
+                        price:
+                            basePrice,
+
+                        discountEnabled:
+                            discountEnabled,
+
+                        discountPercent:
+                            discountPercent,
+
+                        discountStartAt:
+                            discountStartAt,
+
+                        discountEndAt:
+                            discountEndAt
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !response.ok ||
+            !data.ok
+        ) {
+
+            throw new Error(
+                data.error ||
+                "ذخیره تنظیمات ناموفق بود."
+            );
+
+        }
+
+
+        showSettingsMessage(
+            "تنظیمات قیمت با موفقیت ذخیره شد.",
+            "success"
+        );
+
+
+        calculateDiscountPreview();
+
+
+        await loadStudents();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        showSettingsMessage(
+            error.message ||
+            "خطا در ذخیره تنظیمات.",
+            "error"
+        );
+
+    }
+    finally {
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            oldText;
+
+    }
+
 }
 
 
@@ -677,6 +1811,7 @@ function getStatus(status) {
     }
 
     return status || "—";
+
 }
 
 
@@ -687,20 +1822,29 @@ function getStatus(status) {
 function showError(message) {
 
     const box =
-        document.getElementById("errorBox");
+        document.getElementById(
+            "errorBox"
+        );
 
-    box.textContent = message;
+    box.textContent =
+        message;
 
-    box.style.display = "block";
+    box.style.display =
+        "block";
+
 }
 
 
 function hideError() {
 
     const box =
-        document.getElementById("errorBox");
+        document.getElementById(
+            "errorBox"
+        );
 
-    box.style.display = "none";
+    box.style.display =
+        "none";
+
 }
 
 
@@ -710,28 +1854,38 @@ function hideError() {
 
 function updateStats(students) {
 
-    let total = students.length;
+    let total =
+        students.length;
 
-    let progress = 0;
-    let finished = 0;
-    let unpaid = 0;
+    let progress =
+        0;
+
+    let finished =
+        0;
+
+    let unpaid =
+        0;
+
 
     students.forEach(student => {
 
         if (
-            student.status === "in_progress"
+            student.status ===
+            "in_progress"
         ) {
             progress++;
         }
 
         if (
-            student.status === "finished"
+            student.status ===
+            "finished"
         ) {
             finished++;
         }
 
         if (
-            student.status === "unpaid"
+            student.status ===
+            "unpaid"
         ) {
             unpaid++;
         }
@@ -741,22 +1895,26 @@ function updateStats(students) {
 
     document.getElementById(
         "totalCount"
-    ).textContent = faNumber(total);
+    ).textContent =
+        faNumber(total);
 
 
     document.getElementById(
         "progressCount"
-    ).textContent = faNumber(progress);
+    ).textContent =
+        faNumber(progress);
 
 
     document.getElementById(
         "finishedCount"
-    ).textContent = faNumber(finished);
+    ).textContent =
+        faNumber(finished);
 
 
     document.getElementById(
         "unpaidCount"
-    ).textContent = faNumber(unpaid);
+    ).textContent =
+        faNumber(unpaid);
 
 }
 
@@ -793,6 +1951,7 @@ function escapeHtml(value) {
             /'/g,
             "&#039;"
         );
+
 }
 
 
@@ -803,33 +1962,50 @@ function escapeHtml(value) {
 async function loadStudents() {
 
     const loading =
-        document.getElementById("loading");
+        document.getElementById(
+            "loading"
+        );
+
 
     const table =
-        document.getElementById("studentsTable");
+        document.getElementById(
+            "studentsTable"
+        );
+
 
     const empty =
-        document.getElementById("emptyBox");
+        document.getElementById(
+            "emptyBox"
+        );
+
 
     const body =
-        document.getElementById("studentsBody");
+        document.getElementById(
+            "studentsBody"
+        );
 
 
     hideError();
 
 
-    loading.style.display = "block";
+    loading.style.display =
+        "block";
 
-    table.style.display = "none";
 
-    empty.style.display = "none";
+    table.style.display =
+        "none";
+
+
+    empty.style.display =
+        "none";
 
 
     try {
 
-        const response = await fetch(
-            `${API_BASE}/api/teacher/students?examId=${EXAM_ID}&_=${Date.now()}`
-        );
+        const response =
+            await fetch(
+                `${API_BASE}/api/teacher/students?examId=${EXAM_ID}&_=${Date.now()}`
+            );
 
 
         if (!response.ok) {
@@ -863,16 +2039,19 @@ async function loadStudents() {
         updateStats(students);
 
 
-        body.innerHTML = "";
+        body.innerHTML =
+            "";
 
 
         if (
             students.length === 0
         ) {
 
-            loading.style.display = "none";
+            loading.style.display =
+                "none";
 
-            empty.style.display = "block";
+            empty.style.display =
+                "block";
 
             return;
 
@@ -883,34 +2062,43 @@ async function loadStudents() {
             (student, index) => {
 
                 const tr =
-                    document.createElement("tr");
+                    document.createElement(
+                        "tr"
+                    );
 
 
                 tr.innerHTML = `
 
                     <td>
-                        ${faNumber(index + 1)}
+                        ${faNumber(
+                            index + 1
+                        )}
                     </td>
 
                     <td>
                         <strong>
                             ${escapeHtml(
-                                student.name || "—"
+                                student.name ||
+                                "—"
                             )}
                         </strong>
                     </td>
 
                     <td dir="ltr">
                         ${escapeHtml(
-                            student.phone || "—"
+                            student.phone ||
+                            "—"
                         )}
                     </td>
 
                     <td>
                         ${faNumber(
                             Number(
-                                student.amount || 0
-                            ).toLocaleString("en-US")
+                                student.amount ||
+                                0
+                            ).toLocaleString(
+                                "en-US"
+                            )
                         )}
                     </td>
 
@@ -952,7 +2140,8 @@ async function loadStudents() {
 
                             ? faNumber(
                                 student.score
-                            ) + " از ۲۰"
+                            ) +
+                            " از ۲۰"
 
                             : "—"
                         }
@@ -961,19 +2150,22 @@ async function loadStudents() {
 
                     <td>
                         ${faNumber(
-                            student.correct ?? 0
+                            student.correct ??
+                            0
                         )}
                     </td>
 
                     <td>
                         ${faNumber(
-                            student.wrong ?? 0
+                            student.wrong ??
+                            0
                         )}
                     </td>
 
                     <td>
                         ${faNumber(
-                            student.empty ?? 0
+                            student.empty ??
+                            0
                         )}
                     </td>
 
@@ -1022,20 +2214,29 @@ async function loadStudents() {
         );
 
 
-        loading.style.display = "none";
+        loading.style.display =
+            "none";
 
-        table.style.display = "table";
+
+        table.style.display =
+            "table";
 
 
     } catch (error) {
 
         console.error(error);
 
-        loading.style.display = "none";
+
+        loading.style.display =
+            "none";
+
 
         showError(
             "خطا در دریافت اطلاعات. " +
-            (error.message || "")
+            (
+                error.message ||
+                ""
+            )
         );
 
     }
@@ -1050,13 +2251,19 @@ async function loadStudents() {
 async function showAttempt(attemptId) {
 
     const modal =
-        document.getElementById("attemptModal");
+        document.getElementById(
+            "attemptModal"
+        );
+
 
     const content =
-        document.getElementById("attemptContent");
+        document.getElementById(
+            "attemptContent"
+        );
 
 
-    modal.style.display = "block";
+    modal.style.display =
+        "block";
 
 
     content.innerHTML = `
@@ -1068,9 +2275,10 @@ async function showAttempt(attemptId) {
 
     try {
 
-        const response = await fetch(
-            `${API_BASE}/api/teacher/attempt?attemptId=${encodeURIComponent(attemptId)}&_=${Date.now()}`
-        );
+        const response =
+            await fetch(
+                `${API_BASE}/api/teacher/attempt?attemptId=${encodeURIComponent(attemptId)}&_=${Date.now()}`
+            );
 
 
         if (!response.ok) {
@@ -1104,10 +2312,12 @@ async function showAttempt(attemptId) {
 
         console.error(error);
 
+
         content.innerHTML = `
 
-            <div class="error"
-                 style="display:block;">
+            <div
+                class="error"
+                style="display:block;">
 
                 ${escapeHtml(
                     error.message ||
@@ -1132,11 +2342,14 @@ function renderAttempt(data) {
     const student =
         data.student || {};
 
+
     const payment =
         data.payment || {};
 
+
     const attempt =
         data.attempt || {};
+
 
     const questions =
         data.questions || [];
@@ -1154,7 +2367,8 @@ function renderAttempt(data) {
 
                 <div class="summary-value">
                     ${escapeHtml(
-                        student.name || "—"
+                        student.name ||
+                        "—"
                     )}
                 </div>
 
@@ -1167,10 +2381,15 @@ function renderAttempt(data) {
                     موبایل
                 </div>
 
-                <div class="summary-value" dir="ltr">
+                <div
+                    class="summary-value"
+                    dir="ltr">
+
                     ${escapeHtml(
-                        student.phone || "—"
+                        student.phone ||
+                        "—"
                     )}
+
                 </div>
 
             </div>
@@ -1183,11 +2402,16 @@ function renderAttempt(data) {
                 </div>
 
                 <div class="summary-value">
+
                     ${faNumber(
                         Number(
-                            payment.amount || 0
-                        ).toLocaleString("en-US")
+                            payment.amount ||
+                            0
+                        ).toLocaleString(
+                            "en-US"
+                        )
                     )}
+
                 </div>
 
             </div>
@@ -1200,11 +2424,16 @@ function renderAttempt(data) {
                 </div>
 
                 <div class="summary-value">
+
                     ${
-                        payment.status === "paid"
+                        payment.status ===
+                        "paid"
+
                         ? "پرداخت شده"
+
                         : "پرداخت نشده"
                     }
+
                 </div>
 
             </div>
@@ -1217,16 +2446,19 @@ function renderAttempt(data) {
                 </div>
 
                 <div class="summary-value">
+
                     ${
                         attempt.score !== null &&
                         attempt.score !== undefined
 
                         ? faNumber(
                             attempt.score
-                        ) + " از ۲۰"
+                        ) +
+                        " از ۲۰"
 
                         : "—"
                     }
+
                 </div>
 
             </div>
@@ -1239,9 +2471,12 @@ function renderAttempt(data) {
                 </div>
 
                 <div class="summary-value">
+
                     ${faNumber(
-                        attempt.correct ?? 0
+                        attempt.correct ??
+                        0
                     )}
+
                 </div>
 
             </div>
@@ -1254,9 +2489,12 @@ function renderAttempt(data) {
                 </div>
 
                 <div class="summary-value">
+
                     ${faNumber(
-                        attempt.wrong ?? 0
+                        attempt.wrong ??
+                        0
                     )}
+
                 </div>
 
             </div>
@@ -1269,9 +2507,12 @@ function renderAttempt(data) {
                 </div>
 
                 <div class="summary-value">
+
                     ${faNumber(
-                        attempt.empty ?? 0
+                        attempt.empty ??
+                        0
                     )}
+
                 </div>
 
             </div>
@@ -1284,9 +2525,11 @@ function renderAttempt(data) {
                 </div>
 
                 <div class="summary-value">
+
                     ${formatDate(
                         attempt.startedAt
                     )}
+
                 </div>
 
             </div>
@@ -1299,9 +2542,11 @@ function renderAttempt(data) {
                 </div>
 
                 <div class="summary-value">
+
                     ${formatDate(
                         attempt.finishedAt
                     )}
+
                 </div>
 
             </div>
@@ -1350,34 +2595,45 @@ function renderAttempt(data) {
 
 
         if (
-            question.result === "correct"
+            question.result ===
+            "correct"
         ) {
 
-            rowClass = "correct-row";
+            rowClass =
+                "correct-row";
 
-            resultText = "✓ صحیح";
+            resultText =
+                "✓ صحیح";
 
-            resultClass = "result-correct";
+            resultClass =
+                "result-correct";
 
         }
         else if (
-            question.result === "wrong"
+            question.result ===
+            "wrong"
         ) {
 
-            rowClass = "wrong-row";
+            rowClass =
+                "wrong-row";
 
-            resultText = "✕ غلط";
+            resultText =
+                "✕ غلط";
 
-            resultClass = "result-wrong";
+            resultClass =
+                "result-wrong";
 
         }
         else {
 
-            rowClass = "empty-row";
+            rowClass =
+                "empty-row";
 
-            resultText = "— بدون پاسخ";
+            resultText =
+                "— بدون پاسخ";
 
-            resultClass = "result-empty";
+            resultClass =
+                "result-empty";
 
         }
 
@@ -1417,7 +2673,8 @@ function renderAttempt(data) {
 
                 <td class="answer-box">
                     ${escapeHtml(
-                        question.question || "—"
+                        question.question ||
+                        "—"
                     )}
                 </td>
 
@@ -1442,30 +2699,36 @@ function renderAttempt(data) {
 
 
                 <td>
+
                     ${
                         question.elapsedSeconds !== null &&
                         question.elapsedSeconds !== undefined
 
                         ? faNumber(
                             question.elapsedSeconds
-                        ) + " ثانیه"
+                        ) +
+                        " ثانیه"
 
                         : "—"
                     }
+
                 </td>
 
 
                 <td>
+
                     ${
                         question.durationSeconds !== null &&
                         question.durationSeconds !== undefined
 
                         ? faNumber(
                             question.durationSeconds
-                        ) + " ثانیه"
+                        ) +
+                        " ثانیه"
 
                         : "—"
                     }
+
                 </td>
 
             </tr>
@@ -1488,7 +2751,8 @@ function renderAttempt(data) {
 
     document.getElementById(
         "attemptContent"
-    ).innerHTML = html;
+    ).innerHTML =
+        html;
 
 }
 
@@ -1501,12 +2765,15 @@ function closeAttemptModal() {
 
     document.getElementById(
         "attemptModal"
-    ).style.display = "none";
+    ).style.display =
+        "none";
 
 }
 
 
-function closeModalByBackground(event) {
+function closeModalByBackground(
+    event
+) {
 
     if (
         event.target.id ===
@@ -1530,7 +2797,8 @@ async function deleteStudent(
 ) {
 
     const name =
-        studentName || "این دانش‌آموز";
+        studentName ||
+        "این دانش‌آموز";
 
 
     const confirmed =
@@ -1550,19 +2818,24 @@ async function deleteStudent(
 
     try {
 
-        const response = await fetch(
-            `${API_BASE}/api/teacher/student?orderId=${encodeURIComponent(orderId)}`,
-            {
-                method: "DELETE"
-            }
-        );
+        const response =
+            await fetch(
+                `${API_BASE}/api/teacher/student?orderId=${encodeURIComponent(orderId)}`,
+                {
+                    method:
+                        "DELETE"
+                }
+            );
 
 
         const data =
             await response.json();
 
 
-        if (!response.ok || !data.ok) {
+        if (
+            !response.ok ||
+            !data.ok
+        ) {
 
             throw new Error(
                 data.error ||
@@ -1584,9 +2857,13 @@ async function deleteStudent(
 
         console.error(error);
 
+
         alert(
             "خطا در حذف دانش‌آموز:\n\n" +
-            (error.message || "")
+            (
+                error.message ||
+                ""
+            )
         );
 
     }
@@ -1628,19 +2905,24 @@ async function deleteAllStudents() {
 
     try {
 
-        const response = await fetch(
-            `${API_BASE}/api/teacher/students?examId=${EXAM_ID}`,
-            {
-                method: "DELETE"
-            }
-        );
+        const response =
+            await fetch(
+                `${API_BASE}/api/teacher/students?examId=${EXAM_ID}`,
+                {
+                    method:
+                        "DELETE"
+                }
+            );
 
 
         const data =
             await response.json();
 
 
-        if (!response.ok || !data.ok) {
+        if (
+            !response.ok ||
+            !data.ok
+        ) {
 
             throw new Error(
                 data.error ||
@@ -1662,9 +2944,13 @@ async function deleteAllStudents() {
 
         console.error(error);
 
+
         alert(
             "خطا در حذف همه:\n\n" +
-            (error.message || "")
+            (
+                error.message ||
+                ""
+            )
         );
 
     }
@@ -1673,10 +2959,60 @@ async function deleteAllStudents() {
 
 
 /* =========================
+   بروزرسانی همه
+========================= */
+
+async function loadAll() {
+
+    await Promise.all([
+        loadExamSettings(),
+        loadStudents()
+    ]);
+
+}
+
+
+/* =========================
+   رویدادهای پیش‌نمایش قیمت
+========================= */
+
+document
+    .getElementById("basePrice")
+    .addEventListener(
+        "input",
+        calculateDiscountPreview
+    );
+
+
+document
+    .getElementById("discountPercent")
+    .addEventListener(
+        "input",
+        calculateDiscountPreview
+    );
+
+
+document
+    .getElementById("discountStart")
+    .addEventListener(
+        "input",
+        calculateDiscountPreview
+    );
+
+
+document
+    .getElementById("discountEnd")
+    .addEventListener(
+        "input",
+        calculateDiscountPreview
+    );
+
+
+/* =========================
    اجرای اولیه
 ========================= */
 
-loadStudents();
+loadAll();
 
 </script>
 
