@@ -1,17 +1,18 @@
-<!DOCTYPE html><html lang="fa" dir="rtl">
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>آزمون آنلاین ریاضی</title><style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>آزمون آنلاین ریاضی</title>
+
+<style>
 *{
     box-sizing:border-box;
 }
 
 body{
     margin:0;
-    font-family:
-        Tahoma,
-        Arial,
-        sans-serif;
+    font-family:Tahoma,Arial,sans-serif;
     background:#f4f7fb;
     color:#1f2937;
 }
@@ -58,6 +59,8 @@ body{
     font-size:13px;
     margin-top:5px;
 }
+
+/* مراحل آزمون */
 
 .steps{
     display:flex;
@@ -394,6 +397,8 @@ body{
     font-weight:bold;
 }
 
+/* نتیجه */
+
 .result-hero{
     text-align:center;
 }
@@ -417,6 +422,62 @@ body{
 
 .result-hero p{
     color:#6b7280;
+}
+
+/* دایره نمره */
+
+.score-circle{
+    width:130px;
+    height:130px;
+    border-radius:50%;
+    border:8px solid #2563eb;
+    background:#eff6ff;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    margin:22px auto 12px;
+}
+
+.score-number{
+    font-size:38px;
+    line-height:1;
+    font-weight:bold;
+    color:#2563eb;
+}
+
+.score-label{
+    margin-top:7px;
+    font-size:12px;
+    color:#6b7280;
+}
+
+.result-counts{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin:0 auto 20px;
+    flex-wrap:wrap;
+}
+
+.result-count{
+    min-width:100px;
+    background:#f8fafc;
+    border-radius:12px;
+    padding:12px 15px;
+    text-align:center;
+}
+
+.result-count strong{
+    display:block;
+    font-size:18px;
+}
+
+.result-count span{
+    display:block;
+    font-size:11px;
+    color:#6b7280;
+    margin-top:4px;
 }
 
 .result-summary{
@@ -556,8 +617,24 @@ body{
     .question-text{
         font-size:17px;
     }
+
+    .score-circle{
+        width:120px;
+        height:120px;
+    }
+
+    .result-count{
+        min-width:90px;
+    }
 }
-</style></head><body><div class="container"><!-- HEADER -->
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- HEADER -->
 <div class="header">
 
     <div class="brand">
@@ -573,35 +650,16 @@ body{
 
     </div>
 
-    <div class="steps">
+    <!--
+    مراحل آزمون در ابتدا مخفی هستند.
+    بعد از شروع آزمون، جاوااسکریپت آنها را
+    به تعداد سؤال‌ها ایجاد می‌کند.
+    -->
 
-        <div class="step active" id="step1">
-            <div class="step-circle">۱</div>
-            <span>اطلاعات</span>
-        </div>
-
-        <div class="step-line"></div>
-
-        <div class="step" id="step2">
-            <div class="step-circle">۲</div>
-            <span>پرداخت</span>
-        </div>
-
-        <div class="step-line"></div>
-
-        <div class="step" id="step3">
-            <div class="step-circle">۳</div>
-            <span>قوانین</span>
-        </div>
-
-        <div class="step-line"></div>
-
-        <div class="step" id="step4">
-            <div class="step-circle">۴</div>
-            <span>آزمون</span>
-        </div>
-
-    </div>
+    <div
+        class="steps hidden"
+        id="steps"
+    ></div>
 
 </div>
 
@@ -646,7 +704,6 @@ body{
 
     </div>
 
-
     <div class="field">
 
         <label>شماره موبایل</label>
@@ -671,9 +728,7 @@ body{
 
     </div>
 
-
     <div id="startError"></div>
-
 
     <button id="startButton" class="primary-btn">
         ادامه و ثبت اطلاعات
@@ -697,7 +752,6 @@ body{
         پس از پرداخت، دسترسی شما به آزمون فعال می‌شود.
     </p>
 
-
     <div class="price-box">
 
         <div>
@@ -718,16 +772,13 @@ body{
 
     </div>
 
-
     <div class="payment-status">
         🔒 پرداخت امن و ثبت سفارش
     </div>
 
-
     <button id="payButton" class="primary-btn">
         پرداخت و ادامه
     </button>
-
 
     <div id="paymentError"></div>
 
@@ -749,54 +800,37 @@ body{
         قبل از شروع آزمون، قوانین را با دقت مطالعه کنید.
     </p>
 
-
     <div class="rules">
 
         <div class="rule">
-
             <div class="rule-icon">✓</div>
-
             <div>
                 هر سؤال زمان مشخصی دارد و پس از پایان زمان، سؤال به‌صورت خودکار بسته می‌شود.
             </div>
-
         </div>
 
-
         <div class="rule">
-
             <div class="rule-icon">✓</div>
-
             <div>
                 پس از عبور از هر سؤال، امکان بازگشت به سؤال قبلی وجود ندارد.
             </div>
-
         </div>
 
-
         <div class="rule">
-
             <div class="rule-icon">✓</div>
-
             <div>
                 پاسخ‌ها به‌صورت خودکار در سامانه ثبت می‌شوند.
             </div>
-
         </div>
 
-
         <div class="rule">
-
             <div class="rule-icon">✓</div>
-
             <div>
                 در پایان آزمون، نتیجه و پاسخنامه شما نمایش داده خواهد شد.
             </div>
-
         </div>
 
     </div>
-
 
     <button id="beginExamButton" class="primary-btn">
         شروع آزمون
@@ -822,7 +856,6 @@ body{
 
         </div>
 
-
         <div class="timer">
 
             <span id="timer">
@@ -836,7 +869,6 @@ body{
         </div>
 
     </div>
-
 
     <div class="progress-container">
 
@@ -852,7 +884,6 @@ body{
 
         </div>
 
-
         <div class="progress-bar">
 
             <div
@@ -864,12 +895,10 @@ body{
 
     </div>
 
-
     <div
         class="question-box"
         id="questionBox"
     ></div>
-
 
     <div id="examError"></div>
 
@@ -895,14 +924,11 @@ body{
 
     </div>
 
-
     <div id="resultSummary"></div>
-
 
     <h3 style="font-size:16px;margin-top:25px">
         پاسخنامه
     </h3>
-
 
     <div
         id="answerSheet"
@@ -911,7 +937,10 @@ body{
 
 </div>
 
-</div><script>
+</div>
+
+
+<script>
 
 const API =
     "https://azmon.hosseinkhorasani1.workers.dev";
@@ -953,16 +982,12 @@ const $ = (id) =>
 
 
 function show(id){
-
     $(id).classList.remove("hidden");
-
 }
 
 
 function hide(id){
-
     $(id).classList.add("hidden");
-
 }
 
 
@@ -1021,37 +1046,107 @@ function clearError(id){
 
 /*
 ====================================================
+ساخت دایره‌های سؤال‌ها
+====================================================
+*/
+
+function renderQuestionSteps(){
+
+    const container =
+        $("steps");
+
+    if(!examQuestionsCount){
+
+        hide("steps");
+        return;
+
+    }
+
+    let html = "";
+
+    for(let i = 0; i < examQuestionsCount; i++){
+
+        if(i > 0){
+
+            html += `
+                <div class="step-line"></div>
+            `;
+
+        }
+
+        html += `
+            <div
+                class="step"
+                id="questionStep${i}"
+            >
+                <div class="step-circle">
+                    ${toPersianNumber(i + 1)}
+                </div>
+            </div>
+        `;
+
+    }
+
+    container.innerHTML = html;
+
+}
+
+
+/*
+====================================================
 مراحل بالای صفحه
 ====================================================
 */
 
 function setStep(step){
 
-    const steps = [
-        $("step1"),
-        $("step2"),
-        $("step3"),
-        $("step4")
-    ];
+    if(!examQuestionsCount){
 
-    steps.forEach((item,index)=>{
+        hide("steps");
+        return;
+
+    }
+
+    show("steps");
+
+    for(let i = 0; i < examQuestionsCount; i++){
+
+        const item =
+            $(`questionStep${i}`);
+
+        if(!item){
+            continue;
+        }
 
         item.classList.remove("active");
         item.classList.remove("done");
 
-        if(index + 1 < step){
+        if(i + 1 < step){
 
             item.classList.add("done");
 
         }
 
-        if(index + 1 === step){
+        if(i + 1 === step){
 
             item.classList.add("active");
 
         }
 
-    });
+    }
+
+}
+
+
+/*
+====================================================
+مخفی کردن مراحل
+====================================================
+*/
+
+function hideQuestionSteps(){
+
+    hide("steps");
 
 }
 
@@ -1250,8 +1345,6 @@ $("startButton").addEventListener(
 
             show("paymentCard");
 
-            setStep(2);
-
         }
         catch(error){
 
@@ -1341,8 +1434,6 @@ $("payButton").addEventListener(
             hide("paymentCard");
 
             show("rulesCard");
-
-            setStep(3);
 
         }
         catch(error){
@@ -1444,14 +1535,16 @@ async function startExam(){
         );
 
         hide("startCard");
-
         hide("paymentCard");
-
         hide("rulesCard");
 
         show("examCard");
 
-        setStep(4);
+        renderQuestionSteps();
+
+        setStep(
+            Number(data.currentQuestion || 0) + 1
+        );
 
         showQuestion(
             data.question,
@@ -1510,6 +1603,8 @@ function showQuestion(
         Number(
             question.duration_seconds || 30
         );
+
+    setStep(questionIndex + 1);
 
     $("progress").textContent =
         "سؤال " +
@@ -1946,17 +2041,14 @@ async function finishExam(){
         }
 
 
+        hideQuestionSteps();
+
         hide("examCard");
-
         hide("rulesCard");
-
         hide("paymentCard");
-
         hide("startCard");
 
         show("resultCard");
-
-        setStep(4);
 
         renderResult(data);
 
@@ -2056,8 +2148,36 @@ function renderResult(data){
     const result =
         data.result || {};
 
-    const score =
+    /*
+    اگر Worker هنوز نمره را از ۱۰۰ برگرداند،
+    اینجا به نمره از ۲۰ تبدیل می‌شود.
+    اگر Worker نمره را از ۲۰ برگرداند،
+    همان نمره استفاده می‌شود.
+    */
+
+    const rawScore =
         Number(result.score || 0);
+
+    let score20;
+
+    if(rawScore > 20){
+
+        score20 =
+            rawScore / 5;
+
+    }
+    else{
+
+        score20 =
+            rawScore;
+
+    }
+
+    score20 =
+        Math.round(
+            score20 * 10
+        ) / 10;
+
 
     const total =
         Number(result.total || 0);
@@ -2084,47 +2204,50 @@ function renderResult(data){
 
     $("resultSummary").innerHTML = `
 
-        <div class="result-summary">
+        <div class="score-circle">
 
-            <div class="result-item">
-
-                <strong>
-                    ${toPersianNumber(score)}
-                </strong>
-
-                <span>
-                    نمره
-                </span>
-
+            <div class="score-number">
+                ${toPersianNumber(score20)}
             </div>
 
-            <div class="result-item">
+            <div class="score-label">
+                از ۲۰
+            </div>
 
-                <strong>
+        </div>
+
+
+        <div class="result-counts">
+
+            <div class="result-count">
+
+                <strong class="status-correct">
                     ${toPersianNumber(correct)}
                 </strong>
 
                 <span>
-                    صحیح
+                    پاسخ صحیح
                 </span>
 
             </div>
 
-            <div class="result-item">
 
-                <strong>
+            <div class="result-count">
+
+                <strong class="status-wrong">
                     ${toPersianNumber(wrong)}
                 </strong>
 
                 <span>
-                    غلط
+                    پاسخ غلط
                 </span>
 
             </div>
 
-            <div class="result-item">
 
-                <strong>
+            <div class="result-count">
+
+                <strong class="status-empty">
                     ${toPersianNumber(empty)}
                 </strong>
 
@@ -2183,16 +2306,6 @@ function renderResult(data){
 
     `;
 
-
-    /*
-    Worker جدید:
-    data.sheet
-
-    برای سازگاری با نسخه‌های قبلی:
-    data.answerSheet
-    result.sheet
-    result.answerSheet
-    */
 
     const sheet =
         data.sheet ||
@@ -2447,12 +2560,6 @@ async function restoreSession(){
         );
 
 
-    /*
-    اگر آزمون شروع شده باشد،
-    از Worker می‌خواهیم همان Attempt
-    و همان سؤال فعلی را برگرداند.
-    */
-
     if(
         started === "1" &&
         savedOrderId &&
@@ -2504,6 +2611,8 @@ async function restoreSession(){
                     "math_exam_started"
                 );
 
+                hideQuestionSteps();
+
                 return;
 
             }
@@ -2520,14 +2629,16 @@ async function restoreSession(){
 
 
             hide("startCard");
-
             hide("paymentCard");
-
             hide("rulesCard");
 
             show("examCard");
 
-            setStep(4);
+            renderQuestionSteps();
+
+            setStep(
+                Number(data.currentQuestion || 0) + 1
+            );
 
 
             showQuestion(
@@ -2556,11 +2667,6 @@ async function restoreSession(){
     }
 
 
-    /*
-    اگر سفارش ثبت شده ولی هنوز آزمون شروع نشده،
-    بعد از Refresh دوباره به مرحله پرداخت برمی‌گردیم.
-    */
-
     if(
         savedOrderId &&
         paid !== "1"
@@ -2573,17 +2679,12 @@ async function restoreSession(){
 
         show("paymentCard");
 
-        setStep(2);
+        hideQuestionSteps();
 
         return;
 
     }
 
-
-    /*
-    اگر پرداخت شده ولی هنوز آزمون شروع نشده،
-    قوانین را نمایش می‌دهیم.
-    */
 
     if(
         savedOrderId &&
@@ -2599,7 +2700,7 @@ async function restoreSession(){
 
         show("rulesCard");
 
-        setStep(3);
+        hideQuestionSteps();
 
         return;
 
@@ -2618,6 +2719,8 @@ async function initializePage(){
 
     await loadExam();
 
+    hideQuestionSteps();
+
     await restoreSession();
 
 }
@@ -2631,5 +2734,9 @@ async function initializePage(){
 
 initializePage();
 
-</script></body>
+</script>
+
+</body>
 </html>
+
+این نسخه را جایگزین "public/index.html" کن و تست بگیر. Worker را فعلاً تغییر نده؛ این نسخه حتی اگر Worker هنوز نمره را از ۱۰۰ برگرداند، در صفحه نتیجه آن را برای نمایش به نمره از ۲۰ تبدیل می‌کند.
