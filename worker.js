@@ -276,9 +276,6 @@ export default {
           }
 
 
-          // -----------------------------------------------
-          // آزمون جدید با attempt_questions
-          // -----------------------------------------------
           const savedQuestions = await env.DB.prepare(`
             SELECT
               id,
@@ -320,8 +317,6 @@ export default {
               }, 400);
             }
 
-
-            // اگر سؤال فعلی هنوز شروع نشده، زمان شروع را ثبت کن
             let questionStartedAt =
               currentQuestion.started_at;
 
@@ -368,9 +363,6 @@ export default {
           }
 
 
-          // -----------------------------------------------
-          // سازگاری با آزمون‌های قدیمی
-          // -----------------------------------------------
           const currentIndex =
             Number(existing.current_question || 0);
 
@@ -404,7 +396,6 @@ export default {
 
         // =================================================
         // آزمون جدید
-        // انتخاب سؤال از پوشه‌ها
         // =================================================
         const selectedQuestions =
           await selectQuestionsForExam(
@@ -420,7 +411,6 @@ export default {
           }, 400);
         }
 
-
         const attemptId =
           crypto.randomUUID();
 
@@ -428,9 +418,6 @@ export default {
           new Date().toISOString();
 
 
-        // -----------------------------------------------
-        // ساخت attempt
-        // -----------------------------------------------
         await env.DB.prepare(`
           INSERT INTO attempts (
             id,
@@ -450,9 +437,6 @@ export default {
           .run();
 
 
-        // -----------------------------------------------
-        // ذخیره Snapshot سؤال‌ها
-        // -----------------------------------------------
         for (
           let i = 0;
           i < selectedQuestions.length;
@@ -501,7 +485,6 @@ export default {
 
         const firstQuestion =
           selectedQuestions[0];
-
 
         return json({
           ok: true,
@@ -628,9 +611,6 @@ export default {
         }
 
 
-        // =================================================
-        // سؤال Snapshot شده
-        // =================================================
         let question =
           await env.DB.prepare(`
             SELECT
@@ -656,9 +636,6 @@ export default {
             .first();
 
 
-        // =================================================
-        // سازگاری با آزمون‌های قدیمی
-        // =================================================
         let isSnapshot = true;
 
         if (!question) {
@@ -715,15 +692,11 @@ export default {
               );
 
 
-        // اگر زمان تمام شده باشد
         if (elapsedSeconds > duration) {
           selectedIndex = null;
         }
 
 
-        // =================================================
-        // ثبت پاسخ
-        // =================================================
         if (isSnapshot) {
 
           const isCorrect =
@@ -777,9 +750,6 @@ export default {
         }
 
 
-        // =================================================
-        // سؤال بعدی
-        // =================================================
         const nextIndex =
           questionIndex + 1;
 
@@ -863,10 +833,7 @@ export default {
           }
 
 
-          // ---------------------------------------------
-          // پایان آزمون Snapshot
-          // ---------------------------------------------
-
+          // پایان آزمون
           const finishedAt =
             now.toISOString();
 
@@ -895,9 +862,6 @@ export default {
         }
 
 
-        // =================================================
-        // مسیر قدیمی
-        // =================================================
         const nextQuestion =
           await getQuestion(
             env,
@@ -1030,9 +994,6 @@ export default {
         }
 
 
-        // =================================================
-        // اگر Snapshot وجود دارد
-        // =================================================
         const savedQuestions =
           await env.DB.prepare(`
             SELECT
@@ -1127,9 +1088,6 @@ export default {
             savedRows.length;
 
 
-          // =================================================
-          // نمره از ۲۰
-          // =================================================
           const score =
             calculateScore20(
               correct,
@@ -1180,9 +1138,6 @@ export default {
         }
 
 
-        // =================================================
-        // نتیجه آزمون‌های قدیمی
-        // =================================================
         return await buildLegacyResult(
           env,
           attempt
@@ -1258,10 +1213,6 @@ export default {
             let status = "unpaid";
 
 
-            // -------------------------------------------
-            // وضعیت دانش‌آموز
-            // -------------------------------------------
-
             if (row.payment_status !== "paid") {
 
               status = "unpaid";
@@ -1285,10 +1236,6 @@ export default {
               status = "finished";
             }
 
-
-            // -------------------------------------------
-            // محاسبه نمره واقعی از ۲۰
-            // -------------------------------------------
 
             let calculatedScore = null;
 
@@ -1415,9 +1362,6 @@ export default {
         }
 
 
-        // -----------------------------------------------
-        // اطلاعات دانش‌آموز و آزمون
-        // -----------------------------------------------
         const attempt =
           await env.DB.prepare(`
             SELECT
@@ -1459,9 +1403,6 @@ export default {
         }
 
 
-        // -----------------------------------------------
-        // سؤال‌های Snapshot شده
-        // -----------------------------------------------
         const questions =
           await env.DB.prepare(`
             SELECT
@@ -1499,9 +1440,6 @@ export default {
           questions.results || [];
 
 
-        // -----------------------------------------------
-        // آماده‌سازی اطلاعات هر سؤال
-        // -----------------------------------------------
         const questionDetails =
           questionRows.map(q => {
 
@@ -1586,10 +1524,6 @@ export default {
           });
 
 
-        // -----------------------------------------------
-        // اگر تعداد پاسخ‌ها هنوز ذخیره نشده باشد
-        // دوباره از سؤال‌ها محاسبه می‌کنیم
-        // -----------------------------------------------
         let correctCount = 0;
         let wrongCount = 0;
         let emptyCount = 0;
@@ -1696,6 +1630,266 @@ export default {
 
           questions:
             questionDetails
+        });
+      }
+
+
+      // =====================================================
+      // حذف یک دانش‌آموز
+      // =====================================================
+      if (
+        request.method === "DELETE" &&
+        url.pathname === "/api/teacher/student"
+      ) {
+
+        const orderId =
+          String(
+            url.searchParams.get("orderId") || ""
+          ).trim();
+
+
+        const examId =
+          Number(
+            url.searchParams.get("examId") || 0
+          );
+
+
+        if (!orderId) {
+          return json({
+            ok: false,
+            error: "شناسه دانش‌آموز ارسال نشده است."
+          }, 400);
+        }
+
+
+        if (!examId) {
+          return json({
+            ok: false,
+            error: "شناسه آزمون نامعتبر است."
+          }, 400);
+        }
+
+
+        // -----------------------------------------------
+        // بررسی سفارش
+        // -----------------------------------------------
+        const order =
+          await env.DB.prepare(`
+            SELECT
+              id,
+              exam_id,
+              name,
+              phone
+            FROM orders
+            WHERE id = ?
+              AND exam_id = ?
+            LIMIT 1
+          `)
+            .bind(
+              orderId,
+              examId
+            )
+            .first();
+
+
+        if (!order) {
+          return json({
+            ok: false,
+            error: "دانش‌آموز پیدا نشد."
+          }, 404);
+        }
+
+
+        // -----------------------------------------------
+        // پیدا کردن تمام Attemptهای سفارش
+        // -----------------------------------------------
+        const attempts =
+          await env.DB.prepare(`
+            SELECT id
+            FROM attempts
+            WHERE order_id = ?
+          `)
+            .bind(orderId)
+            .all();
+
+
+        const attemptRows =
+          attempts.results || [];
+
+
+        // -----------------------------------------------
+        // حذف اطلاعات مربوط به Attemptها
+        // -----------------------------------------------
+        for (const attempt of attemptRows) {
+
+          await env.DB.prepare(`
+            DELETE FROM attempt_answers
+            WHERE attempt_id = ?
+          `)
+            .bind(attempt.id)
+            .run();
+
+
+          await env.DB.prepare(`
+            DELETE FROM attempt_questions
+            WHERE attempt_id = ?
+          `)
+            .bind(attempt.id)
+            .run();
+
+
+          await env.DB.prepare(`
+            DELETE FROM attempts
+            WHERE id = ?
+          `)
+            .bind(attempt.id)
+            .run();
+        }
+
+
+        // -----------------------------------------------
+        // حذف سفارش
+        // -----------------------------------------------
+        await env.DB.prepare(`
+          DELETE FROM orders
+          WHERE id = ?
+            AND exam_id = ?
+        `)
+          .bind(
+            orderId,
+            examId
+          )
+          .run();
+
+
+        return json({
+          ok: true,
+          deleted: true,
+          orderId,
+          examId,
+          name: order.name,
+          phone: order.phone,
+          message: "اطلاعات دانش‌آموز با موفقیت حذف شد."
+        });
+      }
+
+
+      // =====================================================
+      // حذف تمام دانش‌آموزان یک آزمون
+      // =====================================================
+      if (
+        request.method === "DELETE" &&
+        url.pathname === "/api/teacher/students"
+      ) {
+
+        const examId =
+          Number(
+            url.searchParams.get("examId") || 0
+          );
+
+
+        if (!examId) {
+          return json({
+            ok: false,
+            error: "شناسه آزمون نامعتبر است."
+          }, 400);
+        }
+
+
+        // -----------------------------------------------
+        // پیدا کردن سفارش‌های آزمون
+        // -----------------------------------------------
+        const orders =
+          await env.DB.prepare(`
+            SELECT id
+            FROM orders
+            WHERE exam_id = ?
+          `)
+            .bind(examId)
+            .all();
+
+
+        const orderRows =
+          orders.results || [];
+
+
+        let deletedOrders = 0;
+        let deletedAttempts = 0;
+
+
+        // -----------------------------------------------
+        // حذف تمام اطلاعات وابسته
+        // -----------------------------------------------
+        for (const order of orderRows) {
+
+          const attempts =
+            await env.DB.prepare(`
+              SELECT id
+              FROM attempts
+              WHERE order_id = ?
+            `)
+              .bind(order.id)
+              .all();
+
+
+          const attemptRows =
+            attempts.results || [];
+
+
+          for (const attempt of attemptRows) {
+
+            await env.DB.prepare(`
+              DELETE FROM attempt_answers
+              WHERE attempt_id = ?
+            `)
+              .bind(attempt.id)
+              .run();
+
+
+            await env.DB.prepare(`
+              DELETE FROM attempt_questions
+              WHERE attempt_id = ?
+            `)
+              .bind(attempt.id)
+              .run();
+
+
+            await env.DB.prepare(`
+              DELETE FROM attempts
+              WHERE id = ?
+            `)
+              .bind(attempt.id)
+              .run();
+
+
+            deletedAttempts++;
+          }
+
+
+          await env.DB.prepare(`
+            DELETE FROM orders
+            WHERE id = ?
+              AND exam_id = ?
+          `)
+            .bind(
+              order.id,
+              examId
+            )
+            .run();
+
+
+          deletedOrders++;
+        }
+
+
+        return json({
+          ok: true,
+          deleted: true,
+          examId,
+          deletedOrders,
+          deletedAttempts,
+          message:
+            "تمام اطلاعات شرکت‌کنندگان این آزمون حذف شد."
         });
       }
 
@@ -1863,7 +2057,6 @@ async function selectQuestionsForExam(
     }
 
 
-    // اگر سؤال کافی نبود، آزمون را ناقص شروع نکن
     if (rows.length < count) {
       throw new Error(
         `در ${rule.folder_name} فقط ${rows.length} سؤال موجود است ولی ${count} سؤال لازم است.`
@@ -1877,7 +2070,6 @@ async function selectQuestionsForExam(
 
   // =====================================================
   // اگر هیچ Rule ثبت نشده بود
-  // برای سازگاری با آزمون فعلی
   // =====================================================
   if (selected.length === 0) {
 
@@ -2166,20 +2358,12 @@ async function buildResult(
     rows.length;
 
 
-  // =====================================================
-  // نمره از ۲۰
-  // =====================================================
-
   const score =
     calculateScore20(
       correct,
       total
     );
 
-
-  // -----------------------------------------------------
-  // اصلاح نمره ذخیره شده قبلی در صورت نیاز
-  // -----------------------------------------------------
 
   if (
     attempt.finished_at
@@ -2349,20 +2533,12 @@ async function buildLegacyResult(
     rows.length;
 
 
-  // =====================================================
-  // نمره از ۲۰
-  // =====================================================
-
   const score =
     calculateScore20(
       correct,
       total
     );
 
-
-  // -----------------------------------------------------
-  // اصلاح نمره قدیمی
-  // -----------------------------------------------------
 
   await env.DB.prepare(`
     UPDATE attempts
@@ -2411,7 +2587,7 @@ function corsHeaders() {
     "Access-Control-Allow-Origin": "*",
 
     "Access-Control-Allow-Methods":
-      "GET, POST, OPTIONS",
+      "GET, POST, DELETE, OPTIONS",
 
     "Access-Control-Allow-Headers":
       "Content-Type",
