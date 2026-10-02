@@ -15,7 +15,6 @@ body{
     color:#1f2937;
 }
 
-/* جلوگیری از نمایش لحظه‌ای صفحه شروع هنگام Refresh */
 body.page-loading{
     visibility:hidden;
 }
@@ -959,7 +958,6 @@ let submitting = false;
 let examQuestionsCount = 0;
 let examData = null;
 
-/* زمان‌های آزمون */
 let examStartedAt = null;
 let examFinishedAt = null;
 
@@ -1079,7 +1077,6 @@ function renderExamInfo(){
     }
 
     const exam = examData.exam || {};
-    const questions = examData.questions || [];
 
     const finalPrice =
         Number(
@@ -1210,7 +1207,7 @@ function renderExamInfo(){
             <div class="info-row">
                 <span class="info-label">تعداد سؤال</span>
                 <span class="info-value">
-                    ${toPersianNumber(questions.length)}
+                    ${toPersianNumber(examQuestionsCount)}
                 </span>
             </div>
 
@@ -1273,23 +1270,50 @@ async function loadExam(){
 
         }
 
+        if(!data.exam){
+
+            throw new Error(
+                "اطلاعات آزمون در پاسخ سرور وجود ندارد."
+            );
+
+        }
+
         examData = data;
 
+        /*
+           تعداد واقعی سوالات آزمون
+           از questionCount دریافت می‌شود.
+           اگر وجود نداشت، برای سازگاری
+           از تعداد questions استفاده می‌کنیم.
+        */
         examQuestionsCount =
-            Array.isArray(data.questions)
-                ? data.questions.length
-                : 0;
+            Number(
+                data.questionCount ||
+                (
+                    Array.isArray(data.questions)
+                        ? data.questions.length
+                        : 0
+                )
+            );
 
         renderExamInfo();
 
     }
     catch(error){
 
+        console.error(
+            "LOAD EXAM ERROR:",
+            error
+        );
+
         $("examInfo").innerHTML = `
             <div class="error">
                 دریافت اطلاعات آزمون انجام نشد.
                 <br>
-                ${escapeHtml(error.message)}
+                ${escapeHtml(
+                    error.message ||
+                    "خطای نامشخص"
+                )}
             </div>
         `;
 
@@ -1380,10 +1404,6 @@ $("startButton").addEventListener(
 
             attemptId = null;
 
-            /*
-               شروع یک آزمون جدید:
-               زمان‌های آزمون قبلی پاک می‌شوند.
-            */
             examStartedAt = null;
             examFinishedAt = null;
 
@@ -1676,10 +1696,6 @@ async function startExam(){
         attemptId =
             data.attemptId;
 
-        /*
-           فقط در شروع واقعی آزمون،
-           زمان شروع را ذخیره می‌کنیم.
-        */
         if(
             !examStartedAt &&
             data.questionStartedAt
@@ -2157,11 +2173,6 @@ async function finishExam(){
         return;
     }
 
-    /*
-       زمان پایان را قبل از درخواست نتیجه ذخیره می‌کنیم
-       تا حتی اگر Worker این فیلد را برنگرداند،
-       زمان پایان در پنل موجود باشد.
-    */
     examFinishedAt =
         new Date().toISOString();
 
@@ -2289,10 +2300,6 @@ function renderResult(data){
     const empty =
         Number(result.empty || 0);
 
-    /*
-       ابتدا زمان‌های برگشتی از Worker،
-       سپس زمان‌های ذخیره‌شده در مرورگر.
-    */
     const startedAt =
         result.startedAt ||
         result.started_at ||
@@ -2616,10 +2623,6 @@ async function restoreSession(){
             "math_exam_paid"
         );
 
-    /*
-       زمان شروع قبلی را بازیابی می‌کنیم.
-       این زمان با Refresh تغییر نمی‌کند.
-    */
     examStartedAt =
         localStorage.getItem(
             "math_exam_started_at"
@@ -2630,11 +2633,6 @@ async function restoreSession(){
             "math_exam_finished_at"
         );
 
-
-    /*
-    اگر attempt وجود دارد و started=1 است،
-    یعنی آزمون واقعاً شروع شده.
-    */
 
     if(
         savedOrderId &&
@@ -2690,11 +2688,6 @@ async function restoreSession(){
                 attemptId
             );
 
-            /*
-               اگر به هر دلیلی زمان شروع قبلی
-               ذخیره نشده بود، فقط یک بار
-               از زمان سؤال فعلی استفاده می‌کنیم.
-            */
             if(
                 !examStartedAt &&
                 data.questionStartedAt
@@ -2734,21 +2727,11 @@ async function restoreSession(){
                 error
             );
 
-            /*
-               Session را پاک نمی‌کنیم.
-               چون آزمون هنوز در حال اجراست
-               و با Refresh بعدی دوباره تلاش می‌شود.
-            */
-
             return;
         }
 
     }
 
-
-    /*
-    اگر سفارش وجود دارد ولی آزمون شروع نشده:
-    */
 
     if(
         savedOrderId &&
@@ -2769,10 +2752,6 @@ async function restoreSession(){
     }
 
 
-    /*
-    اگر سفارش ایجاد شده ولی پرداخت نشده:
-    */
-
     if(
         savedOrderId &&
         paid !== "1" &&
@@ -2790,11 +2769,6 @@ async function restoreSession(){
 
     }
 
-
-    /*
-    اگر وضعیت ناقص یا خراب است،
-    همه چیز پاک می‌شود و صفحه اول نمایش داده می‌شود.
-    */
 
     if(
         savedAttemptId ||
@@ -2816,14 +2790,6 @@ async function restoreSession(){
 
 async function initializePage(){
 
-    /*
-       همه کارت‌ها ابتدا مخفی می‌شوند.
-       body نیز تا پایان restoreSession
-       visibility:hidden دارد.
-       بنابراین صفحه شروع حتی برای یک لحظه
-       هنگام Refresh دیده نمی‌شود.
-    */
-
     hide("startCard");
     hide("paymentCard");
     hide("rulesCard");
@@ -2835,10 +2801,6 @@ async function initializePage(){
 
     await restoreSession();
 
-    /*
-       اگر هیچ Session فعالی وجود نداشت،
-       صفحه شروع نمایش داده می‌شود.
-    */
     if(
         !attemptId &&
         !orderId
@@ -2848,10 +2810,6 @@ async function initializePage(){
 
     }
 
-    /*
-       حالا وضعیت نهایی مشخص شده و صفحه را
-       برای کاربر قابل مشاهده می‌کنیم.
-    */
     document.body.classList.remove(
         "page-loading"
     );
