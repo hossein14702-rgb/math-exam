@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پنل معلم</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Tahoma, Arial, sans-serif;
+    background: #f5f7fb;
+    color: #222;
+}
+
+.container {
+    width: 95%;
+    max-width: 1400px;
+    margin: 25px auto;
+}
+
+.header {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.07);
+    margin-bottom: 20px;
+}
+
+.header h1 {
+    margin: 0 0 8px;
+    font-size: 25px;
+}
+
+.header p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.controls {
+    margin-top: 18px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+button {
+    border: 0;
+    border-radius: 10px;
+    padding: 11px 18px;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.refresh-btn {
+    background: #2563eb;
+    color: white;
+}
+
+.refresh-btn:hover {
+    background: #1d4ed8;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.stat {
+    background: white;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.06);
+}
+
+.stat-title {
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.table-box {
+    background: white;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.07);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1050px;
+}
+
+th {
+    background: #f1f5f9;
+    padding: 13px 10px;
+    text-align: center;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+td {
+    padding: 13px 10px;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+tr:hover td {
+    background: #fafafa;
+}
+
+.status {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.status-unpaid {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-paid {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-progress {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.status-finished {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.score {
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.detail-btn {
+    background: #111827;
+    color: white;
+    padding: 7px 12px;
+    font-size: 12px;
+}
+
+.detail-btn:hover {
+    background: #374151;
+}
+
+.empty {
+    text-align: center;
+    padding: 35px;
+    color: #777;
+}
+
+.loading {
+    text-align: center;
+    padding: 35px;
+    color: #555;
+}
+
+.error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    display: none;
+}
+
+@media (max-width: 800px) {
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .header h1 {
+        font-size: 21px;
+    }
+}
+
+@media (max-width: 450px) {
+    .stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .stat {
+        padding: 13px;
+    }
+
+    .stat-value {
+        font-size: 20px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>پنل معلم</h1>
+        <p>مدیریت وضعیت شرکت‌کنندگان آزمون ریاضی</p>
+
+        <div class="controls">
+            <button class="refresh-btn" onclick="loadStudents()">
+                🔄 بروزرسانی
+            </button>
+        </div>
+    </div>
+
+    <div id="errorBox" class="error"></div>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-title">کل شرکت‌کنندگان</div>
+            <div class="stat-value" id="totalCount">۰</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">در حال انجام</div>
+            <div class="stat-value" id="progressCount">۰</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">تمام شده</div>
+            <div class="stat-value" id="finishedCount">۰</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">پرداخت نکرده</div>
+            <div class="stat-value" id="unpaidCount">۰</div>
+        </div>
+    </div>
+
+    <div class="table-box">
+
+        <div id="loading" class="loading">
+            در حال دریافت اطلاعات...
+        </div>
+
+        <table id="studentsTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th>ردیف</th>
+                    <th>نام</th>
+                    <th>موبایل</th>
+                    <th>مبلغ</th>
+                    <th>ثبت سفارش</th>
+                    <th>تاریخ پرداخت</th>
+                    <th>وضعیت</th>
+                    <th>شروع آزمون</th>
+                    <th>پایان آزمون</th>
+                    <th>نمره</th>
+                    <th>صحیح</th>
+                    <th>غلط</th>
+                    <th>بدون پاسخ</th>
+                    <th>جزئیات</th>
+                </tr>
+            </thead>
+
+            <tbody id="studentsBody"></tbody>
+        </table>
+
+        <div id="emptyBox" class="empty" style="display:none;">
+            هنوز شرکت‌کننده‌ای ثبت نشده است.
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const API_BASE =
+    "https://azmon.hosseinkhorasani1.workers.dev";
+
+const EXAM_ID = 1;
+
+
+/* تبدیل اعداد انگلیسی به فارسی */
+function faNumber(value) {
+    if (value === null || value === undefined) return "—";
+
+    return String(value).replace(/\d/g, d =>
+        "۰۱۲۳۴۵۶۷۸۹"[d]
+    );
+}
+
+
+/* نمایش تاریخ به وقت ایران */
+function formatDate(value) {
+
+    if (!value) return "—";
+
+    try {
+
+        const date = new Date(value);
+
+        if (isNaN(date.getTime())) {
+            return "—";
+        }
+
+        return new Intl.DateTimeFormat("fa-IR", {
+            dateStyle: "short",
+            timeStyle: "short",
+            timeZone: "Asia/Tehran"
+        }).format(date);
+
+    } catch (e) {
+        return "—";
+    }
+}
+
+
+/* نمایش وضعیت */
+function getStatus(status) {
+
+    if (status === "unpaid") {
+
+        return `
+            <span class="status status-unpaid">
+                پرداخت نکرده
+            </span>
+        `;
+
+    }
+
+    if (status === "paid_not_started") {
+
+        return `
+            <span class="status status-paid">
+                پرداخت کرده ولی شروع نکرده
+            </span>
+        `;
+
+    }
+
+    if (status === "in_progress") {
+
+        return `
+            <span class="status status-progress">
+                آزمون در حال انجام
+            </span>
+        `;
+
+    }
+
+    if (status === "finished") {
+
+        return `
+            <span class="status status-finished">
+                آزمون تمام شده
+            </span>
+        `;
+
+    }
+
+    return status || "—";
+}
+
+
+/* نمایش خطا */
+function showError(message) {
+
+    const box = document.getElementById("errorBox");
+
+    box.textContent = message;
+    box.style.display = "block";
+}
+
+
+/* مخفی کردن خطا */
+function hideError() {
+
+    const box = document.getElementById("errorBox");
+
+    box.style.display = "none";
+}
+
+
+/* بروزرسانی آمار */
+function updateStats(students) {
+
+    let total = students.length;
+    let progress = 0;
+    let finished = 0;
+    let unpaid = 0;
+
+    students.forEach(student => {
+
+        if (student.status === "in_progress") {
+            progress++;
+        }
+
+        if (student.status === "finished") {
+            finished++;
+        }
+
+        if (student.status === "unpaid") {
+            unpaid++;
+        }
+
+    });
+
+    document.getElementById("totalCount").textContent =
+        faNumber(total);
+
+    document.getElementById("progressCount").textContent =
+        faNumber(progress);
+
+    document.getElementById("finishedCount").textContent =
+        faNumber(finished);
+
+    document.getElementById("unpaidCount").textContent =
+        faNumber(unpaid);
+}
+
+
+/* بارگذاری دانش‌آموزها */
+async function loadStudents() {
+
+    const loading = document.getElementById("loading");
+    const table = document.getElementById("studentsTable");
+    const empty = document.getElementById("emptyBox");
+    const body = document.getElementById("studentsBody");
+
+    hideError();
+
+    loading.style.display = "block";
+    table.style.display = "none";
+    empty.style.display = "none";
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE}/api/teacher/students?examId=${EXAM_ID}&_=${Date.now()}`
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "خطا در ارتباط با سرور: " + response.status
+            );
+        }
+
+        const data = await response.json();
+
+        if (!data.ok) {
+            throw new Error(
+                data.error || "دریافت اطلاعات ناموفق بود."
+            );
+        }
+
+        const students = data.students || [];
+
+        updateStats(students);
+
+        body.innerHTML = "";
+
+        if (students.length === 0) {
+
+            loading.style.display = "none";
+            empty.style.display = "block";
+            return;
+        }
+
+
+        students.forEach((student, index) => {
+
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+
+                <td>${faNumber(index + 1)}</td>
+
+                <td>
+                    <strong>${escapeHtml(student.name || "—")}</strong>
+                </td>
+
+                <td dir="ltr">
+                    ${escapeHtml(student.phone || "—")}
+                </td>
+
+                <td>
+                    ${faNumber(
+                        Number(student.amount || 0).toLocaleString("en-US")
+                    )}
+                </td>
+
+                <td>
+                    ${formatDate(student.createdAt)}
+                </td>
+
+                <td>
+                    ${formatDate(student.paidAt)}
+                </td>
+
+                <td>
+                    ${getStatus(student.status)}
+                </td>
+
+                <td>
+                    ${formatDate(student.startedAt)}
+                </td>
+
+                <td>
+                    ${formatDate(student.finishedAt)}
+                </td>
+
+                <td class="score">
+                    ${
+                        student.score !== null &&
+                        student.score !== undefined
+                            ? faNumber(student.score) + " از ۲۰"
+                            : "—"
+                    }
+                </td>
+
+                <td>
+                    ${faNumber(student.correct ?? 0)}
+                </td>
+
+                <td>
+                    ${faNumber(student.wrong ?? 0)}
+                </td>
+
+                <td>
+                    ${faNumber(student.empty ?? 0)}
+                </td>
+
+                <td>
+                    ${
+                        student.attemptId
+                            ? `
+                                <button
+                                    class="detail-btn"
+                                    onclick="showAttempt('${student.attemptId}')">
+                                    مشاهده
+                                </button>
+                              `
+                            : "—"
+                    }
+                </td>
+            `;
+
+            body.appendChild(tr);
+
+        });
+
+        loading.style.display = "none";
+        table.style.display = "table";
+
+    } catch (error) {
+
+        console.error(error);
+
+        loading.style.display = "none";
+
+        showError(
+            "خطا در دریافت اطلاعات. " +
+            (error.message || "")
+        );
+    }
+}
+
+
+/* جلوگیری از ورود HTML داخل نام */
+function escapeHtml(value) {
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+/* فعلاً جزئیات آزمون */
+function showAttempt(attemptId) {
+
+    alert(
+        "شناسه آزمون:\n\n" +
+        attemptId +
+        "\n\n" +
+        "در مرحله بعد جزئیات کامل آزمون را به این بخش اضافه می‌کنیم."
+    );
+}
+
+
+/* اجرای اولیه */
+loadStudents();
+
+</script>
+
+</body>
+</html>
