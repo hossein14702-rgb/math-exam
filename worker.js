@@ -866,15 +866,21 @@ export default {
           // ---------------------------------------------
           // پایان آزمون Snapshot
           // ---------------------------------------------
+
+          const finishedAt =
+            now.toISOString();
+
           await env.DB.prepare(`
             UPDATE attempts
             SET
               current_question = ?,
-              question_started_at = NULL
+              question_started_at = NULL,
+              finished_at = ?
             WHERE id = ?
           `)
             .bind(
               nextIndex,
+              finishedAt,
               attemptId
             )
             .run();
@@ -934,15 +940,20 @@ export default {
         }
 
 
+        const finishedAt =
+          now.toISOString();
+
         await env.DB.prepare(`
           UPDATE attempts
           SET
             current_question = ?,
-            question_started_at = NULL
+            question_started_at = NULL,
+            finished_at = ?
           WHERE id = ?
         `)
           .bind(
             nextIndex,
+            finishedAt,
             attemptId
           )
           .run();
@@ -1120,14 +1131,10 @@ export default {
           // نمره از ۲۰
           // =================================================
           const score =
-            total > 0
-              ? Number(
-                  (
-                    (correct / total) *
-                    20
-                  ).toFixed(2)
-                )
-              : 0;
+            calculateScore20(
+              correct,
+              total
+            );
 
 
           const finishedAt =
@@ -1279,6 +1286,45 @@ export default {
             }
 
 
+            // -------------------------------------------
+            // محاسبه نمره واقعی از ۲۰
+            // -------------------------------------------
+
+            let calculatedScore = null;
+
+            if (
+              row.correct_count !== null &&
+              row.correct_count !== undefined
+            ) {
+
+              const correct =
+                Number(
+                  row.correct_count || 0
+                );
+
+              const wrong =
+                Number(
+                  row.wrong_count || 0
+                );
+
+              const empty =
+                Number(
+                  row.empty_count || 0
+                );
+
+              const total =
+                correct +
+                wrong +
+                empty;
+
+              calculatedScore =
+                calculateScore20(
+                  correct,
+                  total
+                );
+            }
+
+
             return {
 
               orderId:
@@ -1316,12 +1362,9 @@ export default {
               finishedAt:
                 row.finished_at || null,
 
-              // نمره از ۲۰
+              // همیشه نمره واقعی از ۲۰
               score:
-                row.score === null ||
-                row.score === undefined
-                  ? null
-                  : Number(row.score),
+                calculatedScore,
 
               correct:
                 row.correct_count === null ||
@@ -1460,6 +1503,10 @@ async function selectQuestionsForExam(
             ON q.id = m.question_id
           WHERE m.exam_id = ?
             AND q.folder_id = ?
+            AND (
+              q.active IS NULL
+              OR q.active = 1
+            )
           ORDER BY m.sort_order, q.id
           LIMIT ?
         `)
@@ -1542,6 +1589,10 @@ async function selectQuestionsForExam(
           duration_seconds
         FROM questions
         WHERE exam_id = ?
+          AND (
+            active IS NULL
+            OR active = 1
+          )
         ORDER BY id
       `)
         .bind(examId)
@@ -1652,6 +1703,37 @@ function publicQuestion(q) {
         q.duration_seconds || 30
       )
   };
+}
+
+
+// =====================================================
+// محاسبه نمره از ۲۰
+// =====================================================
+
+function calculateScore20(
+  correct,
+  total
+) {
+
+  const c =
+    Number(correct || 0);
+
+  const t =
+    Number(total || 0);
+
+  if (
+    t <= 0 ||
+    c <= 0
+  ) {
+    return 0;
+  }
+
+  return Number(
+    (
+      (c / t) *
+      20
+    ).toFixed(2)
+  );
 }
 
 
@@ -1782,15 +1864,40 @@ async function buildResult(
   // =====================================================
   // نمره از ۲۰
   // =====================================================
+
   const score =
-    total > 0
-      ? Number(
-          (
-            (correct / total) *
-            20
-          ).toFixed(2)
-        )
-      : 0;
+    calculateScore20(
+      correct,
+      total
+    );
+
+
+  // -----------------------------------------------------
+  // اصلاح نمره ذخیره شده قبلی در صورت نیاز
+  // -----------------------------------------------------
+
+  if (
+    attempt.finished_at
+  ) {
+
+    await env.DB.prepare(`
+      UPDATE attempts
+      SET
+        score = ?,
+        correct_count = ?,
+        wrong_count = ?,
+        empty_count = ?
+      WHERE id = ?
+    `)
+      .bind(
+        score,
+        correct,
+        wrong,
+        empty,
+        attemptId
+      )
+      .run();
+  }
 
 
   return json({
@@ -1940,15 +2047,35 @@ async function buildLegacyResult(
   // =====================================================
   // نمره از ۲۰
   // =====================================================
+
   const score =
-    total > 0
-      ? Number(
-          (
-            (correct / total) *
-            20
-          ).toFixed(2)
-        )
-      : 0;
+    calculateScore20(
+      correct,
+      total
+    );
+
+
+  // -----------------------------------------------------
+  // اصلاح نمره قدیمی
+  // -----------------------------------------------------
+
+  await env.DB.prepare(`
+    UPDATE attempts
+    SET
+      score = ?,
+      correct_count = ?,
+      wrong_count = ?,
+      empty_count = ?
+    WHERE id = ?
+  `)
+    .bind(
+      score,
+      correct,
+      wrong,
+      empty,
+      attempt.id
+    )
+    .run();
 
 
   return json({
