@@ -67,6 +67,15 @@ button {
     background: #1d4ed8;
 }
 
+.delete-all-btn {
+    background: #dc2626;
+    color: white;
+}
+
+.delete-all-btn:hover {
+    background: #b91c1c;
+}
+
 .stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -103,7 +112,7 @@ button {
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1050px;
+    min-width: 1250px;
 }
 
 th {
@@ -163,10 +172,22 @@ tr:hover td {
     color: white;
     padding: 7px 12px;
     font-size: 12px;
+    margin-left: 5px;
 }
 
 .detail-btn:hover {
     background: #374151;
+}
+
+.delete-btn {
+    background: #dc2626;
+    color: white;
+    padding: 7px 12px;
+    font-size: 12px;
+}
+
+.delete-btn:hover {
+    background: #b91c1c;
 }
 
 .empty {
@@ -190,8 +211,132 @@ tr:hover td {
     display: none;
 }
 
+/* =========================
+   مودال جزئیات
+========================= */
+
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.modal-box {
+    background: white;
+    width: 95%;
+    max-width: 1100px;
+    margin: 30px auto;
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 21px;
+}
+
+.close-btn {
+    background: #e5e7eb;
+    color: #111827;
+    font-size: 20px;
+    padding: 5px 12px;
+}
+
+.close-btn:hover {
+    background: #d1d5db;
+}
+
+.student-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.summary-item {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.summary-title {
+    color: #64748b;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.summary-value {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.questions-table {
+    overflow-x: auto;
+}
+
+.questions-table table {
+    min-width: 850px;
+}
+
+.correct-row td {
+    background: #f0fdf4;
+}
+
+.wrong-row td {
+    background: #fef2f2;
+}
+
+.empty-row td {
+    background: #f8fafc;
+}
+
+.result-correct {
+    color: #166534;
+    font-weight: bold;
+}
+
+.result-wrong {
+    color: #991b1b;
+    font-weight: bold;
+}
+
+.result-empty {
+    color: #64748b;
+    font-weight: bold;
+}
+
+.answer-box {
+    white-space: normal;
+    min-width: 180px;
+    max-width: 280px;
+}
+
+.modal-loading {
+    text-align: center;
+    padding: 30px;
+    color: #555;
+}
+
 @media (max-width: 800px) {
+
     .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .student-summary {
         grid-template-columns: repeat(2, 1fr);
     }
 
@@ -201,6 +346,7 @@ tr:hover td {
 }
 
 @media (max-width: 450px) {
+
     .stats {
         grid-template-columns: 1fr 1fr;
         gap: 8px;
@@ -213,6 +359,20 @@ tr:hover td {
     .stat-value {
         font-size: 20px;
     }
+
+    .student-summary {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .modal {
+        padding: 8px;
+    }
+
+    .modal-box {
+        width: 100%;
+        margin: 10px auto;
+        padding: 15px;
+    }
 }
 </style>
 </head>
@@ -222,49 +382,110 @@ tr:hover td {
 <div class="container">
 
     <div class="header">
+
         <h1>پنل معلم</h1>
-        <p>مدیریت وضعیت شرکت‌کنندگان آزمون ریاضی</p>
+
+        <p>
+            مدیریت وضعیت شرکت‌کنندگان آزمون ریاضی
+        </p>
 
         <div class="controls">
-            <button class="refresh-btn" onclick="loadStudents()">
+
+            <button
+                class="refresh-btn"
+                onclick="loadStudents()">
                 🔄 بروزرسانی
             </button>
+
+            <button
+                class="delete-all-btn"
+                onclick="deleteAllStudents()">
+                🗑 حذف همه دانش‌آموزان
+            </button>
+
         </div>
+
     </div>
+
 
     <div id="errorBox" class="error"></div>
 
+
     <div class="stats">
-        <div class="stat">
-            <div class="stat-title">کل شرکت‌کنندگان</div>
-            <div class="stat-value" id="totalCount">۰</div>
-        </div>
 
         <div class="stat">
-            <div class="stat-title">در حال انجام</div>
-            <div class="stat-value" id="progressCount">۰</div>
+            <div class="stat-title">
+                کل شرکت‌کنندگان
+            </div>
+
+            <div
+                class="stat-value"
+                id="totalCount">
+                ۰
+            </div>
         </div>
 
-        <div class="stat">
-            <div class="stat-title">تمام شده</div>
-            <div class="stat-value" id="finishedCount">۰</div>
-        </div>
 
         <div class="stat">
-            <div class="stat-title">پرداخت نکرده</div>
-            <div class="stat-value" id="unpaidCount">۰</div>
+            <div class="stat-title">
+                در حال انجام
+            </div>
+
+            <div
+                class="stat-value"
+                id="progressCount">
+                ۰
+            </div>
         </div>
+
+
+        <div class="stat">
+            <div class="stat-title">
+                تمام شده
+            </div>
+
+            <div
+                class="stat-value"
+                id="finishedCount">
+                ۰
+            </div>
+        </div>
+
+
+        <div class="stat">
+            <div class="stat-title">
+                پرداخت نکرده
+            </div>
+
+            <div
+                class="stat-value"
+                id="unpaidCount">
+                ۰
+            </div>
+        </div>
+
     </div>
+
 
     <div class="table-box">
 
-        <div id="loading" class="loading">
+        <div
+            id="loading"
+            class="loading">
+
             در حال دریافت اطلاعات...
+
         </div>
 
-        <table id="studentsTable" style="display:none;">
+
+        <table
+            id="studentsTable"
+            style="display:none;">
+
             <thead>
+
                 <tr>
+
                     <th>ردیف</th>
                     <th>نام</th>
                     <th>موبایل</th>
@@ -278,20 +499,73 @@ tr:hover td {
                     <th>صحیح</th>
                     <th>غلط</th>
                     <th>بدون پاسخ</th>
-                    <th>جزئیات</th>
+                    <th>عملیات</th>
+
                 </tr>
+
             </thead>
 
+
             <tbody id="studentsBody"></tbody>
+
         </table>
 
-        <div id="emptyBox" class="empty" style="display:none;">
+
+        <div
+            id="emptyBox"
+            class="empty"
+            style="display:none;">
+
             هنوز شرکت‌کننده‌ای ثبت نشده است.
+
         </div>
 
     </div>
 
 </div>
+
+
+<!-- =========================
+     مودال جزئیات آزمون
+========================= -->
+
+<div
+    id="attemptModal"
+    class="modal"
+    onclick="closeModalByBackground(event)">
+
+    <div
+        class="modal-box"
+        onclick="event.stopPropagation()">
+
+        <div class="modal-header">
+
+            <h2>
+                جزئیات آزمون
+            </h2>
+
+            <button
+                class="close-btn"
+                onclick="closeAttemptModal()">
+                ×
+            </button>
+
+        </div>
+
+
+        <div
+            id="attemptContent">
+
+            <div class="modal-loading">
+                در حال دریافت جزئیات...
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
 
 <script>
 
@@ -301,20 +575,35 @@ const API_BASE =
 const EXAM_ID = 1;
 
 
-/* تبدیل اعداد انگلیسی به فارسی */
-function faNumber(value) {
-    if (value === null || value === undefined) return "—";
+/* =========================
+   اعداد فارسی
+========================= */
 
-    return String(value).replace(/\d/g, d =>
-        "۰۱۲۳۴۵۶۷۸۹"[d]
+function faNumber(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return "—";
+    }
+
+    return String(value).replace(
+        /\d/g,
+        d => "۰۱۲۳۴۵۶۷۸۹"[d]
     );
 }
 
 
-/* نمایش تاریخ به وقت ایران */
+/* =========================
+   تاریخ
+========================= */
+
 function formatDate(value) {
 
-    if (!value) return "—";
+    if (!value) {
+        return "—";
+    }
 
     try {
 
@@ -324,19 +613,27 @@ function formatDate(value) {
             return "—";
         }
 
-        return new Intl.DateTimeFormat("fa-IR", {
-            dateStyle: "short",
-            timeStyle: "short",
-            timeZone: "Asia/Tehran"
-        }).format(date);
+        return new Intl.DateTimeFormat(
+            "fa-IR",
+            {
+                dateStyle: "short",
+                timeStyle: "short",
+                timeZone: "Asia/Tehran"
+            }
+        ).format(date);
 
     } catch (e) {
+
         return "—";
+
     }
 }
 
 
-/* نمایش وضعیت */
+/* =========================
+   وضعیت
+========================= */
+
 function getStatus(status) {
 
     if (status === "unpaid") {
@@ -383,76 +680,150 @@ function getStatus(status) {
 }
 
 
-/* نمایش خطا */
+/* =========================
+   خطا
+========================= */
+
 function showError(message) {
 
-    const box = document.getElementById("errorBox");
+    const box =
+        document.getElementById("errorBox");
 
     box.textContent = message;
+
     box.style.display = "block";
 }
 
 
-/* مخفی کردن خطا */
 function hideError() {
 
-    const box = document.getElementById("errorBox");
+    const box =
+        document.getElementById("errorBox");
 
     box.style.display = "none";
 }
 
 
-/* بروزرسانی آمار */
+/* =========================
+   آمار
+========================= */
+
 function updateStats(students) {
 
     let total = students.length;
+
     let progress = 0;
     let finished = 0;
     let unpaid = 0;
 
     students.forEach(student => {
 
-        if (student.status === "in_progress") {
+        if (
+            student.status === "in_progress"
+        ) {
             progress++;
         }
 
-        if (student.status === "finished") {
+        if (
+            student.status === "finished"
+        ) {
             finished++;
         }
 
-        if (student.status === "unpaid") {
+        if (
+            student.status === "unpaid"
+        ) {
             unpaid++;
         }
 
     });
 
-    document.getElementById("totalCount").textContent =
-        faNumber(total);
 
-    document.getElementById("progressCount").textContent =
-        faNumber(progress);
+    document.getElementById(
+        "totalCount"
+    ).textContent = faNumber(total);
 
-    document.getElementById("finishedCount").textContent =
-        faNumber(finished);
 
-    document.getElementById("unpaidCount").textContent =
-        faNumber(unpaid);
+    document.getElementById(
+        "progressCount"
+    ).textContent = faNumber(progress);
+
+
+    document.getElementById(
+        "finishedCount"
+    ).textContent = faNumber(finished);
+
+
+    document.getElementById(
+        "unpaidCount"
+    ).textContent = faNumber(unpaid);
+
 }
 
 
-/* بارگذاری دانش‌آموزها */
+/* =========================
+   HTML امن
+========================= */
+
+function escapeHtml(value) {
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}
+
+
+/* =========================
+   بارگذاری دانش‌آموزان
+========================= */
+
 async function loadStudents() {
 
-    const loading = document.getElementById("loading");
-    const table = document.getElementById("studentsTable");
-    const empty = document.getElementById("emptyBox");
-    const body = document.getElementById("studentsBody");
+    const loading =
+        document.getElementById("loading");
+
+    const table =
+        document.getElementById("studentsTable");
+
+    const empty =
+        document.getElementById("emptyBox");
+
+    const body =
+        document.getElementById("studentsBody");
+
 
     hideError();
 
+
     loading.style.display = "block";
+
     table.style.display = "none";
+
     empty.style.display = "none";
+
 
     try {
 
@@ -460,118 +831,201 @@ async function loadStudents() {
             `${API_BASE}/api/teacher/students?examId=${EXAM_ID}&_=${Date.now()}`
         );
 
+
         if (!response.ok) {
+
             throw new Error(
-                "خطا در ارتباط با سرور: " + response.status
+                "خطا در ارتباط با سرور: " +
+                response.status
             );
+
         }
 
-        const data = await response.json();
+
+        const data =
+            await response.json();
+
 
         if (!data.ok) {
+
             throw new Error(
-                data.error || "دریافت اطلاعات ناموفق بود."
+                data.error ||
+                "دریافت اطلاعات ناموفق بود."
             );
+
         }
 
-        const students = data.students || [];
+
+        const students =
+            data.students || [];
+
 
         updateStats(students);
 
+
         body.innerHTML = "";
 
-        if (students.length === 0) {
+
+        if (
+            students.length === 0
+        ) {
 
             loading.style.display = "none";
+
             empty.style.display = "block";
+
             return;
+
         }
 
 
-        students.forEach((student, index) => {
+        students.forEach(
+            (student, index) => {
 
-            const tr = document.createElement("tr");
+                const tr =
+                    document.createElement("tr");
 
-            tr.innerHTML = `
 
-                <td>${faNumber(index + 1)}</td>
+                tr.innerHTML = `
 
-                <td>
-                    <strong>${escapeHtml(student.name || "—")}</strong>
-                </td>
+                    <td>
+                        ${faNumber(index + 1)}
+                    </td>
 
-                <td dir="ltr">
-                    ${escapeHtml(student.phone || "—")}
-                </td>
+                    <td>
+                        <strong>
+                            ${escapeHtml(
+                                student.name || "—"
+                            )}
+                        </strong>
+                    </td>
 
-                <td>
-                    ${faNumber(
-                        Number(student.amount || 0).toLocaleString("en-US")
-                    )}
-                </td>
+                    <td dir="ltr">
+                        ${escapeHtml(
+                            student.phone || "—"
+                        )}
+                    </td>
 
-                <td>
-                    ${formatDate(student.createdAt)}
-                </td>
+                    <td>
+                        ${faNumber(
+                            Number(
+                                student.amount || 0
+                            ).toLocaleString("en-US")
+                        )}
+                    </td>
 
-                <td>
-                    ${formatDate(student.paidAt)}
-                </td>
+                    <td>
+                        ${formatDate(
+                            student.createdAt
+                        )}
+                    </td>
 
-                <td>
-                    ${getStatus(student.status)}
-                </td>
+                    <td>
+                        ${formatDate(
+                            student.paidAt
+                        )}
+                    </td>
 
-                <td>
-                    ${formatDate(student.startedAt)}
-                </td>
+                    <td>
+                        ${getStatus(
+                            student.status
+                        )}
+                    </td>
 
-                <td>
-                    ${formatDate(student.finishedAt)}
-                </td>
+                    <td>
+                        ${formatDate(
+                            student.startedAt
+                        )}
+                    </td>
 
-                <td class="score">
-                    ${
-                        student.score !== null &&
-                        student.score !== undefined
-                            ? faNumber(student.score) + " از ۲۰"
+                    <td>
+                        ${formatDate(
+                            student.finishedAt
+                        )}
+                    </td>
+
+                    <td class="score">
+
+                        ${
+                            student.score !== null &&
+                            student.score !== undefined
+
+                            ? faNumber(
+                                student.score
+                            ) + " از ۲۰"
+
                             : "—"
-                    }
-                </td>
+                        }
 
-                <td>
-                    ${faNumber(student.correct ?? 0)}
-                </td>
+                    </td>
 
-                <td>
-                    ${faNumber(student.wrong ?? 0)}
-                </td>
+                    <td>
+                        ${faNumber(
+                            student.correct ?? 0
+                        )}
+                    </td>
 
-                <td>
-                    ${faNumber(student.empty ?? 0)}
-                </td>
+                    <td>
+                        ${faNumber(
+                            student.wrong ?? 0
+                        )}
+                    </td>
 
-                <td>
-                    ${
-                        student.attemptId
+                    <td>
+                        ${faNumber(
+                            student.empty ?? 0
+                        )}
+                    </td>
+
+                    <td>
+
+                        ${
+                            student.attemptId
+
                             ? `
+
                                 <button
                                     class="detail-btn"
                                     onclick="showAttempt('${student.attemptId}')">
+
                                     مشاهده
+
                                 </button>
+
                               `
-                            : "—"
-                    }
-                </td>
-            `;
 
-            body.appendChild(tr);
+                            : ""
+                        }
 
-        });
+
+                        <button
+                            class="delete-btn"
+                            onclick="deleteStudent(
+                                '${student.orderId}',
+                                '${escapeHtml(
+                                    student.name || ""
+                                )}'
+                            )">
+
+                            حذف
+
+                        </button>
+
+                    </td>
+
+                `;
+
+
+                body.appendChild(tr);
+
+            }
+        );
+
 
         loading.style.display = "none";
+
         table.style.display = "table";
+
 
     } catch (error) {
 
@@ -583,35 +1037,645 @@ async function loadStudents() {
             "خطا در دریافت اطلاعات. " +
             (error.message || "")
         );
+
     }
+
 }
 
 
-/* جلوگیری از ورود HTML داخل نام */
-function escapeHtml(value) {
+/* =========================
+   مشاهده جزئیات آزمون
+========================= */
 
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+async function showAttempt(attemptId) {
+
+    const modal =
+        document.getElementById("attemptModal");
+
+    const content =
+        document.getElementById("attemptContent");
+
+
+    modal.style.display = "block";
+
+
+    content.innerHTML = `
+        <div class="modal-loading">
+            در حال دریافت جزئیات آزمون...
+        </div>
+    `;
+
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE}/api/teacher/attempt?attemptId=${encodeURIComponent(attemptId)}&_=${Date.now()}`
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "خطا در دریافت جزئیات: " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (!data.ok) {
+
+            throw new Error(
+                data.error ||
+                "دریافت جزئیات ناموفق بود."
+            );
+
+        }
+
+
+        renderAttempt(data);
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        content.innerHTML = `
+
+            <div class="error"
+                 style="display:block;">
+
+                ${escapeHtml(
+                    error.message ||
+                    "خطا در دریافت اطلاعات."
+                )}
+
+            </div>
+
+        `;
+
+    }
+
 }
 
 
-/* فعلاً جزئیات آزمون */
-function showAttempt(attemptId) {
+/* =========================
+   ساخت جزئیات آزمون
+========================= */
 
-    alert(
-        "شناسه آزمون:\n\n" +
-        attemptId +
-        "\n\n" +
-        "در مرحله بعد جزئیات کامل آزمون را به این بخش اضافه می‌کنیم."
-    );
+function renderAttempt(data) {
+
+    const student =
+        data.student || {};
+
+    const payment =
+        data.payment || {};
+
+    const attempt =
+        data.attempt || {};
+
+    const questions =
+        data.questions || [];
+
+
+    let html = `
+
+        <div class="student-summary">
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    نام
+                </div>
+
+                <div class="summary-value">
+                    ${escapeHtml(
+                        student.name || "—"
+                    )}
+                </div>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    موبایل
+                </div>
+
+                <div class="summary-value" dir="ltr">
+                    ${escapeHtml(
+                        student.phone || "—"
+                    )}
+                </div>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    مبلغ
+                </div>
+
+                <div class="summary-value">
+                    ${faNumber(
+                        Number(
+                            payment.amount || 0
+                        ).toLocaleString("en-US")
+                    )}
+                </div>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    وضعیت پرداخت
+                </div>
+
+                <div class="summary-value">
+                    ${
+                        payment.status === "paid"
+                        ? "پرداخت شده"
+                        : "پرداخت نشده"
+                    }
+                </div>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    نمره
+                </div>
+
+                <div class="summary-value">
+                    ${
+                        attempt.score !== null &&
+                        attempt.score !== undefined
+
+                        ? faNumber(
+                            attempt.score
+                        ) + " از ۲۰"
+
+                        : "—"
+                    }
+                </div>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    صحیح
+                </div>
+
+                <div class="summary-value">
+                    ${faNumber(
+                        attempt.correct ?? 0
+                    )}
+                </div>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    غلط
+                </div>
+
+                <div class="summary-value">
+                    ${faNumber(
+                        attempt.wrong ?? 0
+                    )}
+                </div>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    بدون پاسخ
+                </div>
+
+                <div class="summary-value">
+                    ${faNumber(
+                        attempt.empty ?? 0
+                    )}
+                </div>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    شروع آزمون
+                </div>
+
+                <div class="summary-value">
+                    ${formatDate(
+                        attempt.startedAt
+                    )}
+                </div>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    پایان آزمون
+                </div>
+
+                <div class="summary-value">
+                    ${formatDate(
+                        attempt.finishedAt
+                    )}
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="questions-table">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>سؤال</th>
+
+                        <th>متن سؤال</th>
+
+                        <th>پاسخ دانش‌آموز</th>
+
+                        <th>پاسخ صحیح</th>
+
+                        <th>نتیجه</th>
+
+                        <th>زمان پاسخ</th>
+
+                        <th>زمان مجاز</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+    `;
+
+
+    questions.forEach(question => {
+
+        let rowClass = "";
+
+        let resultText = "";
+
+        let resultClass = "";
+
+
+        if (
+            question.result === "correct"
+        ) {
+
+            rowClass = "correct-row";
+
+            resultText = "✓ صحیح";
+
+            resultClass = "result-correct";
+
+        }
+        else if (
+            question.result === "wrong"
+        ) {
+
+            rowClass = "wrong-row";
+
+            resultText = "✕ غلط";
+
+            resultClass = "result-wrong";
+
+        }
+        else {
+
+            rowClass = "empty-row";
+
+            resultText = "— بدون پاسخ";
+
+            resultClass = "result-empty";
+
+        }
+
+
+        const selectedAnswer =
+            question.selectedIndex !== null &&
+            question.selectedIndex !== undefined
+
+            ? question.options[
+                question.selectedIndex
+            ]
+
+            : "بدون پاسخ";
+
+
+        const correctAnswer =
+            question.correctIndex !== null &&
+            question.correctIndex !== undefined
+
+            ? question.options[
+                question.correctIndex
+            ]
+
+            : "—";
+
+
+        html += `
+
+            <tr class="${rowClass}">
+
+                <td>
+                    ${faNumber(
+                        question.number
+                    )}
+                </td>
+
+
+                <td class="answer-box">
+                    ${escapeHtml(
+                        question.question || "—"
+                    )}
+                </td>
+
+
+                <td class="answer-box">
+                    ${escapeHtml(
+                        selectedAnswer
+                    )}
+                </td>
+
+
+                <td class="answer-box">
+                    ${escapeHtml(
+                        correctAnswer
+                    )}
+                </td>
+
+
+                <td class="${resultClass}">
+                    ${resultText}
+                </td>
+
+
+                <td>
+                    ${
+                        question.elapsedSeconds !== null &&
+                        question.elapsedSeconds !== undefined
+
+                        ? faNumber(
+                            question.elapsedSeconds
+                        ) + " ثانیه"
+
+                        : "—"
+                    }
+                </td>
+
+
+                <td>
+                    ${
+                        question.durationSeconds !== null &&
+                        question.durationSeconds !== undefined
+
+                        ? faNumber(
+                            question.durationSeconds
+                        ) + " ثانیه"
+
+                        : "—"
+                    }
+                </td>
+
+            </tr>
+
+        `;
+
+    });
+
+
+    html += `
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    `;
+
+
+    document.getElementById(
+        "attemptContent"
+    ).innerHTML = html;
+
 }
 
 
-/* اجرای اولیه */
+/* =========================
+   بستن مودال
+========================= */
+
+function closeAttemptModal() {
+
+    document.getElementById(
+        "attemptModal"
+    ).style.display = "none";
+
+}
+
+
+function closeModalByBackground(event) {
+
+    if (
+        event.target.id ===
+        "attemptModal"
+    ) {
+
+        closeAttemptModal();
+
+    }
+
+}
+
+
+/* =========================
+   حذف یک دانش‌آموز
+========================= */
+
+async function deleteStudent(
+    orderId,
+    studentName
+) {
+
+    const name =
+        studentName || "این دانش‌آموز";
+
+
+    const confirmed =
+        confirm(
+            "آیا مطمئن هستید؟\n\n" +
+            "دانش‌آموز:\n" +
+            name +
+            "\n\n" +
+            "تمام اطلاعات سفارش، آزمون و پاسخ‌های او حذف خواهد شد."
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE}/api/teacher/student?orderId=${encodeURIComponent(orderId)}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok || !data.ok) {
+
+            throw new Error(
+                data.error ||
+                "حذف دانش‌آموز انجام نشد."
+            );
+
+        }
+
+
+        alert(
+            "اطلاعات دانش‌آموز با موفقیت حذف شد."
+        );
+
+
+        await loadStudents();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "خطا در حذف دانش‌آموز:\n\n" +
+            (error.message || "")
+        );
+
+    }
+
+}
+
+
+/* =========================
+   حذف همه
+========================= */
+
+async function deleteAllStudents() {
+
+    const confirmed =
+        confirm(
+            "⚠️ هشدار\n\n" +
+            "تمام دانش‌آموزان، سفارش‌ها، آزمون‌های انجام‌شده و پاسخ‌های ثبت‌شده حذف می‌شوند.\n\n" +
+            "سؤالات و تنظیمات خود آزمون حذف نمی‌شوند.\n\n" +
+            "آیا مطمئن هستید؟"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    const secondConfirm =
+        confirm(
+            "این عملیات قابل بازگشت نیست.\n\n" +
+            "آیا واقعاً می‌خواهید همه دانش‌آموزان حذف شوند؟"
+        );
+
+
+    if (!secondConfirm) {
+        return;
+    }
+
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE}/api/teacher/students?examId=${EXAM_ID}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok || !data.ok) {
+
+            throw new Error(
+                data.error ||
+                "حذف همه دانش‌آموزان انجام نشد."
+            );
+
+        }
+
+
+        alert(
+            "تمام اطلاعات دانش‌آموزان با موفقیت حذف شد."
+        );
+
+
+        await loadStudents();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "خطا در حذف همه:\n\n" +
+            (error.message || "")
+        );
+
+    }
+
+}
+
+
+/* =========================
+   اجرای اولیه
+========================= */
+
 loadStudents();
 
 </script>
