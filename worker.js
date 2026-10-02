@@ -23,22 +23,33 @@ export default {
       // =========================================================
       // GET /api/exam
       // =========================================================
-      if (request.method === "GET" && url.pathname === "/api/exam") {
-        const examId = Number(url.searchParams.get("id") || 1);
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/exam"
+      ) {
+        const examId =
+          Number(
+            url.searchParams.get("id") || 1
+          );
 
-        const exam = await env.DB
-          .prepare(`
-            SELECT
-              id,
-              title,
-              price,
-              duration_seconds,
-              active
-            FROM exams
-            WHERE id = ?
-          `)
-          .bind(examId)
-          .first();
+        const exam =
+          await env.DB
+            .prepare(`
+              SELECT
+                id,
+                title,
+                price,
+                duration_seconds,
+                active,
+                discount_enabled,
+                discount_percent,
+                discount_start_at,
+                discount_end_at
+              FROM exams
+              WHERE id = ?
+            `)
+            .bind(examId)
+            .first();
 
         if (!exam) {
           return json(
@@ -51,32 +62,413 @@ export default {
           );
         }
 
-        const result = await env.DB
-          .prepare(`
-            SELECT
-              id,
-              question_text,
-              option_a,
-              option_b,
-              option_c,
-              option_d,
-              correct_index,
-              duration_seconds,
-              folder_id,
-              active
-            FROM questions
-            WHERE exam_id = ?
-              AND active = 1
-            ORDER BY id
-          `)
-          .bind(examId)
-          .all();
+        const pricing =
+          getEffectivePrice(exam);
+
+        const publicExam = {
+          id: exam.id,
+          title: exam.title,
+
+          // برای سازگاری با index.html قبلی
+          price: pricing.finalPrice,
+
+          // قیمت اصلی
+          basePrice: pricing.basePrice,
+
+          // قیمت نهایی
+          finalPrice: pricing.finalPrice,
+
+          discountEnabled:
+            pricing.discountEnabled,
+
+          discountActive:
+            pricing.discountActive,
+
+          discountPercent:
+            pricing.discountPercent,
+
+          discountStartAt:
+            pricing.discountStartAt,
+
+          discountEndAt:
+            pricing.discountEndAt,
+
+          duration_seconds:
+            exam.duration_seconds,
+
+          active:
+            exam.active,
+        };
+
+        const result =
+          await env.DB
+            .prepare(`
+              SELECT
+                id,
+                question_text,
+                option_a,
+                option_b,
+                option_c,
+                option_d,
+                correct_index,
+                duration_seconds,
+                folder_id,
+                active
+              FROM questions
+              WHERE exam_id = ?
+                AND active = 1
+              ORDER BY id
+            `)
+            .bind(examId)
+            .all();
 
         return json(
           {
             ok: true,
-            exam,
-            questions: result.results || [],
+            exam: publicExam,
+            questions:
+              result.results || [],
+          },
+          200,
+          cors
+        );
+      }
+
+
+      // =========================================================
+      // GET /api/teacher/exam-settings
+      // =========================================================
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/teacher/exam-settings"
+      ) {
+        const examId =
+          Number(
+            url.searchParams.get("examId") || 1
+          );
+
+        if (
+          !Number.isInteger(examId) ||
+          examId <= 0
+        ) {
+          return json(
+            {
+              ok: false,
+              error: "examId نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+
+        const exam =
+          await env.DB
+            .prepare(`
+              SELECT
+                id,
+                title,
+                price,
+                active,
+                discount_enabled,
+                discount_percent,
+                discount_start_at,
+                discount_end_at
+              FROM exams
+              WHERE id = ?
+            `)
+            .bind(examId)
+            .first();
+
+        if (!exam) {
+          return json(
+            {
+              ok: false,
+              error: "آزمون پیدا نشد",
+            },
+            404,
+            cors
+          );
+        }
+
+        const pricing =
+          getEffectivePrice(exam);
+
+        return json(
+          {
+            ok: true,
+
+            exam: {
+              id: exam.id,
+              title: exam.title,
+              active: exam.active,
+
+              price:
+                Number(exam.price || 0),
+
+              discountEnabled:
+                Number(exam.discount_enabled || 0) === 1,
+
+              discountPercent:
+                Number(
+                  exam.discount_percent || 0
+                ),
+
+              discountStartAt:
+                exam.discount_start_at || null,
+
+              discountEndAt:
+                exam.discount_end_at || null,
+            },
+
+            pricing,
+          },
+          200,
+          cors
+        );
+      }
+
+
+      // =========================================================
+      // POST /api/teacher/exam-settings
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/exam-settings"
+      ) {
+        const body =
+          await request.json();
+
+        const examId =
+          Number(body.examId || 1);
+
+        const price =
+          Number(body.price);
+
+        const discountEnabled =
+          body.discountEnabled === true ||
+          body.discountEnabled === 1 ||
+          body.discountEnabled === "1";
+
+        const discountPercent =
+          Number(
+            body.discountPercent || 0
+          );
+
+        let discountStartAt =
+          body.discountStartAt
+            ? String(body.discountStartAt).trim()
+            : null;
+
+        let discountEndAt =
+          body.discountEndAt
+            ? String(body.discountEndAt).trim()
+            : null;
+
+        if (
+          !Number.isInteger(examId) ||
+          examId <= 0
+        ) {
+          return json(
+            {
+              ok: false,
+              error: "examId نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+
+        if (
+          !Number.isFinite(price) ||
+          price <= 0
+        ) {
+          return json(
+            {
+              ok: false,
+              error:
+                "قیمت اصلی باید بیشتر از صفر باشد",
+            },
+            400,
+            cors
+          );
+        }
+
+        if (
+          !Number.isInteger(price)
+        ) {
+          return json(
+            {
+              ok: false,
+              error:
+                "قیمت اصلی باید عدد صحیح باشد",
+            },
+            400,
+            cors
+          );
+        }
+
+        if (
+          !Number.isFinite(discountPercent) ||
+          discountPercent < 0 ||
+          discountPercent > 100
+        ) {
+          return json(
+            {
+              ok: false,
+              error:
+                "درصد تخفیف باید بین صفر تا 100 باشد",
+            },
+            400,
+            cors
+          );
+        }
+
+        // -------------------------------------------------------
+        // اگر تخفیف فعال است
+        // -------------------------------------------------------
+        if (discountEnabled) {
+
+          if (
+            !discountStartAt ||
+            !discountEndAt
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "برای فعال کردن تخفیف، تاریخ شروع و پایان الزامی است",
+              },
+              400,
+              cors
+            );
+          }
+
+          const startMs =
+            new Date(
+              discountStartAt
+            ).getTime();
+
+          const endMs =
+            new Date(
+              discountEndAt
+            ).getTime();
+
+          if (
+            !Number.isFinite(startMs) ||
+            !Number.isFinite(endMs)
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "تاریخ یا ساعت تخفیف نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+
+          if (
+            endMs <= startMs
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "تاریخ پایان باید بعد از تاریخ شروع باشد",
+              },
+              400,
+              cors
+            );
+          }
+        }
+
+        // -------------------------------------------------------
+        // اگر درصد تخفیف صفر است، عملاً تخفیفی نداریم
+        // -------------------------------------------------------
+        if (
+          discountPercent === 0
+        ) {
+          discountStartAt =
+            discountStartAt || null;
+
+          discountEndAt =
+            discountEndAt || null;
+        }
+
+        await env.DB
+          .prepare(`
+            UPDATE exams
+            SET
+              price = ?,
+              discount_enabled = ?,
+              discount_percent = ?,
+              discount_start_at = ?,
+              discount_end_at = ?
+            WHERE id = ?
+          `)
+          .bind(
+            price,
+            discountEnabled ? 1 : 0,
+            discountPercent,
+            discountStartAt,
+            discountEndAt,
+            examId
+          )
+          .run();
+
+        const exam =
+          await env.DB
+            .prepare(`
+              SELECT
+                id,
+                title,
+                price,
+                active,
+                discount_enabled,
+                discount_percent,
+                discount_start_at,
+                discount_end_at
+              FROM exams
+              WHERE id = ?
+            `)
+            .bind(examId)
+            .first();
+
+        const pricing =
+          getEffectivePrice(exam);
+
+        return json(
+          {
+            ok: true,
+
+            message:
+              "تنظیمات قیمت با موفقیت ذخیره شد",
+
+            exam: {
+              id: exam.id,
+              title: exam.title,
+              active: exam.active,
+
+              price:
+                Number(exam.price || 0),
+
+              discountEnabled:
+                Number(exam.discount_enabled || 0) === 1,
+
+              discountPercent:
+                Number(
+                  exam.discount_percent || 0
+                ),
+
+              discountStartAt:
+                exam.discount_start_at || null,
+
+              discountEndAt:
+                exam.discount_end_at || null,
+            },
+
+            pricing,
           },
           200,
           cors
@@ -91,37 +483,59 @@ export default {
         request.method === "POST" &&
         url.pathname === "/api/create-order"
       ) {
-        const body = await request.json();
+        const body =
+          await request.json();
 
-        const name = String(body.name || "").trim();
-        const phone = normalizePhone(body.phone);
-        const examId = Number(body.examId || 1);
+        const name =
+          String(
+            body.name || ""
+          ).trim();
+
+        const phone =
+          normalizePhone(
+            body.phone
+          );
+
+        const examId =
+          Number(
+            body.examId || 1
+          );
 
         if (!name || !phone) {
           return json(
             {
               ok: false,
-              error: "نام و شماره موبایل الزامی است",
+              error:
+                "نام و شماره موبایل الزامی است",
             },
             400,
             cors
           );
         }
 
-        const exam = await env.DB
-          .prepare(`
-            SELECT id, price, active
-            FROM exams
-            WHERE id = ?
-          `)
-          .bind(examId)
-          .first();
+        const exam =
+          await env.DB
+            .prepare(`
+              SELECT
+                id,
+                price,
+                active,
+                discount_enabled,
+                discount_percent,
+                discount_start_at,
+                discount_end_at
+              FROM exams
+              WHERE id = ?
+            `)
+            .bind(examId)
+            .first();
 
         if (!exam) {
           return json(
             {
               ok: false,
-              error: "آزمون پیدا نشد",
+              error:
+                "آزمون پیدا نشد",
             },
             404,
             cors
@@ -132,15 +546,28 @@ export default {
           return json(
             {
               ok: false,
-              error: "این آزمون فعال نیست",
+              error:
+                "این آزمون فعال نیست",
             },
             400,
             cors
           );
         }
 
-        const orderId = crypto.randomUUID();
-        const createdAt = new Date().toISOString();
+        // -------------------------------------------------------
+        // قیمت واقعی در سمت سرور محاسبه می‌شود
+        // -------------------------------------------------------
+        const pricing =
+          getEffectivePrice(exam);
+
+        const amount =
+          pricing.finalPrice;
+
+        const orderId =
+          crypto.randomUUID();
+
+        const createdAt =
+          new Date().toISOString();
 
         await env.DB
           .prepare(`
@@ -160,7 +587,7 @@ export default {
             examId,
             name,
             phone,
-            exam.price,
+            amount,
             createdAt
           )
           .run();
@@ -168,8 +595,33 @@ export default {
         return json(
           {
             ok: true,
+
             orderId,
-            amount: exam.price,
+
+            amount,
+
+            pricing: {
+              basePrice:
+                pricing.basePrice,
+
+              finalPrice:
+                pricing.finalPrice,
+
+              discountEnabled:
+                pricing.discountEnabled,
+
+              discountActive:
+                pricing.discountActive,
+
+              discountPercent:
+                pricing.discountPercent,
+
+              discountStartAt:
+                pricing.discountStartAt,
+
+              discountEndAt:
+                pricing.discountEndAt,
+            },
           },
           200,
           cors
@@ -184,42 +636,50 @@ export default {
         request.method === "POST" &&
         url.pathname === "/api/demo-pay"
       ) {
-        const body = await request.json();
+        const body =
+          await request.json();
 
-        const orderId = String(body.orderId || "").trim();
+        const orderId =
+          String(
+            body.orderId || ""
+          ).trim();
 
         if (!orderId) {
           return json(
             {
               ok: false,
-              error: "orderId الزامی است",
+              error:
+                "orderId الزامی است",
             },
             400,
             cors
           );
         }
 
-        const order = await env.DB
-          .prepare(`
-            SELECT id, status
-            FROM orders
-            WHERE id = ?
-          `)
-          .bind(orderId)
-          .first();
+        const order =
+          await env.DB
+            .prepare(`
+              SELECT id, status
+              FROM orders
+              WHERE id = ?
+            `)
+            .bind(orderId)
+            .first();
 
         if (!order) {
           return json(
             {
               ok: false,
-              error: "سفارش پیدا نشد",
+              error:
+                "سفارش پیدا نشد",
             },
             404,
             cors
           );
         }
 
-        const paidAt = new Date().toISOString();
+        const paidAt =
+          new Date().toISOString();
 
         await env.DB
           .prepare(`
@@ -229,7 +689,10 @@ export default {
               paid_at = ?
             WHERE id = ?
           `)
-          .bind(paidAt, orderId)
+          .bind(
+            paidAt,
+            orderId
+          )
           .run();
 
         return json(
@@ -252,46 +715,56 @@ export default {
         request.method === "POST" &&
         url.pathname === "/api/start"
       ) {
-        const body = await request.json();
+        const body =
+          await request.json();
 
-        const orderId = String(body.orderId || "").trim();
+        const orderId =
+          String(
+            body.orderId || ""
+          ).trim();
 
         if (!orderId) {
           return json(
             {
               ok: false,
-              error: "orderId الزامی است",
+              error:
+                "orderId الزامی است",
             },
             400,
             cors
           );
         }
 
-        const order = await env.DB
-          .prepare(`
-            SELECT *
-            FROM orders
-            WHERE id = ?
-          `)
-          .bind(orderId)
-          .first();
+        const order =
+          await env.DB
+            .prepare(`
+              SELECT *
+              FROM orders
+              WHERE id = ?
+            `)
+            .bind(orderId)
+            .first();
 
         if (!order) {
           return json(
             {
               ok: false,
-              error: "سفارش پیدا نشد",
+              error:
+                "سفارش پیدا نشد",
             },
             404,
             cors
           );
         }
 
-        if (order.status !== "paid") {
+        if (
+          order.status !== "paid"
+        ) {
           return json(
             {
               ok: false,
-              error: "ابتدا باید پرداخت انجام شود",
+              error:
+                "ابتدا باید پرداخت انجام شود",
             },
             400,
             cors
@@ -301,56 +774,72 @@ export default {
         // -------------------------------------------------------
         // اگر قبلاً آزمون شروع شده
         // -------------------------------------------------------
-        const existingAttempt = await env.DB
-          .prepare(`
-            SELECT *
-            FROM attempts
-            WHERE order_id = ?
-            ORDER BY started_at DESC
-            LIMIT 1
-          `)
-          .bind(orderId)
-          .first();
+        const existingAttempt =
+          await env.DB
+            .prepare(`
+              SELECT *
+              FROM attempts
+              WHERE order_id = ?
+              ORDER BY started_at DESC
+              LIMIT 1
+            `)
+            .bind(orderId)
+            .first();
 
         if (existingAttempt) {
 
-          if (existingAttempt.finished_at) {
+          if (
+            existingAttempt.finished_at
+          ) {
             return json(
               {
                 ok: false,
-                error: "این آزمون قبلاً تمام شده است",
+                error:
+                  "این آزمون قبلاً تمام شده است",
               },
               400,
               cors
             );
           }
 
-          const snapshots = await env.DB
-            .prepare(`
-              SELECT *
-              FROM attempt_questions
-              WHERE attempt_id = ?
-              ORDER BY question_order
-            `)
-            .bind(existingAttempt.id)
-            .all();
+          const snapshots =
+            await env.DB
+              .prepare(`
+                SELECT *
+                FROM attempt_questions
+                WHERE attempt_id = ?
+                ORDER BY question_order
+              `)
+              .bind(existingAttempt.id)
+              .all();
 
-          if (snapshots.results && snapshots.results.length > 0) {
+          if (
+            snapshots.results &&
+            snapshots.results.length > 0
+          ) {
 
             let currentQuestion =
-              Number(existingAttempt.current_question || 0);
+              Number(
+                existingAttempt.current_question || 0
+              );
 
             if (
               currentQuestion < 0 ||
-              currentQuestion >= snapshots.results.length
+              currentQuestion >=
+                snapshots.results.length
             ) {
               currentQuestion = 0;
             }
 
-            const current = snapshots.results[currentQuestion];
+            const current =
+              snapshots.results[
+                currentQuestion
+              ];
 
             if (!current.started_at) {
-              const now = new Date().toISOString();
+
+              const now =
+                new Date().toISOString();
 
               await env.DB
                 .prepare(`
@@ -385,10 +874,15 @@ export default {
               {
                 ok: true,
                 resumed: true,
-                attemptId: existingAttempt.id,
+                attemptId:
+                  existingAttempt.id,
                 currentQuestion,
-                totalQuestions: snapshots.results.length,
-                question: publicSnapshotQuestion(current),
+                totalQuestions:
+                  snapshots.results.length,
+                question:
+                  publicSnapshotQuestion(
+                    current
+                  ),
               },
               200,
               cors
@@ -398,24 +892,32 @@ export default {
           // -----------------------------------------------------
           // Legacy attempt
           // -----------------------------------------------------
-          const questions = await selectQuestionsForExam(
-            env,
-            order.exam_id
-          );
+          const questions =
+            await selectQuestionsForExam(
+              env,
+              order.exam_id
+            );
 
           return json(
             {
               ok: true,
               resumed: true,
-              attemptId: existingAttempt.id,
+              attemptId:
+                existingAttempt.id,
               currentQuestion:
-                Number(existingAttempt.current_question || 0),
-              totalQuestions: questions.length,
-              question: publicQuestion(
-                questions[
-                  Number(existingAttempt.current_question || 0)
-                ]
-              ),
+                Number(
+                  existingAttempt.current_question || 0
+                ),
+              totalQuestions:
+                questions.length,
+              question:
+                publicQuestion(
+                  questions[
+                    Number(
+                      existingAttempt.current_question || 0
+                    )
+                  ]
+                ),
             },
             200,
             cors
@@ -425,24 +927,29 @@ export default {
         // -------------------------------------------------------
         // ایجاد آزمون جدید
         // -------------------------------------------------------
-        const questions = await selectQuestionsForExam(
-          env,
-          order.exam_id
-        );
+        const questions =
+          await selectQuestionsForExam(
+            env,
+            order.exam_id
+          );
 
         if (!questions.length) {
           return json(
             {
               ok: false,
-              error: "برای این آزمون سوالی وجود ندارد",
+              error:
+                "برای این آزمون سوالی وجود ندارد",
             },
             400,
             cors
           );
         }
 
-        const attemptId = crypto.randomUUID();
-        const startedAt = new Date().toISOString();
+        const attemptId =
+          crypto.randomUUID();
+
+        const startedAt =
+          new Date().toISOString();
 
         await env.DB
           .prepare(`
@@ -465,9 +972,14 @@ export default {
 
         const statements = [];
 
-        for (let i = 0; i < questions.length; i++) {
+        for (
+          let i = 0;
+          i < questions.length;
+          i++
+        ) {
 
-          const q = questions[i];
+          const q =
+            questions[i];
 
           statements.push(
             env.DB
@@ -497,14 +1009,20 @@ export default {
                 q.option_c,
                 q.option_d,
                 q.correct_index,
-                Number(q.duration_seconds || 30),
-                i === 0 ? startedAt : null
+                Number(
+                  q.duration_seconds || 30
+                ),
+                i === 0
+                  ? startedAt
+                  : null
               )
           );
         }
 
         if (statements.length) {
-          await env.DB.batch(statements);
+          await env.DB.batch(
+            statements
+          );
         }
 
         return json(
@@ -513,8 +1031,12 @@ export default {
             resumed: false,
             attemptId,
             currentQuestion: 0,
-            totalQuestions: questions.length,
-            question: publicQuestion(questions[0]),
+            totalQuestions:
+              questions.length,
+            question:
+              publicQuestion(
+                questions[0]
+              ),
           },
           200,
           cors
@@ -529,58 +1051,81 @@ export default {
         request.method === "POST" &&
         url.pathname === "/api/answer"
       ) {
-        const body = await request.json();
+        const body =
+          await request.json();
 
-        const attemptId = String(body.attemptId || "").trim();
-        const questionIndex = Number(body.questionIndex);
+        const attemptId =
+          String(
+            body.attemptId || ""
+          ).trim();
+
+        const questionIndex =
+          Number(
+            body.questionIndex
+          );
+
         let selectedIndex =
           body.selectedIndex === null ||
           body.selectedIndex === undefined ||
           body.selectedIndex === ""
             ? null
-            : Number(body.selectedIndex);
+            : Number(
+                body.selectedIndex
+              );
 
-        if (!attemptId || !Number.isInteger(questionIndex)) {
+        if (
+          !attemptId ||
+          !Number.isInteger(
+            questionIndex
+          )
+        ) {
           return json(
             {
               ok: false,
-              error: "اطلاعات پاسخ ناقص است",
+              error:
+                "اطلاعات پاسخ ناقص است",
             },
             400,
             cors
           );
         }
 
-        const attempt = await env.DB
-          .prepare(`
-            SELECT
-              a.*,
-              o.status AS order_status,
-              o.exam_id
-            FROM attempts a
-            JOIN orders o
-              ON o.id = a.order_id
-            WHERE a.id = ?
-          `)
-          .bind(attemptId)
-          .first();
+        const attempt =
+          await env.DB
+            .prepare(`
+              SELECT
+                a.*,
+                o.status AS order_status,
+                o.exam_id
+              FROM attempts a
+              JOIN orders o
+                ON o.id = a.order_id
+              WHERE a.id = ?
+            `)
+            .bind(attemptId)
+            .first();
 
         if (!attempt) {
           return json(
             {
               ok: false,
-              error: "آزمون پیدا نشد",
+              error:
+                "آزمون پیدا نشد",
             },
             404,
             cors
           );
         }
 
-        if (attempt.order_status !== "paid") {
+        if (
+          attempt.order_status !==
+          "paid"
+        ) {
           return json(
             {
               ok: false,
-              error: "پرداخت معتبر نیست",
+              error:
+                "پرداخت معتبر نیست",
             },
             400,
             cors
@@ -591,7 +1136,8 @@ export default {
           return json(
             {
               ok: false,
-              error: "آزمون تمام شده است",
+              error:
+                "آزمون تمام شده است",
             },
             400,
             cors
@@ -599,31 +1145,38 @@ export default {
         }
 
         const currentQuestion =
-          Number(attempt.current_question || 0);
+          Number(
+            attempt.current_question || 0
+          );
 
-        if (questionIndex !== currentQuestion) {
+        if (
+          questionIndex !==
+          currentQuestion
+        ) {
           return json(
             {
               ok: false,
-              error: "شماره سوال صحیح نیست",
+              error:
+                "شماره سوال صحیح نیست",
             },
             400,
             cors
           );
         }
 
-        let snapshot = await env.DB
-          .prepare(`
-            SELECT *
-            FROM attempt_questions
-            WHERE attempt_id = ?
-              AND question_order = ?
-          `)
-          .bind(
-            attemptId,
-            questionIndex
-          )
-          .first();
+        let snapshot =
+          await env.DB
+            .prepare(`
+              SELECT *
+              FROM attempt_questions
+              WHERE attempt_id = ?
+                AND question_order = ?
+            `)
+            .bind(
+              attemptId,
+              questionIndex
+            )
+            .first();
 
         // -------------------------------------------------------
         // Snapshot path
@@ -636,28 +1189,38 @@ export default {
             attempt.started_at;
 
           const startedMs =
-            new Date(startedAt).getTime();
+            new Date(
+              startedAt
+            ).getTime();
 
-          const nowMs = Date.now();
+          const nowMs =
+            Date.now();
 
-          let elapsedSeconds = Math.max(
-            0,
-            Math.floor(
-              (nowMs - startedMs) / 1000
-            )
-          );
+          let elapsedSeconds =
+            Math.max(
+              0,
+              Math.floor(
+                (
+                  nowMs -
+                  startedMs
+                ) / 1000
+              )
+            );
 
           const durationSeconds =
             Number(
-              snapshot.duration_seconds_snapshot || 30
+              snapshot.duration_seconds_snapshot ||
+              30
             );
 
           let timedOut =
-            elapsedSeconds >= durationSeconds;
+            elapsedSeconds >=
+            durationSeconds;
 
           if (timedOut) {
             selectedIndex = null;
-            elapsedSeconds = durationSeconds;
+            elapsedSeconds =
+              durationSeconds;
           }
 
           let isCorrect = null;
@@ -669,7 +1232,9 @@ export default {
           ) {
             isCorrect =
               selectedIndex ===
-              Number(snapshot.correct_index_snapshot)
+              Number(
+                snapshot.correct_index_snapshot
+              )
                 ? 1
                 : 0;
           }
@@ -720,7 +1285,8 @@ export default {
           // پایان آزمون
           // -----------------------------------------------------
           if (
-            nextQuestion >= totalQuestions
+            nextQuestion >=
+            totalQuestions
           ) {
 
             await env.DB
@@ -742,7 +1308,8 @@ export default {
               {
                 ok: true,
                 finished: true,
-                nextQuestion: totalQuestions,
+                nextQuestion:
+                  totalQuestions,
                 totalQuestions,
                 timedOut,
               },
@@ -805,7 +1372,9 @@ export default {
               totalQuestions,
               timedOut,
               question:
-                publicSnapshotQuestion(next),
+                publicSnapshotQuestion(
+                  next
+                ),
             },
             200,
             cors
@@ -826,7 +1395,8 @@ export default {
           return json(
             {
               ok: false,
-              error: "سوال پیدا نشد",
+              error:
+                "سوال پیدا نشد",
             },
             404,
             cors
@@ -837,21 +1407,28 @@ export default {
           attempt.question_started_at ||
           attempt.started_at;
 
-        const elapsedSeconds = Math.max(
-          0,
-          Math.floor(
-            (
-              Date.now() -
-              new Date(questionStarted).getTime()
-            ) / 1000
-          )
-        );
+        const elapsedSeconds =
+          Math.max(
+            0,
+            Math.floor(
+              (
+                Date.now() -
+                new Date(
+                  questionStarted
+                ).getTime()
+              ) / 1000
+            )
+          );
 
         const durationSeconds =
-          Number(question.duration_seconds || 30);
+          Number(
+            question.duration_seconds ||
+            30
+          );
 
         let timedOut =
-          elapsedSeconds >= durationSeconds;
+          elapsedSeconds >=
+          durationSeconds;
 
         if (timedOut) {
           selectedIndex = null;
@@ -892,7 +1469,8 @@ export default {
           questionIndex + 1;
 
         if (
-          nextQuestion >= questions.length
+          nextQuestion >=
+          questions.length
         ) {
 
           await env.DB
@@ -914,8 +1492,10 @@ export default {
             {
               ok: true,
               finished: true,
-              nextQuestion: questions.length,
-              totalQuestions: questions.length,
+              nextQuestion:
+                questions.length,
+              totalQuestions:
+                questions.length,
               timedOut,
             },
             200,
@@ -943,11 +1523,14 @@ export default {
             ok: true,
             finished: false,
             nextQuestion,
-            totalQuestions: questions.length,
+            totalQuestions:
+              questions.length,
             timedOut,
             question:
               publicQuestion(
-                questions[nextQuestion]
+                questions[
+                  nextQuestion
+                ]
               ),
           },
           200,
@@ -963,16 +1546,20 @@ export default {
         request.method === "POST" &&
         url.pathname === "/api/submit"
       ) {
-        const body = await request.json();
+        const body =
+          await request.json();
 
         const attemptId =
-          String(body.attemptId || "").trim();
+          String(
+            body.attemptId || ""
+          ).trim();
 
         if (!attemptId) {
           return json(
             {
               ok: false,
-              error: "attemptId الزامی است",
+              error:
+                "attemptId الزامی است",
             },
             400,
             cors
@@ -993,7 +1580,8 @@ export default {
           return json(
             {
               ok: false,
-              error: "آزمون پیدا نشد",
+              error:
+                "آزمون پیدا نشد",
             },
             404,
             cors
@@ -1002,7 +1590,10 @@ export default {
 
         if (attempt.finished_at) {
           return json(
-            await buildResult(env, attemptId),
+            await buildResult(
+              env,
+              attemptId
+            ),
             200,
             cors
           );
@@ -1028,18 +1619,26 @@ export default {
           let wrong = 0;
           let empty = 0;
 
-          for (const row of rows.results) {
+          for (
+            const row of rows.results
+          ) {
 
             if (
               row.selected_index === null ||
               row.selected_index === undefined
             ) {
               empty++;
+
             } else if (
-              Number(row.selected_index) ===
-              Number(row.correct_index_snapshot)
+              Number(
+                row.selected_index
+              ) ===
+              Number(
+                row.correct_index_snapshot
+              )
             ) {
               correct++;
+
             } else {
               wrong++;
             }
@@ -1109,7 +1708,9 @@ export default {
 
         const examId =
           Number(
-            url.searchParams.get("examId") || 1
+            url.searchParams.get(
+              "examId"
+            ) || 1
           );
 
         const result =
@@ -1169,44 +1770,81 @@ export default {
             .all();
 
         const students =
-          (result.results || []).map(row => {
+          (
+            result.results || []
+          ).map(row => {
 
             let status;
 
-            if (row.payment_status !== "paid") {
+            if (
+              row.payment_status !==
+              "paid"
+            ) {
               status = "unpaid";
-            } else if (!row.attempt_id) {
-              status = "paid_not_started";
-            } else if (!row.finished_at) {
-              status = "in_progress";
+
+            } else if (
+              !row.attempt_id
+            ) {
+              status =
+                "paid_not_started";
+
+            } else if (
+              !row.finished_at
+            ) {
+              status =
+                "in_progress";
+
             } else {
-              status = "finished";
+              status =
+                "finished";
             }
 
             const correct =
-              Number(row.correct_count || 0);
+              Number(
+                row.correct_count || 0
+              );
 
             const wrong =
-              Number(row.wrong_count || 0);
+              Number(
+                row.wrong_count || 0
+              );
 
             const empty =
-              Number(row.empty_count || 0);
+              Number(
+                row.empty_count || 0
+              );
 
             const total =
-              correct + wrong + empty;
+              correct +
+              wrong +
+              empty;
 
             const score =
               total > 0
-                ? calculateScore20(correct, total)
+                ? calculateScore20(
+                    correct,
+                    total
+                  )
                 : null;
 
             return {
-              orderId: row.order_id,
-              attemptId: row.attempt_id || null,
-              examId: row.exam_id,
-              name: row.name,
-              phone: row.phone,
-              amount: row.amount,
+              orderId:
+                row.order_id,
+
+              attemptId:
+                row.attempt_id || null,
+
+              examId:
+                row.exam_id,
+
+              name:
+                row.name,
+
+              phone:
+                row.phone,
+
+              amount:
+                row.amount,
 
               paymentStatus:
                 row.payment_status,
@@ -1255,14 +1893,17 @@ export default {
 
         const attemptId =
           String(
-            url.searchParams.get("attemptId") || ""
+            url.searchParams.get(
+              "attemptId"
+            ) || ""
           ).trim();
 
         if (!attemptId) {
           return json(
             {
               ok: false,
-              error: "attemptId الزامی است",
+              error:
+                "attemptId الزامی است",
             },
             400,
             cors
@@ -1299,7 +1940,8 @@ export default {
           return json(
             {
               ok: false,
-              error: "آزمون پیدا نشد",
+              error:
+                "آزمون پیدا نشد",
             },
             404,
             cors
@@ -1318,24 +1960,34 @@ export default {
             .all();
 
         const questions =
-          (rows.results || []).map(row => {
+          (
+            rows.results || []
+          ).map(row => {
 
-            let result = "empty";
+            let result =
+              "empty";
 
             if (
               row.selected_index !== null &&
               row.selected_index !== undefined
             ) {
+
               result =
-                Number(row.selected_index) ===
-                Number(row.correct_index_snapshot)
+                Number(
+                  row.selected_index
+                ) ===
+                Number(
+                  row.correct_index_snapshot
+                )
                   ? "correct"
                   : "wrong";
             }
 
             return {
               number:
-                Number(row.question_order) + 1,
+                Number(
+                  row.question_order
+                ) + 1,
 
               questionId:
                 row.question_id,
@@ -1374,23 +2026,31 @@ export default {
                 row.elapsed_seconds === null ||
                 row.elapsed_seconds === undefined
                   ? null
-                  : Number(row.elapsed_seconds),
+                  : Number(
+                      row.elapsed_seconds
+                    ),
             };
           });
 
         const correct =
           questions.filter(
-            q => q.result === "correct"
+            q =>
+              q.result ===
+              "correct"
           ).length;
 
         const wrong =
           questions.filter(
-            q => q.result === "wrong"
+            q =>
+              q.result ===
+              "wrong"
           ).length;
 
         const empty =
           questions.filter(
-            q => q.result === "empty"
+            q =>
+              q.result ===
+              "empty"
           ).length;
 
         const total =
@@ -1398,7 +2058,10 @@ export default {
 
         const score =
           total > 0
-            ? calculateScore20(correct, total)
+            ? calculateScore20(
+                correct,
+                total
+              )
             : 0;
 
         return json(
@@ -1406,21 +2069,36 @@ export default {
             ok: true,
 
             student: {
-              name: data.name,
-              phone: data.phone,
+              name:
+                data.name,
+
+              phone:
+                data.phone,
             },
 
             payment: {
-              amount: data.amount,
-              status: data.payment_status,
-              createdAt: data.created_at,
-              paidAt: data.paid_at,
+              amount:
+                data.amount,
+
+              status:
+                data.payment_status,
+
+              createdAt:
+                data.created_at,
+
+              paidAt:
+                data.paid_at,
             },
 
             attempt: {
-              id: data.attempt_id,
-              orderId: data.order_id,
-              examId: data.exam_id,
+              id:
+                data.attempt_id,
+
+              orderId:
+                data.order_id,
+
+              examId:
+                data.exam_id,
 
               startedAt:
                 data.started_at,
@@ -1447,23 +2125,26 @@ export default {
 
       // =========================================================
       // DELETE /api/teacher/student
-      // حذف یک دانش‌آموز
       // =========================================================
       if (
         request.method === "DELETE" &&
-        url.pathname === "/api/teacher/student"
+        url.pathname ===
+          "/api/teacher/student"
       ) {
 
         const orderId =
           String(
-            url.searchParams.get("orderId") || ""
+            url.searchParams.get(
+              "orderId"
+            ) || ""
           ).trim();
 
         if (!orderId) {
           return json(
             {
               ok: false,
-              error: "orderId الزامی است",
+              error:
+                "orderId الزامی است",
             },
             400,
             cors
@@ -1488,7 +2169,8 @@ export default {
           return json(
             {
               ok: false,
-              error: "دانش‌آموز پیدا نشد",
+              error:
+                "دانش‌آموز پیدا نشد",
             },
             404,
             cors
@@ -1576,20 +2258,32 @@ export default {
               "دانش‌آموز و تمام اطلاعات آزمون او حذف شد",
 
             student: {
-              orderId: order.id,
-              examId: order.exam_id,
-              name: order.name,
-              phone: order.phone,
+              orderId:
+                order.id,
+
+              examId:
+                order.exam_id,
+
+              name:
+                order.name,
+
+              phone:
+                order.phone,
             },
 
             deleted: {
               orders: 1,
+
               attempts:
-                Number(attemptCount?.count || 0),
+                Number(
+                  attemptCount?.count || 0
+                ),
+
               attemptQuestions:
                 Number(
                   attemptQuestionsCount?.count || 0
                 ),
+
               attemptAnswers:
                 Number(
                   attemptAnswersCount?.count || 0
@@ -1604,23 +2298,29 @@ export default {
 
       // =========================================================
       // DELETE /api/teacher/students
-      // حذف تمام دانش‌آموزان یک آزمون
       // =========================================================
       if (
         request.method === "DELETE" &&
-        url.pathname === "/api/teacher/students"
+        url.pathname ===
+          "/api/teacher/students"
       ) {
 
         const examId =
           Number(
-            url.searchParams.get("examId") || 1
+            url.searchParams.get(
+              "examId"
+            ) || 1
           );
 
-        if (!Number.isInteger(examId) || examId <= 0) {
+        if (
+          !Number.isInteger(examId) ||
+          examId <= 0
+        ) {
           return json(
             {
               ok: false,
-              error: "examId نامعتبر است",
+              error:
+                "examId نامعتبر است",
             },
             400,
             cors
@@ -1735,10 +2435,14 @@ export default {
 
             deleted: {
               orders:
-                Number(orderCount?.count || 0),
+                Number(
+                  orderCount?.count || 0
+                ),
 
               attempts:
-                Number(attemptCount?.count || 0),
+                Number(
+                  attemptCount?.count || 0
+                ),
 
               attemptQuestions:
                 Number(
@@ -1761,13 +2465,16 @@ export default {
       // Static files
       // =========================================================
       if (env.ASSETS) {
-        return env.ASSETS.fetch(request);
+        return env.ASSETS.fetch(
+          request
+        );
       }
 
       return json(
         {
           ok: false,
-          error: "مسیر پیدا نشد",
+          error:
+            "مسیر پیدا نشد",
         },
         404,
         cors
@@ -1793,9 +2500,186 @@ export default {
 
 
 // =============================================================
+// قیمت مؤثر آزمون
+// =============================================================
+function getEffectivePrice(exam, now = new Date()) {
+
+  const basePrice =
+    Math.max(
+      0,
+      Math.round(
+        Number(
+          exam?.price || 0
+        )
+      )
+    );
+
+  const discountEnabled =
+    Number(
+      exam?.discount_enabled || 0
+    ) === 1;
+
+  const discountPercent =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Number(
+          exam?.discount_percent || 0
+        )
+      )
+    );
+
+  const discountStartAt =
+    exam?.discount_start_at ||
+    null;
+
+  const discountEndAt =
+    exam?.discount_end_at ||
+    null;
+
+  // تخفیف خاموش است
+  if (
+    !discountEnabled
+  ) {
+    return {
+      basePrice,
+      finalPrice: basePrice,
+
+      discountEnabled: false,
+      discountActive: false,
+
+      discountPercent: 0,
+
+      discountStartAt,
+      discountEndAt,
+    };
+  }
+
+  // درصد تخفیف صفر است
+  if (
+    discountPercent <= 0
+  ) {
+    return {
+      basePrice,
+      finalPrice: basePrice,
+
+      discountEnabled: true,
+      discountActive: false,
+
+      discountPercent: 0,
+
+      discountStartAt,
+      discountEndAt,
+    };
+  }
+
+  // تاریخ‌ها وجود ندارند
+  if (
+    !discountStartAt ||
+    !discountEndAt
+  ) {
+    return {
+      basePrice,
+      finalPrice: basePrice,
+
+      discountEnabled: true,
+      discountActive: false,
+
+      discountPercent,
+
+      discountStartAt,
+      discountEndAt,
+    };
+  }
+
+  const nowMs =
+    new Date(now).getTime();
+
+  const startMs =
+    new Date(
+      discountStartAt
+    ).getTime();
+
+  const endMs =
+    new Date(
+      discountEndAt
+    ).getTime();
+
+  // تاریخ نامعتبر
+  if (
+    !Number.isFinite(nowMs) ||
+    !Number.isFinite(startMs) ||
+    !Number.isFinite(endMs)
+  ) {
+    return {
+      basePrice,
+      finalPrice: basePrice,
+
+      discountEnabled: true,
+      discountActive: false,
+
+      discountPercent,
+
+      discountStartAt,
+      discountEndAt,
+    };
+  }
+
+  const discountActive =
+    nowMs >= startMs &&
+    nowMs <= endMs;
+
+  if (!discountActive) {
+    return {
+      basePrice,
+      finalPrice: basePrice,
+
+      discountEnabled: true,
+      discountActive: false,
+
+      discountPercent,
+
+      discountStartAt,
+      discountEndAt,
+    };
+  }
+
+  const finalPrice =
+    Math.max(
+      0,
+      Math.round(
+        basePrice *
+        (
+          1 -
+          discountPercent / 100
+        )
+      )
+    );
+
+  return {
+    basePrice,
+
+    finalPrice,
+
+    discountEnabled: true,
+    discountActive: true,
+
+    discountPercent,
+
+    discountStartAt,
+    discountEndAt,
+  };
+}
+
+
+// =============================================================
 // انتخاب سوالات آزمون
 // =============================================================
-async function selectQuestionsForExam(env, examId) {
+async function selectQuestionsForExam(
+  env,
+  examId
+) {
 
   const rulesResult =
     await env.DB
@@ -1817,9 +2701,6 @@ async function selectQuestionsForExam(env, examId) {
   const rules =
     rulesResult.results || [];
 
-  // -----------------------------------------------------------
-  // اگر قانون پوشه‌ای وجود نداشت → حالت قدیمی
-  // -----------------------------------------------------------
   if (!rules.length) {
 
     const result =
@@ -1842,7 +2723,9 @@ async function selectQuestionsForExam(env, examId) {
   for (const rule of rules) {
 
     const count =
-      Number(rule.selection_count || 0);
+      Number(
+        rule.selection_count || 0
+      );
 
     if (count <= 0) {
       continue;
@@ -1850,10 +2733,10 @@ async function selectQuestionsForExam(env, examId) {
 
     let rows = [];
 
-    // ---------------------------------------------------------
-    // manual
-    // ---------------------------------------------------------
-    if (rule.selection_mode === "manual") {
+    if (
+      rule.selection_mode ===
+      "manual"
+    ) {
 
       const result =
         await env.DB
@@ -1866,7 +2749,9 @@ async function selectQuestionsForExam(env, examId) {
               AND q.exam_id = ?
               AND q.folder_id = ?
               AND q.active = 1
-            ORDER BY emq.sort_order, q.id
+            ORDER BY
+              emq.sort_order,
+              q.id
             LIMIT ?
           `)
           .bind(
@@ -1882,9 +2767,6 @@ async function selectQuestionsForExam(env, examId) {
 
     } else {
 
-      // -------------------------------------------------------
-      // random
-      // -------------------------------------------------------
       const result =
         await env.DB
           .prepare(`
@@ -1907,14 +2789,17 @@ async function selectQuestionsForExam(env, examId) {
         result.results || [];
     }
 
-    if (rows.length < count) {
-
+    if (
+      rows.length < count
+    ) {
       throw new Error(
         `در پوشه ${rule.folder_id} به تعداد ${count} سوال فعال وجود ندارد`
       );
     }
 
-    selected.push(...rows);
+    selected.push(
+      ...rows
+    );
   }
 
   return selected;
@@ -1944,7 +2829,9 @@ function publicQuestion(q) {
     ],
 
     durationSeconds:
-      Number(q.duration_seconds || 30),
+      Number(
+        q.duration_seconds || 30
+      ),
   };
 }
 
@@ -1973,7 +2860,8 @@ function publicSnapshotQuestion(q) {
 
     durationSeconds:
       Number(
-        q.duration_seconds_snapshot || 30
+        q.duration_seconds_snapshot ||
+        30
       ),
   };
 }
@@ -1995,8 +2883,9 @@ async function getQuestion(
     );
 
   return (
-    questions[questionIndex] ||
-    null
+    questions[
+      questionIndex
+    ] || null
   );
 }
 
@@ -2010,17 +2899,24 @@ function calculateScore20(
 ) {
 
   correct =
-    Number(correct || 0);
+    Number(
+      correct || 0
+    );
 
   total =
-    Number(total || 0);
+    Number(
+      total || 0
+    );
 
   if (total <= 0) {
     return 0;
   }
 
   const score =
-    (correct / total) * 20;
+    (
+      correct /
+      total
+    ) * 20;
 
   return Math.round(
     score * 10
@@ -2047,7 +2943,9 @@ async function buildResult(
       .first();
 
   if (!attempt) {
-    throw new Error("آزمون پیدا نشد");
+    throw new Error(
+      "آزمون پیدا نشد"
+    );
   }
 
   const rows =
@@ -2069,61 +2967,71 @@ async function buildResult(
   let empty = 0;
 
   const sheet =
-    questions.map(row => {
+    questions.map(
+      row => {
 
-      let result =
-        "empty";
-
-      if (
-        row.selected_index !== null &&
-        row.selected_index !== undefined
-      ) {
+        let result =
+          "empty";
 
         if (
-          Number(row.selected_index) ===
-          Number(row.correct_index_snapshot)
+          row.selected_index !== null &&
+          row.selected_index !== undefined
         ) {
 
-          correct++;
-          result = "correct";
+          if (
+            Number(
+              row.selected_index
+            ) ===
+            Number(
+              row.correct_index_snapshot
+            )
+          ) {
+
+            correct++;
+            result =
+              "correct";
+
+          } else {
+
+            wrong++;
+            result =
+              "wrong";
+          }
 
         } else {
 
-          wrong++;
-          result = "wrong";
+          empty++;
         }
 
-      } else {
+        return {
+          number:
+            Number(
+              row.question_order
+            ) + 1,
 
-        empty++;
+          question:
+            row.question_text_snapshot,
+
+          options: [
+            row.option_a_snapshot,
+            row.option_b_snapshot,
+            row.option_c_snapshot,
+            row.option_d_snapshot,
+          ],
+
+          selectedIndex:
+            row.selected_index,
+
+          correctIndex:
+            row.correct_index_snapshot,
+
+          result,
+
+          elapsedSeconds:
+            row.elapsed_seconds,
+        };
       }
-
-      return {
-        number:
-          Number(row.question_order) + 1,
-
-        question:
-          row.question_text_snapshot,
-
-        options: [
-          row.option_a_snapshot,
-          row.option_b_snapshot,
-          row.option_c_snapshot,
-          row.option_d_snapshot,
-        ],
-
-        selectedIndex:
-          row.selected_index,
-
-        correctIndex:
-          row.correct_index_snapshot,
-
-        result,
-
-        elapsedSeconds:
-          row.elapsed_seconds,
-      };
-    });
+    );
 
   const total =
     questions.length;
@@ -2177,7 +3085,9 @@ async function buildLegacyResult(
       .first();
 
   if (!attempt) {
-    throw new Error("آزمون پیدا نشد");
+    throw new Error(
+      "آزمون پیدا نشد"
+    );
   }
 
   const questions =
@@ -2203,10 +3113,14 @@ async function buildLegacyResult(
   const answerMap =
     new Map();
 
-  for (const answer of answers) {
+  for (
+    const answer of answers
+  ) {
 
     answerMap.set(
-      Number(answer.question_index),
+      Number(
+        answer.question_index
+      ),
       answer.selected_index
     );
   }
@@ -2216,58 +3130,67 @@ async function buildLegacyResult(
   let empty = 0;
 
   const sheet =
-    questions.map((q, index) => {
+    questions.map(
+      (q, index) => {
 
-      const selectedIndex =
-        answerMap.has(index)
-          ? answerMap.get(index)
-          : null;
+        const selectedIndex =
+          answerMap.has(index)
+            ? answerMap.get(index)
+            : null;
 
-      let result =
-        "empty";
+        let result =
+          "empty";
 
-      if (
-        selectedIndex === null ||
-        selectedIndex === undefined
-      ) {
+        if (
+          selectedIndex === null ||
+          selectedIndex === undefined
+        ) {
 
-        empty++;
+          empty++;
 
-      } else if (
-        Number(selectedIndex) ===
-        Number(q.correct_index)
-      ) {
+        } else if (
+          Number(
+            selectedIndex
+          ) ===
+          Number(
+            q.correct_index
+          )
+        ) {
 
-        correct++;
-        result = "correct";
+          correct++;
+          result =
+            "correct";
 
-      } else {
+        } else {
 
-        wrong++;
-        result = "wrong";
+          wrong++;
+          result =
+            "wrong";
+        }
+
+        return {
+          number:
+            index + 1,
+
+          question:
+            q.question_text,
+
+          options: [
+            q.option_a,
+            q.option_b,
+            q.option_c,
+            q.option_d,
+          ],
+
+          selectedIndex,
+
+          correctIndex:
+            q.correct_index,
+
+          result,
+        };
       }
-
-      return {
-        number: index + 1,
-
-        question:
-          q.question_text,
-
-        options: [
-          q.option_a,
-          q.option_b,
-          q.option_c,
-          q.option_d,
-        ],
-
-        selectedIndex,
-
-        correctIndex:
-          q.correct_index,
-
-        result,
-      };
-    });
+    );
 
   const total =
     questions.length;
@@ -2283,7 +3206,10 @@ async function buildLegacyResult(
       UPDATE attempts
       SET
         finished_at =
-          COALESCE(finished_at, ?),
+          COALESCE(
+            finished_at,
+            ?
+          ),
         score = ?,
         correct_count = ?,
         wrong_count = ?,
@@ -2348,10 +3274,14 @@ function json(
 // =============================================================
 // شماره موبایل
 // =============================================================
-function normalizePhone(value) {
+function normalizePhone(
+  value
+) {
 
   let phone =
-    String(value || "")
+    String(
+      value || ""
+    )
       .trim()
       .replace(/\s+/g, "")
       .replace(/-/g, "");
