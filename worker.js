@@ -65,7 +65,6 @@ export default {
         const pricing =
           getEffectivePrice(exam);
 
-        // تعداد واقعی سوالات آزمون طبق قوانین پوشه‌ها
         const rulesResult =
           await env.DB
             .prepare(`
@@ -101,15 +100,12 @@ export default {
           id: exam.id,
           title: exam.title,
 
-          // قیمت نهایی فعلی
           price:
             pricing.finalPrice,
 
-          // قیمت اصلی
           basePrice:
             pricing.basePrice,
 
-          // قیمت نهایی
           finalPrice:
             pricing.finalPrice,
 
@@ -135,7 +131,6 @@ export default {
             exam.active,
         };
 
-        // لیست سوالات بانک برای سازگاری
         const result =
           await env.DB
             .prepare(`
@@ -165,10 +160,8 @@ export default {
             exam:
               publicExam,
 
-            // تعداد واقعی سوالات آزمون
             questionCount,
 
-            // برای سازگاری با index قدیمی
             questions:
               result.results || [],
           },
@@ -840,9 +833,6 @@ export default {
           );
         }
 
-        // =====================================================
-        // اگر قبلاً آزمون شروع شده است
-        // =====================================================
         const existingAttempt =
           await env.DB
             .prepare(`
@@ -857,7 +847,6 @@ export default {
 
         if (existingAttempt) {
 
-          // آزمون تمام شده
           if (
             existingAttempt.finished_at
           ) {
@@ -909,7 +898,6 @@ export default {
                 currentQuestion
               ];
 
-            // اگر سوال هنوز شروع نشده
             if (
               !current.started_at
             ) {
@@ -974,9 +962,6 @@ export default {
             );
           }
 
-          // ===================================================
-          // Legacy attempt
-          // ===================================================
           const questions =
             await selectQuestionsForExam(
               env,
@@ -1032,9 +1017,6 @@ export default {
           );
         }
 
-        // =====================================================
-        // ایجاد آزمون جدید
-        // =====================================================
         const questions =
           await selectQuestionsForExam(
             env,
@@ -1318,9 +1300,6 @@ export default {
             )
             .first();
 
-        // =======================================================
-        // Snapshot path
-        // =======================================================
         if (snapshot) {
 
           const startedAt =
@@ -1423,9 +1402,6 @@ export default {
               0
             );
 
-          // =====================================================
-          // پایان آزمون
-          // =====================================================
           if (
             nextQuestion >=
             totalQuestions
@@ -1467,9 +1443,6 @@ export default {
             );
           }
 
-          // =====================================================
-          // شروع سوال بعدی
-          // =====================================================
           await env.DB
             .prepare(`
               UPDATE attempt_questions
@@ -1541,9 +1514,6 @@ export default {
           );
         }
 
-        // =======================================================
-        // Legacy path
-        // =======================================================
         const question =
           await getQuestion(
             env,
@@ -2912,7 +2882,6 @@ async function selectQuestionsForExam(
   const rules =
     rulesResult.results || [];
 
-  // اگر قانون پوشه وجود نداشت
   if (!rules.length) {
 
     const result =
@@ -2947,9 +2916,6 @@ async function selectQuestionsForExam(
 
     let rows = [];
 
-    // =========================================================
-    // انتخاب دستی
-    // =========================================================
     if (
       rule.selection_mode ===
       "manual"
@@ -2984,9 +2950,6 @@ async function selectQuestionsForExam(
 
     } else {
 
-      // =======================================================
-      // انتخاب تصادفی
-      // =======================================================
       const result =
         await env.DB
           .prepare(`
@@ -3045,7 +3008,6 @@ function publicQuestion(q) {
     id:
       q.id,
 
-    // ساختار جدید
     question:
       q.question_text,
 
@@ -3059,7 +3021,6 @@ function publicQuestion(q) {
     durationSeconds:
       duration,
 
-    // ساختار قدیمی برای index
     question_text:
       q.question_text,
 
@@ -3101,7 +3062,6 @@ function publicSnapshotQuestion(q) {
     id:
       q.question_id,
 
-    // ساختار جدید
     question:
       q.question_text_snapshot,
 
@@ -3115,7 +3075,6 @@ function publicSnapshotQuestion(q) {
     durationSeconds:
       duration,
 
-    // ساختار قدیمی برای index
     question_text:
       q.question_text_snapshot,
 
@@ -3321,6 +3280,12 @@ async function buildResult(
     ok: true,
 
     attemptId,
+
+    startedAt:
+      attempt.started_at || null,
+
+    finishedAt:
+      attempt.finished_at || null,
 
     score,
 
