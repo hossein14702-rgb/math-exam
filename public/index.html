@@ -2199,20 +2199,22 @@ function formatDateTime(value){
 
 function renderResult(data){
 
+    /*
+       پاسخ /api/submit از Worker مستقیماً
+       شامل score و correct و wrong و empty
+       و sheet است؛ بنابراین دیگر نباید
+       دنبال data.result بگردیم.
+    */
+
     const result =
-        data.result || {};
+        data || {};
 
     const rawScore =
         Number(result.score || 0);
 
-    let score20 =
-        rawScore > 20
-        ? rawScore / 5
-        : rawScore;
-
-    score20 =
+    const score20 =
         Math.round(
-            score20 * 10
+            rawScore * 10
         ) / 10;
 
     const total =
@@ -2325,15 +2327,27 @@ function renderResult(data){
 
     `;
 
+    /*
+       Worker:
+       data.sheet = [
+           {
+               number,
+               question,
+               options,
+               selectedIndex,
+               correctIndex,
+               result,
+               elapsedSeconds
+           }
+       ]
+    */
+
     const sheet =
-        data.sheet ||
-        data.answerSheet ||
-        result.sheet ||
-        result.answerSheet ||
-        [];
+        Array.isArray(data.sheet)
+            ? data.sheet
+            : [];
 
     if(
-        !Array.isArray(sheet) ||
         !sheet.length
     ){
 
@@ -2350,44 +2364,44 @@ function renderResult(data){
             (item,index) => {
 
                 const selected =
-                    item.selected ??
-                    item.selected_index ??
+                    item.selectedIndex ??
                     null;
 
                 const correctAnswer =
-                    item.correct ??
-                    item.correct_index ??
+                    item.correctIndex ??
                     null;
+
+                const itemResult =
+                    item.result ||
+                    "empty";
 
                 let type = "empty";
                 let status = "بدون پاسخ";
                 let statusClass =
                     "status-empty";
 
-                if(
-                    selected !== null &&
-                    selected !== undefined
-                ){
+                if(itemResult === "correct"){
 
-                    if(
-                        Number(selected) ===
-                        Number(correctAnswer)
-                    ){
+                    type = "correct";
+                    status = "صحیح";
+                    statusClass =
+                        "status-correct";
 
-                        type = "correct";
-                        status = "صحیح";
-                        statusClass =
-                            "status-correct";
+                }
+                else if(itemResult === "wrong"){
 
-                    }
-                    else{
+                    type = "wrong";
+                    status = "غلط";
+                    statusClass =
+                        "status-wrong";
 
-                        type = "wrong";
-                        status = "غلط";
-                        statusClass =
-                            "status-wrong";
+                }
+                else{
 
-                    }
+                    type = "empty";
+                    status = "بدون پاسخ";
+                    statusClass =
+                        "status-empty";
 
                 }
 
@@ -2401,21 +2415,25 @@ function renderResult(data){
                     );
 
                 const correctText =
-                    optionText(
+                    correctAnswer === null ||
+                    correctAnswer === undefined
+                    ? "نامشخص"
+                    : optionText(
                         item,
                         correctAnswer
                     );
 
                 const elapsed =
                     item.elapsedSeconds ??
-                    item.elapsed_seconds ??
                     null;
 
                 const questionText =
-                    item.question_text ||
                     item.question ||
-                    item.question_text_snapshot ||
                     "";
+
+                const questionNumber =
+                    item.number ??
+                    (index + 1);
 
                 return `
 
@@ -2426,7 +2444,9 @@ function renderResult(data){
                         <div class="answer-question">
 
                             سؤال
-                            ${toPersianNumber(index + 1)}
+                            ${toPersianNumber(
+                                questionNumber
+                            )}
 
                             <br>
 
@@ -2501,21 +2521,16 @@ function optionText(
         return "بدون پاسخ";
     }
 
-    const options = [
+    /*
+       Worker گزینه‌ها را داخل آرایه options
+       برمی‌گرداند:
+       [A, B, C, D]
+    */
 
-        item.option_a ??
-        item.option_a_snapshot,
-
-        item.option_b ??
-        item.option_b_snapshot,
-
-        item.option_c ??
-        item.option_c_snapshot,
-
-        item.option_d ??
-        item.option_d_snapshot
-
-    ];
+    const options =
+        Array.isArray(item.options)
+            ? item.options
+            : [];
 
     return options[
         Number(index)
