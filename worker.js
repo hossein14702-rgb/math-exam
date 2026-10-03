@@ -587,7 +587,6 @@ export default {
 
       // =========================================================
       // POST /api/teacher/folders
-      // ایجاد / ویرایش / فعال‌سازی پوشه
       // =========================================================
       if (
         request.method === "POST" &&
@@ -601,9 +600,6 @@ export default {
             body.action || "create"
           ).trim();
 
-        // -------------------------------------------------------
-        // CREATE
-        // -------------------------------------------------------
         if (action === "create") {
 
           const name =
@@ -684,9 +680,6 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
-        // UPDATE
-        // -------------------------------------------------------
         if (action === "update") {
 
           const folderId =
@@ -768,9 +761,6 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
-        // TOGGLE
-        // -------------------------------------------------------
         if (action === "toggle") {
 
           const folderId =
@@ -820,9 +810,6 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
-        // DELETE
-        // -------------------------------------------------------
         if (action === "delete") {
 
           const folderId =
@@ -1017,7 +1004,6 @@ export default {
 
       // =========================================================
       // POST /api/teacher/questions
-      // create / update / toggle / move / delete
       // =========================================================
       if (
         request.method === "POST" &&
@@ -1031,9 +1017,6 @@ export default {
             body.action || "create"
           ).trim();
 
-        // =======================================================
-        // CREATE / UPDATE
-        // =======================================================
         if (
           action === "create" ||
           action === "update"
@@ -1192,9 +1175,6 @@ export default {
           const optionD =
             options[3] || "";
 
-          // -----------------------------------------------------
-          // CREATE
-          // -----------------------------------------------------
           if (action === "create") {
 
             const result =
@@ -1254,9 +1234,6 @@ export default {
             );
           }
 
-          // -----------------------------------------------------
-          // UPDATE
-          // -----------------------------------------------------
           if (action === "update") {
 
             if (
@@ -1357,10 +1334,6 @@ export default {
           }
         }
 
-
-        // =======================================================
-        // TOGGLE
-        // =======================================================
         if (action === "toggle") {
 
           const questionId =
@@ -1413,10 +1386,6 @@ export default {
           );
         }
 
-
-        // =======================================================
-        // MOVE
-        // =======================================================
         if (action === "move") {
 
           const questionId =
@@ -1480,10 +1449,6 @@ export default {
           );
         }
 
-
-        // =======================================================
-        // DELETE
-        // =======================================================
         if (action === "delete") {
 
           const questionId =
@@ -1504,8 +1469,6 @@ export default {
             );
           }
 
-          // اگر سؤال در آزمون دستی ثبت شده باشد
-          // ابتدا ارتباط دستی آن حذف می‌شود.
           await env.DB
             .prepare(`
               DELETE FROM exam_manual_questions
@@ -1514,9 +1477,6 @@ export default {
             .bind(questionId)
             .run();
 
-          // اگر snapshot قبلی داشته باشد، حذف واقعی
-          // ممکن است باعث از بین رفتن FK در آینده شود.
-          // فعلاً مطابق ساختار فعلی حذف می‌کنیم.
           await env.DB
             .prepare(`
               DELETE FROM questions
@@ -1535,7 +1495,6 @@ export default {
             cors
           );
         }
-
 
         return json(
           {
@@ -1606,7 +1565,6 @@ export default {
 
       // =========================================================
       // POST /api/teacher/exam-rules
-      // create / update / delete
       // =========================================================
       if (
         request.method === "POST" &&
@@ -1625,9 +1583,6 @@ export default {
             body.examId || 1
           );
 
-        // -------------------------------------------------------
-        // CREATE / UPDATE
-        // -------------------------------------------------------
         if (
           action === "create" ||
           action === "update"
@@ -1732,9 +1687,6 @@ export default {
             );
           }
 
-          // -----------------------------------------------------
-          // UPDATE
-          // -----------------------------------------------------
           if (action === "update") {
 
             const ruleId =
@@ -1785,9 +1737,6 @@ export default {
             );
           }
 
-          // -----------------------------------------------------
-          // جلوگیری از ثبت دوباره همان پوشه
-          // -----------------------------------------------------
           const duplicate =
             await env.DB
               .prepare(`
@@ -1847,10 +1796,6 @@ export default {
           );
         }
 
-
-        // -------------------------------------------------------
-        // DELETE
-        // -------------------------------------------------------
         if (action === "delete") {
 
           const ruleId =
@@ -1984,7 +1929,6 @@ export default {
 
       // =========================================================
       // POST /api/teacher/manual-questions
-      // add / remove / reorder
       // =========================================================
       if (
         request.method === "POST" &&
@@ -2036,9 +1980,6 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
-        // ADD
-        // -------------------------------------------------------
         if (action === "add") {
 
           const question =
@@ -2144,10 +2085,6 @@ export default {
           );
         }
 
-
-        // -------------------------------------------------------
-        // REMOVE
-        // -------------------------------------------------------
         if (action === "remove") {
 
           await env.DB
@@ -2173,10 +2110,6 @@ export default {
           );
         }
 
-
-        // -------------------------------------------------------
-        // REORDER
-        // -------------------------------------------------------
         if (action === "reorder") {
 
           const items =
@@ -2262,6 +2195,7 @@ export default {
 
       // =========================================================
       // POST /api/create-order
+      // ایجاد سفارش + درخواست پرداخت زرین‌پال
       // =========================================================
       if (
         request.method === "POST" &&
@@ -2297,11 +2231,64 @@ export default {
           );
         }
 
+        // -------------------------------------------------------
+        // اعتبارسنجی ساده شماره موبایل
+        // -------------------------------------------------------
+        if (
+          !/^09\d{9}$/.test(phone)
+        ) {
+          return json(
+            {
+              ok: false,
+              error:
+                "شماره موبایل معتبر نیست",
+            },
+            400,
+            cors
+          );
+        }
+
+        if (
+          !Number.isInteger(examId) ||
+          examId <= 0
+        ) {
+          return json(
+            {
+              ok: false,
+              error:
+                "examId نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+
+        // -------------------------------------------------------
+        // Merchant ID
+        // -------------------------------------------------------
+        const merchantId =
+          String(
+            env.ZARINPAL_MERCHANT_ID || ""
+          ).trim();
+
+        if (!merchantId) {
+          return json(
+            {
+              ok: false,
+              error:
+                "درگاه پرداخت هنوز تنظیم نشده است",
+            },
+            500,
+            cors
+          );
+        }
+
         const exam =
           await env.DB
             .prepare(`
               SELECT
                 id,
+                title,
                 price,
                 active,
                 discount_enabled,
@@ -2326,7 +2313,9 @@ export default {
           );
         }
 
-        if (!exam.active) {
+        if (
+          Number(exam.active || 0) !== 1
+        ) {
           return json(
             {
               ok: false,
@@ -2342,7 +2331,43 @@ export default {
           getEffectivePrice(exam);
 
         const amount =
-          pricing.finalPrice;
+          Number(
+            pricing.finalPrice || 0
+          );
+
+        if (
+          !Number.isInteger(amount) ||
+          amount <= 0
+        ) {
+          return json(
+            {
+              ok: false,
+              error:
+                "مبلغ پرداخت نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+
+        // مبلغ D1 بر حسب تومان است.
+        // زرین‌پال مبلغ را بر حسب ریال می‌خواهد.
+        const amountRial =
+          amount * 10;
+
+        if (
+          !Number.isSafeInteger(amountRial)
+        ) {
+          return json(
+            {
+              ok: false,
+              error:
+                "مبلغ پرداخت بیش از حد مجاز است",
+            },
+            400,
+            cors
+          );
+        }
 
         const orderId =
           crypto.randomUUID();
@@ -2373,11 +2398,170 @@ export default {
           )
           .run();
 
+        // -------------------------------------------------------
+        // Callback URL
+        //
+        // از همان دامنه‌ای که درخواست را دریافت کرده‌ایم
+        // ساخته می‌شود؛ بنابراین نیاز به Secret جداگانه ندارد.
+        // -------------------------------------------------------
+        const callbackUrl =
+          new URL(
+            "/api/payment/callback",
+            request.url
+          ).toString();
+
+        const paymentDescription =
+          `پرداخت آزمون ${exam.title || "آزمون ریاضی"}`;
+
+        // -------------------------------------------------------
+        // درخواست پرداخت زرین‌پال
+        // -------------------------------------------------------
+        const paymentResponse =
+          await fetch(
+            "https://payment.zarinpal.com/pg/v4/payment/request.json",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Accept:
+                  "application/json",
+              },
+
+              body:
+                JSON.stringify({
+                  merchant_id:
+                    merchantId,
+
+                  amount:
+                    amountRial,
+
+                  description:
+                    paymentDescription,
+
+                  callback_url:
+                    callbackUrl,
+
+                  metadata: {
+                    mobile:
+                      phone,
+
+                    order_id:
+                      orderId,
+                  },
+                }),
+            }
+          );
+
+        let paymentData = null;
+
+        try {
+          paymentData =
+            await paymentResponse.json();
+        } catch {
+          paymentData = null;
+        }
+
+        const paymentCode =
+          Number(
+            paymentData?.data?.code
+          );
+
+        if (
+          paymentCode !== 100
+        ) {
+          console.error(
+            "ZarinPal request failed",
+            paymentData
+          );
+
+          // سفارش پرداخت‌نشده باقی می‌ماند
+          // ولی برای شفافیت آن را failed می‌کنیم.
+          await env.DB
+            .prepare(`
+              UPDATE orders
+              SET status = 'failed'
+              WHERE id = ?
+                AND status = 'pending'
+            `)
+            .bind(orderId)
+            .run();
+
+          return json(
+            {
+              ok: false,
+              error:
+                "ایجاد درخواست پرداخت در زرین‌پال ناموفق بود",
+
+              code:
+                paymentData?.errors?.code ??
+                paymentData?.data?.code ??
+                null,
+            },
+            502,
+            cors
+          );
+        }
+
+        const authority =
+          String(
+            paymentData?.data?.authority || ""
+          ).trim();
+
+        if (!authority) {
+
+          await env.DB
+            .prepare(`
+              UPDATE orders
+              SET status = 'failed'
+              WHERE id = ?
+                AND status = 'pending'
+            `)
+            .bind(orderId)
+            .run();
+
+          return json(
+            {
+              ok: false,
+              error:
+                "شناسه پرداخت از زرین‌پال دریافت نشد",
+            },
+            502,
+            cors
+          );
+        }
+
+        await env.DB
+          .prepare(`
+            UPDATE orders
+            SET authority = ?
+            WHERE id = ?
+              AND status = 'pending'
+          `)
+          .bind(
+            authority,
+            orderId
+          )
+          .run();
+
+        const paymentUrl =
+          `https://payment.zarinpal.com/pg/StartPay/${encodeURIComponent(authority)}`;
+
         return json(
           {
             ok: true,
+
             orderId,
+
             amount,
+
+            amountRial,
+
+            authority,
+
+            paymentUrl,
 
             pricing: {
               basePrice:
@@ -2409,29 +2593,44 @@ export default {
 
 
       // =========================================================
-      // POST /api/demo-pay
+      // GET /api/payment/callback
       // =========================================================
       if (
-        request.method === "POST" &&
-        url.pathname === "/api/demo-pay"
+        request.method === "GET" &&
+        url.pathname === "/api/payment/callback"
       ) {
-        const body =
-          await request.json();
 
-        const orderId =
+        const authority =
           String(
-            body.orderId || ""
+            url.searchParams.get("Authority") || ""
           ).trim();
 
-        if (!orderId) {
-          return json(
-            {
-              ok: false,
-              error:
-                "orderId الزامی است",
-            },
-            400,
-            cors
+        const status =
+          String(
+            url.searchParams.get("Status") || ""
+          ).trim();
+
+        // صفحه مقصد بعد از پرداخت
+        const frontendUrl =
+          new URL(
+            "/",
+            request.url
+          );
+
+        if (!authority) {
+          frontendUrl.searchParams.set(
+            "payment",
+            "failed"
+          );
+
+          frontendUrl.searchParams.set(
+            "message",
+            "شناسه پرداخت دریافت نشد"
+          );
+
+          return Response.redirect(
+            frontendUrl.toString(),
+            302
           );
         }
 
@@ -2440,22 +2639,249 @@ export default {
             .prepare(`
               SELECT
                 id,
-                status
+                exam_id,
+                name,
+                phone,
+                amount,
+                status,
+                authority,
+                paid_at,
+                ref_id
               FROM orders
-              WHERE id = ?
+              WHERE authority = ?
+              LIMIT 1
             `)
-            .bind(orderId)
+            .bind(authority)
             .first();
 
         if (!order) {
-          return json(
+          frontendUrl.searchParams.set(
+            "payment",
+            "failed"
+          );
+
+          frontendUrl.searchParams.set(
+            "message",
+            "سفارش مربوط به این پرداخت پیدا نشد"
+          );
+
+          return Response.redirect(
+            frontendUrl.toString(),
+            302
+          );
+        }
+
+        // -------------------------------------------------------
+        // اگر قبلاً Verify شده باشد
+        // -------------------------------------------------------
+        if (
+          order.status === "paid"
+        ) {
+          frontendUrl.searchParams.set(
+            "payment",
+            "success"
+          );
+
+          frontendUrl.searchParams.set(
+            "orderId",
+            order.id
+          );
+
+          if (order.ref_id) {
+            frontendUrl.searchParams.set(
+              "refId",
+              String(order.ref_id)
+            );
+          }
+
+          return Response.redirect(
+            frontendUrl.toString(),
+            302
+          );
+        }
+
+        // -------------------------------------------------------
+        // کاربر در درگاه Cancel کرده است
+        // -------------------------------------------------------
+        if (
+          status.toUpperCase() !== "OK"
+        ) {
+          await env.DB
+            .prepare(`
+              UPDATE orders
+              SET status = 'cancelled'
+              WHERE id = ?
+                AND status = 'pending'
+            `)
+            .bind(order.id)
+            .run();
+
+          frontendUrl.searchParams.set(
+            "payment",
+            "cancelled"
+          );
+
+          frontendUrl.searchParams.set(
+            "orderId",
+            order.id
+          );
+
+          return Response.redirect(
+            frontendUrl.toString(),
+            302
+          );
+        }
+
+        const merchantId =
+          String(
+            env.ZARINPAL_MERCHANT_ID || ""
+          ).trim();
+
+        if (!merchantId) {
+          frontendUrl.searchParams.set(
+            "payment",
+            "failed"
+          );
+
+          frontendUrl.searchParams.set(
+            "orderId",
+            order.id
+          );
+
+          frontendUrl.searchParams.set(
+            "message",
+            "تنظیمات درگاه پرداخت ناقص است"
+          );
+
+          return Response.redirect(
+            frontendUrl.toString(),
+            302
+          );
+        }
+
+        const amount =
+          Number(order.amount || 0);
+
+        const amountRial =
+          amount * 10;
+
+        if (
+          !Number.isInteger(amount) ||
+          amount <= 0 ||
+          !Number.isSafeInteger(amountRial)
+        ) {
+          frontendUrl.searchParams.set(
+            "payment",
+            "failed"
+          );
+
+          frontendUrl.searchParams.set(
+            "orderId",
+            order.id
+          );
+
+          frontendUrl.searchParams.set(
+            "message",
+            "مبلغ سفارش نامعتبر است"
+          );
+
+          return Response.redirect(
+            frontendUrl.toString(),
+            302
+          );
+        }
+
+        // -------------------------------------------------------
+        // Verify واقعی در زرین‌پال
+        // مبلغ از D1 خوانده شده و از مرورگر گرفته نمی‌شود.
+        // -------------------------------------------------------
+        const verifyResponse =
+          await fetch(
+            "https://payment.zarinpal.com/pg/v4/payment/verify.json",
             {
-              ok: false,
-              error:
-                "سفارش پیدا نشد",
-            },
-            404,
-            cors
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Accept:
+                  "application/json",
+              },
+
+              body:
+                JSON.stringify({
+                  merchant_id:
+                    merchantId,
+
+                  amount:
+                    amountRial,
+
+                  authority:
+                    authority,
+                }),
+            }
+          );
+
+        let verifyData = null;
+
+        try {
+          verifyData =
+            await verifyResponse.json();
+        } catch {
+          verifyData = null;
+        }
+
+        const verifyCode =
+          Number(
+            verifyData?.data?.code
+          );
+
+        const refId =
+          verifyData?.data?.ref_id ??
+          verifyData?.data?.refId ??
+          null;
+
+        // کد 100 = پرداخت موفق
+        // کد 101 = تراکنش قبلاً Verify شده
+        if (
+          verifyCode !== 100 &&
+          verifyCode !== 101
+        ) {
+
+          console.error(
+            "ZarinPal verify failed",
+            verifyData
+          );
+
+          await env.DB
+            .prepare(`
+              UPDATE orders
+              SET status = 'verify_failed'
+              WHERE id = ?
+                AND status = 'pending'
+            `)
+            .bind(order.id)
+            .run();
+
+          frontendUrl.searchParams.set(
+            "payment",
+            "failed"
+          );
+
+          frontendUrl.searchParams.set(
+            "orderId",
+            order.id
+          );
+
+          frontendUrl.searchParams.set(
+            "message",
+            "تأیید پرداخت توسط زرین‌پال ناموفق بود"
+          );
+
+          return Response.redirect(
+            frontendUrl.toString(),
+            302
           );
         }
 
@@ -2467,24 +2893,43 @@ export default {
             UPDATE orders
             SET
               status = 'paid',
-              paid_at = ?
+              paid_at = ?,
+              ref_id = ?
             WHERE id = ?
+              AND (
+                status = 'pending' OR
+                status = 'verify_failed'
+              )
           `)
           .bind(
             paidAt,
-            orderId
+            refId !== null
+              ? String(refId)
+              : null,
+            order.id
           )
           .run();
 
-        return json(
-          {
-            ok: true,
-            orderId,
-            status: "paid",
-            paidAt,
-          },
-          200,
-          cors
+        frontendUrl.searchParams.set(
+          "payment",
+          "success"
+        );
+
+        frontendUrl.searchParams.set(
+          "orderId",
+          order.id
+        );
+
+        if (refId !== null) {
+          frontendUrl.searchParams.set(
+            "refId",
+            String(refId)
+          );
+        }
+
+        return Response.redirect(
+          frontendUrl.toString(),
+          302
         );
       }
 
@@ -4353,9 +4798,6 @@ async function selectQuestionsForExam(
 
 // =============================================================
 // نرمال‌سازی گزینه‌ها
-//
-// گزینه‌های خالی حذف می‌شوند و correct_index متناسب
-// با گزینه‌های باقی‌مانده اصلاح می‌شود.
 // =============================================================
 function compactOptions(
   values,
@@ -4579,7 +5021,6 @@ function publicSnapshotQuestion(q) {
 
 // =============================================================
 // سؤال برای teacher
-// پاسخ صحیح در پنل معلم نمایش داده می‌شود.
 // =============================================================
 function teacherQuestion(q) {
 
@@ -4650,13 +5091,6 @@ function teacherQuestion(q) {
 
 // =============================================================
 // ساخت گزینه‌ها از Body
-//
-// اجازه:
-// 2 گزینه = A,B
-// 3 گزینه = A,B,C
-// 4 گزینه = A,B,C,D
-//
-// سوراخ بین گزینه‌ها مجاز نیست.
 // =============================================================
 function normalizeOptionsFromBody(body) {
 
@@ -4762,7 +5196,7 @@ function normalizeOptionsFromBody(body) {
 
 
 // =============================================================
-// اصلاح correct index برای گزینه‌های فشرده‌شده
+// اصلاح correct index
 // =============================================================
 function remapCorrectIndex(
   values,
