@@ -1334,6 +1334,10 @@ export default {
           }
         }
 
+
+        // =======================================================
+        // TOGGLE
+        // =======================================================
         if (action === "toggle") {
 
           const questionId =
@@ -1386,6 +1390,10 @@ export default {
           );
         }
 
+
+        // =======================================================
+        // MOVE
+        // =======================================================
         if (action === "move") {
 
           const questionId =
@@ -1449,6 +1457,10 @@ export default {
           );
         }
 
+
+        // =======================================================
+        // DELETE
+        // =======================================================
         if (action === "delete") {
 
           const questionId =
@@ -1495,6 +1507,7 @@ export default {
             cors
           );
         }
+
 
         return json(
           {
@@ -1795,6 +1808,7 @@ export default {
             cors
           );
         }
+
 
         if (action === "delete") {
 
@@ -2195,7 +2209,6 @@ export default {
 
       // =========================================================
       // POST /api/create-order
-      // ایجاد سفارش + درخواست پرداخت زرین‌پال
       // =========================================================
       if (
         request.method === "POST" &&
@@ -2231,9 +2244,6 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
-        // اعتبارسنجی ساده شماره موبایل
-        // -------------------------------------------------------
         if (
           !/^09\d{9}$/.test(phone)
         ) {
@@ -2241,7 +2251,7 @@ export default {
             {
               ok: false,
               error:
-                "شماره موبایل معتبر نیست",
+                "شماره موبایل نامعتبر است",
             },
             400,
             cors
@@ -2263,32 +2273,11 @@ export default {
           );
         }
 
-        // -------------------------------------------------------
-        // Merchant ID
-        // -------------------------------------------------------
-        const merchantId =
-          String(
-            env.ZARINPAL_MERCHANT_ID || ""
-          ).trim();
-
-        if (!merchantId) {
-          return json(
-            {
-              ok: false,
-              error:
-                "درگاه پرداخت هنوز تنظیم نشده است",
-            },
-            500,
-            cors
-          );
-        }
-
         const exam =
           await env.DB
             .prepare(`
               SELECT
                 id,
-                title,
                 price,
                 active,
                 discount_enabled,
@@ -2313,9 +2302,7 @@ export default {
           );
         }
 
-        if (
-          Number(exam.active || 0) !== 1
-        ) {
+        if (!exam.active) {
           return json(
             {
               ok: false,
@@ -2331,9 +2318,7 @@ export default {
           getEffectivePrice(exam);
 
         const amount =
-          Number(
-            pricing.finalPrice || 0
-          );
+          pricing.finalPrice;
 
         if (
           !Number.isInteger(amount) ||
@@ -2344,25 +2329,6 @@ export default {
               ok: false,
               error:
                 "مبلغ پرداخت نامعتبر است",
-            },
-            400,
-            cors
-          );
-        }
-
-        // مبلغ D1 بر حسب تومان است.
-        // زرین‌پال مبلغ را بر حسب ریال می‌خواهد.
-        const amountRial =
-          amount * 10;
-
-        if (
-          !Number.isSafeInteger(amountRial)
-        ) {
-          return json(
-            {
-              ok: false,
-              error:
-                "مبلغ پرداخت بیش از حد مجاز است",
             },
             400,
             cors
@@ -2398,107 +2364,145 @@ export default {
           )
           .run();
 
-        // -------------------------------------------------------
-        // Callback URL
-        //
-        // از همان دامنه‌ای که درخواست را دریافت کرده‌ایم
-        // ساخته می‌شود؛ بنابراین نیاز به Secret جداگانه ندارد.
-        // -------------------------------------------------------
-        const callbackUrl =
-          new URL(
-            "/api/payment/callback",
-            request.url
-          ).toString();
+        /*
+         * اگر VPS هنوز تنظیم نشده باشد،
+         * سفارش ساخته می‌شود ولی پرداخت واقعی
+         * شروع نمی‌شود.
+         *
+         * بعداً فقط PAYMENT_VPS_URL را در
+         * Cloudflare Worker تنظیم می‌کنیم.
+         */
 
-        const paymentDescription =
-          `پرداخت آزمون ${exam.title || "آزمون ریاضی"}`;
+        const vpsBase =
+          String(
+            env.PAYMENT_VPS_URL || ""
+          ).trim();
 
-        // -------------------------------------------------------
-        // درخواست پرداخت زرین‌پال
-        // -------------------------------------------------------
-        const paymentResponse =
-          await fetch(
-            "https://payment.zarinpal.com/pg/v4/payment/request.json",
+        if (!vpsBase) {
+          return json(
             {
-              method: "POST",
+              ok: true,
 
-              headers: {
-                "Content-Type":
-                  "application/json",
+              paymentReady: false,
 
-                Accept:
-                  "application/json",
+              orderId,
+
+              amount,
+
+              message:
+                "سفارش ایجاد شد. درگاه پرداخت هنوز فعال نشده است.",
+
+              pricing: {
+                basePrice:
+                  pricing.basePrice,
+
+                finalPrice:
+                  pricing.finalPrice,
+
+                discountEnabled:
+                  pricing.discountEnabled,
+
+                discountActive:
+                  pricing.discountActive,
+
+                discountPercent:
+                  pricing.discountPercent,
+
+                discountStartAt:
+                  pricing.discountStartAt,
+
+                discountEndAt:
+                  pricing.discountEndAt,
               },
-
-              body:
-                JSON.stringify({
-                  merchant_id:
-                    merchantId,
-
-                  amount:
-                    amountRial,
-
-                  description:
-                    paymentDescription,
-
-                  callback_url:
-                    callbackUrl,
-
-                  metadata: {
-                    mobile:
-                      phone,
-
-                    order_id:
-                      orderId,
-                  },
-                }),
-            }
+            },
+            200,
+            cors
           );
-
-        let paymentData = null;
-
-        try {
-          paymentData =
-            await paymentResponse.json();
-        } catch {
-          paymentData = null;
         }
 
-        const paymentCode =
-          Number(
-            paymentData?.data?.code
-          );
+        /*
+         * درخواست ساخت پرداخت به VPS
+         */
+        const callbackUrl =
+          `${url.origin}/api/payment/callback?orderId=${encodeURIComponent(orderId)}`;
 
-        if (
-          paymentCode !== 100
-        ) {
+        let paymentResponse;
+
+        try {
+
+          const vpsResponse =
+            await fetch(
+              `${vpsBase.replace(/\/+$/, "")}/request`,
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json",
+
+                  ...(env.PAYMENT_VPS_SECRET
+                    ? {
+                        "X-Payment-Secret":
+                          String(
+                            env.PAYMENT_VPS_SECRET
+                          ),
+                      }
+                    : {}),
+                },
+
+                body:
+                  JSON.stringify({
+                    orderId,
+                    amount,
+                    description:
+                      `پرداخت آزمون ${examId} - ${name}`,
+                    callbackUrl,
+                    mobile: phone,
+                  }),
+              }
+            );
+
+          paymentResponse =
+            await vpsResponse.json();
+
+        } catch (error) {
+
           console.error(
-            "ZarinPal request failed",
-            paymentData
+            "VPS payment request error:",
+            error
           );
-
-          // سفارش پرداخت‌نشده باقی می‌ماند
-          // ولی برای شفافیت آن را failed می‌کنیم.
-          await env.DB
-            .prepare(`
-              UPDATE orders
-              SET status = 'failed'
-              WHERE id = ?
-                AND status = 'pending'
-            `)
-            .bind(orderId)
-            .run();
 
           return json(
             {
               ok: false,
               error:
-                "ایجاد درخواست پرداخت در زرین‌پال ناموفق بود",
+                "ارتباط با سرور پرداخت برقرار نشد",
+              orderId,
+            },
+            502,
+            cors
+          );
+        }
 
-              code:
-                paymentData?.errors?.code ??
-                paymentData?.data?.code ??
-                null,
+        if (
+          !paymentResponse ||
+          paymentResponse.ok !== true ||
+          !paymentResponse.authority ||
+          !paymentResponse.paymentUrl
+        ) {
+
+          console.error(
+            "Invalid VPS payment response:",
+            paymentResponse
+          );
+
+          return json(
+            {
+              ok: false,
+              error:
+                paymentResponse?.error ||
+                "ایجاد پرداخت ناموفق بود",
+              orderId,
             },
             502,
             cors
@@ -2507,38 +2511,15 @@ export default {
 
         const authority =
           String(
-            paymentData?.data?.authority || ""
+            paymentResponse.authority
           ).trim();
-
-        if (!authority) {
-
-          await env.DB
-            .prepare(`
-              UPDATE orders
-              SET status = 'failed'
-              WHERE id = ?
-                AND status = 'pending'
-            `)
-            .bind(orderId)
-            .run();
-
-          return json(
-            {
-              ok: false,
-              error:
-                "شناسه پرداخت از زرین‌پال دریافت نشد",
-            },
-            502,
-            cors
-          );
-        }
 
         await env.DB
           .prepare(`
             UPDATE orders
-            SET authority = ?
+            SET
+              authority = ?
             WHERE id = ?
-              AND status = 'pending'
           `)
           .bind(
             authority,
@@ -2546,22 +2527,20 @@ export default {
           )
           .run();
 
-        const paymentUrl =
-          `https://payment.zarinpal.com/pg/StartPay/${encodeURIComponent(authority)}`;
-
         return json(
           {
             ok: true,
+
+            paymentReady: true,
 
             orderId,
 
             amount,
 
-            amountRial,
-
             authority,
 
-            paymentUrl,
+            paymentUrl:
+              paymentResponse.paymentUrl,
 
             pricing: {
               basePrice:
@@ -2594,43 +2573,38 @@ export default {
 
       // =========================================================
       // GET /api/payment/callback
+      //
+      // زرین‌پال پس از پرداخت به این آدرس برمی‌گردد.
       // =========================================================
       if (
         request.method === "GET" &&
         url.pathname === "/api/payment/callback"
       ) {
 
+        const orderId =
+          String(
+            url.searchParams.get("orderId") || ""
+          ).trim();
+
         const authority =
           String(
-            url.searchParams.get("Authority") || ""
+            url.searchParams.get("Authority") ||
+            ""
           ).trim();
 
         const status =
           String(
-            url.searchParams.get("Status") || ""
-          ).trim();
+            url.searchParams.get("Status") ||
+            ""
+          ).trim()
+          .toUpperCase();
 
-        // صفحه مقصد بعد از پرداخت
-        const frontendUrl =
-          new URL(
-            "/",
-            request.url
-          );
-
-        if (!authority) {
-          frontendUrl.searchParams.set(
-            "payment",
-            "failed"
-          );
-
-          frontendUrl.searchParams.set(
-            "message",
-            "شناسه پرداخت دریافت نشد"
-          );
-
-          return Response.redirect(
-            frontendUrl.toString(),
-            302
+        if (!orderId) {
+          return paymentRedirect(
+            env,
+            false,
+            null,
+            "شناسه سفارش وجود ندارد"
           );
         }
 
@@ -2645,243 +2619,275 @@ export default {
                 amount,
                 status,
                 authority,
-                paid_at,
                 ref_id
               FROM orders
-              WHERE authority = ?
-              LIMIT 1
+              WHERE id = ?
             `)
-            .bind(authority)
+            .bind(orderId)
             .first();
 
         if (!order) {
-          frontendUrl.searchParams.set(
-            "payment",
-            "failed"
-          );
-
-          frontendUrl.searchParams.set(
-            "message",
-            "سفارش مربوط به این پرداخت پیدا نشد"
-          );
-
-          return Response.redirect(
-            frontendUrl.toString(),
-            302
+          return paymentRedirect(
+            env,
+            false,
+            orderId,
+            "سفارش پیدا نشد"
           );
         }
 
-        // -------------------------------------------------------
-        // اگر قبلاً Verify شده باشد
-        // -------------------------------------------------------
+        /*
+         * اگر قبلاً پرداخت شده باشد،
+         * دوباره Verify نمی‌کنیم.
+         */
+        if (order.status === "paid") {
+
+          return paymentRedirect(
+            env,
+            true,
+            orderId,
+            "پرداخت قبلاً تأیید شده است"
+          );
+        }
+
         if (
-          order.status === "paid"
+          status !== "OK" ||
+          !authority
         ) {
-          frontendUrl.searchParams.set(
-            "payment",
-            "success"
+
+          return paymentRedirect(
+            env,
+            false,
+            orderId,
+            "پرداخت توسط درگاه تأیید نشد"
+          );
+        }
+
+        const vpsBase =
+          String(
+            env.PAYMENT_VPS_URL || ""
+          ).trim();
+
+        if (!vpsBase) {
+
+          return paymentRedirect(
+            env,
+            false,
+            orderId,
+            "سرور پرداخت هنوز تنظیم نشده است"
+          );
+        }
+
+        let verifyResponse;
+
+        try {
+
+          const vpsResponse =
+            await fetch(
+              `${vpsBase.replace(/\/+$/, "")}/verify`,
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json",
+
+                  ...(env.PAYMENT_VPS_SECRET
+                    ? {
+                        "X-Payment-Secret":
+                          String(
+                            env.PAYMENT_VPS_SECRET
+                          ),
+                      }
+                    : {}),
+                },
+
+                body:
+                  JSON.stringify({
+                    orderId,
+                    authority,
+                    amount:
+                      Number(order.amount),
+                  }),
+              }
+            );
+
+          verifyResponse =
+            await vpsResponse.json();
+
+        } catch (error) {
+
+          console.error(
+            "VPS verify error:",
+            error
           );
 
-          frontendUrl.searchParams.set(
-            "orderId",
-            order.id
+          return paymentRedirect(
+            env,
+            false,
+            orderId,
+            "ارتباط با سرور پرداخت برقرار نشد"
           );
+        }
 
-          if (order.ref_id) {
-            frontendUrl.searchParams.set(
-              "refId",
-              String(order.ref_id)
+        if (
+          !verifyResponse ||
+          verifyResponse.ok !== true
+        ) {
+
+          return paymentRedirect(
+            env,
+            false,
+            orderId,
+            verifyResponse?.error ||
+              "پرداخت تأیید نشد"
+          );
+        }
+
+        const refId =
+          verifyResponse.ref_id ??
+          verifyResponse.refId ??
+          null;
+
+        const paidAt =
+          new Date().toISOString();
+
+        /*
+         * idempotency:
+         * فقط سفارش pending را paid می‌کنیم.
+         */
+        const updateResult =
+          await env.DB
+            .prepare(`
+              UPDATE orders
+              SET
+                status = 'paid',
+                authority = ?,
+                ref_id = ?,
+                paid_at = ?
+              WHERE id = ?
+                AND status = 'pending'
+            `)
+            .bind(
+              authority,
+              refId !== null
+                ? String(refId)
+                : null,
+              paidAt,
+              orderId
+            )
+            .run();
+
+        /*
+         * اگر همزمان callback دوباره اجرا شده باشد،
+         * سفارش ممکن است قبلاً paid شده باشد.
+         */
+        if (
+          Number(
+            updateResult?.meta?.changes || 0
+          ) === 0
+        ) {
+
+          const current =
+            await env.DB
+              .prepare(`
+                SELECT status
+                FROM orders
+                WHERE id = ?
+              `)
+              .bind(orderId)
+              .first();
+
+          if (
+            current?.status === "paid"
+          ) {
+            return paymentRedirect(
+              env,
+              true,
+              orderId,
+              "پرداخت تأیید شده است"
             );
           }
 
-          return Response.redirect(
-            frontendUrl.toString(),
-            302
+          return paymentRedirect(
+            env,
+            false,
+            orderId,
+            "وضعیت سفارش قابل تأیید نیست"
           );
         }
 
-        // -------------------------------------------------------
-        // کاربر در درگاه Cancel کرده است
-        // -------------------------------------------------------
-        if (
-          status.toUpperCase() !== "OK"
-        ) {
-          await env.DB
-            .prepare(`
-              UPDATE orders
-              SET status = 'cancelled'
-              WHERE id = ?
-                AND status = 'pending'
-            `)
-            .bind(order.id)
-            .run();
+        return paymentRedirect(
+          env,
+          true,
+          orderId,
+          "پرداخت با موفقیت تأیید شد"
+        );
+      }
 
-          frontendUrl.searchParams.set(
-            "payment",
-            "cancelled"
-          );
 
-          frontendUrl.searchParams.set(
-            "orderId",
-            order.id
-          );
+      // =========================================================
+      // POST /api/demo-pay
+      // فقط برای تست فعلی
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/demo-pay"
+      ) {
+        const body =
+          await request.json();
 
-          return Response.redirect(
-            frontendUrl.toString(),
-            302
-          );
-        }
-
-        const merchantId =
+        const orderId =
           String(
-            env.ZARINPAL_MERCHANT_ID || ""
+            body.orderId || ""
           ).trim();
 
-        if (!merchantId) {
-          frontendUrl.searchParams.set(
-            "payment",
-            "failed"
-          );
-
-          frontendUrl.searchParams.set(
-            "orderId",
-            order.id
-          );
-
-          frontendUrl.searchParams.set(
-            "message",
-            "تنظیمات درگاه پرداخت ناقص است"
-          );
-
-          return Response.redirect(
-            frontendUrl.toString(),
-            302
-          );
-        }
-
-        const amount =
-          Number(order.amount || 0);
-
-        const amountRial =
-          amount * 10;
-
-        if (
-          !Number.isInteger(amount) ||
-          amount <= 0 ||
-          !Number.isSafeInteger(amountRial)
-        ) {
-          frontendUrl.searchParams.set(
-            "payment",
-            "failed"
-          );
-
-          frontendUrl.searchParams.set(
-            "orderId",
-            order.id
-          );
-
-          frontendUrl.searchParams.set(
-            "message",
-            "مبلغ سفارش نامعتبر است"
-          );
-
-          return Response.redirect(
-            frontendUrl.toString(),
-            302
-          );
-        }
-
-        // -------------------------------------------------------
-        // Verify واقعی در زرین‌پال
-        // مبلغ از D1 خوانده شده و از مرورگر گرفته نمی‌شود.
-        // -------------------------------------------------------
-        const verifyResponse =
-          await fetch(
-            "https://payment.zarinpal.com/pg/v4/payment/verify.json",
+        if (!orderId) {
+          return json(
             {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json",
-
-                Accept:
-                  "application/json",
-              },
-
-              body:
-                JSON.stringify({
-                  merchant_id:
-                    merchantId,
-
-                  amount:
-                    amountRial,
-
-                  authority:
-                    authority,
-                }),
-            }
+              ok: false,
+              error:
+                "orderId الزامی است",
+            },
+            400,
+            cors
           );
-
-        let verifyData = null;
-
-        try {
-          verifyData =
-            await verifyResponse.json();
-        } catch {
-          verifyData = null;
         }
 
-        const verifyCode =
-          Number(
-            verifyData?.data?.code
-          );
-
-        const refId =
-          verifyData?.data?.ref_id ??
-          verifyData?.data?.refId ??
-          null;
-
-        // کد 100 = پرداخت موفق
-        // کد 101 = تراکنش قبلاً Verify شده
-        if (
-          verifyCode !== 100 &&
-          verifyCode !== 101
-        ) {
-
-          console.error(
-            "ZarinPal verify failed",
-            verifyData
-          );
-
+        const order =
           await env.DB
             .prepare(`
-              UPDATE orders
-              SET status = 'verify_failed'
+              SELECT
+                id,
+                status
+              FROM orders
               WHERE id = ?
-                AND status = 'pending'
             `)
-            .bind(order.id)
-            .run();
+            .bind(orderId)
+            .first();
 
-          frontendUrl.searchParams.set(
-            "payment",
-            "failed"
+        if (!order) {
+          return json(
+            {
+              ok: false,
+              error:
+                "سفارش پیدا نشد",
+            },
+            404,
+            cors
           );
+        }
 
-          frontendUrl.searchParams.set(
-            "orderId",
-            order.id
-          );
-
-          frontendUrl.searchParams.set(
-            "message",
-            "تأیید پرداخت توسط زرین‌پال ناموفق بود"
-          );
-
-          return Response.redirect(
-            frontendUrl.toString(),
-            302
+        if (order.status === "paid") {
+          return json(
+            {
+              ok: true,
+              orderId,
+              status: "paid",
+              message:
+                "این سفارش قبلاً پرداخت شده است",
+            },
+            200,
+            cors
           );
         }
 
@@ -2893,43 +2899,24 @@ export default {
             UPDATE orders
             SET
               status = 'paid',
-              paid_at = ?,
-              ref_id = ?
+              paid_at = ?
             WHERE id = ?
-              AND (
-                status = 'pending' OR
-                status = 'verify_failed'
-              )
           `)
           .bind(
             paidAt,
-            refId !== null
-              ? String(refId)
-              : null,
-            order.id
+            orderId
           )
           .run();
 
-        frontendUrl.searchParams.set(
-          "payment",
-          "success"
-        );
-
-        frontendUrl.searchParams.set(
-          "orderId",
-          order.id
-        );
-
-        if (refId !== null) {
-          frontendUrl.searchParams.set(
-            "refId",
-            String(refId)
-          );
-        }
-
-        return Response.redirect(
-          frontendUrl.toString(),
-          302
+        return json(
+          {
+            ok: true,
+            orderId,
+            status: "paid",
+            paidAt,
+          },
+          200,
+          cors
         );
       }
 
@@ -5586,6 +5573,130 @@ async function buildLegacyResult(
 
     sheet,
   };
+}
+
+
+// =============================================================
+// Redirect بعد از پرداخت
+// =============================================================
+function paymentRedirect(
+  env,
+  success,
+  orderId,
+  message
+) {
+
+  /*
+   * بعداً می‌توانی STUDENT_URL را در
+   * Worker Variables تنظیم کنی.
+   *
+   * مثال:
+   * https://azmoonmath.ir
+   */
+
+  const studentUrl =
+    String(
+      env.STUDENT_URL ||
+      ""
+    ).trim();
+
+  if (!studentUrl) {
+
+    return new Response(
+      `
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نتیجه پرداخت</title>
+</head>
+<body style="font-family:tahoma;text-align:center;padding:50px">
+<h2>${escapeHtml(message || "")}</h2>
+<p>
+${success
+  ? "پرداخت با موفقیت تأیید شد."
+  : "پرداخت تأیید نشد."}
+</p>
+${
+  orderId
+    ? `<p>شناسه سفارش: ${escapeHtml(orderId)}</p>`
+    : ""
+}
+</body>
+</html>
+      `,
+      {
+        status: 200,
+        headers: {
+          "Content-Type":
+            "text/html; charset=UTF-8",
+        },
+      }
+    );
+  }
+
+  const target =
+    new URL(
+      studentUrl
+    );
+
+  target.searchParams.set(
+    "payment",
+    success
+      ? "success"
+      : "failed"
+  );
+
+  if (orderId) {
+    target.searchParams.set(
+      "orderId",
+      orderId
+    );
+  }
+
+  if (message) {
+    target.searchParams.set(
+      "message",
+      message
+    );
+  }
+
+  return Response.redirect(
+    target.toString(),
+    302
+  );
+}
+
+
+// =============================================================
+// جلوگیری از HTML Injection در صفحه callback
+// =============================================================
+function escapeHtml(value) {
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
 
