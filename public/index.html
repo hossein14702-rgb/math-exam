@@ -1014,17 +1014,23 @@ let pendingPaymentUrl = null;
 const $ = id => document.getElementById(id);
 
 function show(id){
+
     const element = $(id);
+
     if(element){
         element.classList.remove("hidden");
     }
+
 }
 
 function hide(id){
+
     const element = $(id);
+
     if(element){
         element.classList.add("hidden");
     }
+
 }
 
 function toPersianNumber(value){
@@ -1062,10 +1068,16 @@ function normalizePhone(value){
             .replace(/\D/g,"");
 
     if(phone.startsWith("0098")){
-        phone = "0" + phone.slice(4);
+
+        phone =
+            "0" + phone.slice(4);
+
     }
     else if(phone.startsWith("98")){
-        phone = "0" + phone.slice(2);
+
+        phone =
+            "0" + phone.slice(2);
+
     }
 
     return phone.slice(0,11);
@@ -1155,7 +1167,7 @@ function clearSession(){
 
 
 /* =========================
-   تخفیف و شمارش معکوس
+   اطلاعات تخفیف
 ========================= */
 
 function getDiscountEndAt(exam){
@@ -1165,6 +1177,18 @@ function getDiscountEndAt(exam){
         exam.discount_end_at ??
         exam.discountEnd ??
         exam.discount_end ??
+        null
+    );
+
+}
+
+function getDiscountStartAt(exam){
+
+    return (
+        exam.discountStartAt ??
+        exam.discount_start_at ??
+        exam.discountStart ??
+        exam.discount_start ??
         null
     );
 
@@ -1216,24 +1240,50 @@ function isDiscountCurrentlyActive(exam){
         discountPercent <= 0 ||
         basePrice <= finalPrice
     ){
+
         return false;
+
+    }
+
+    const startAt =
+        getDiscountStartAt(exam);
+
+    if(startAt){
+
+        const startTime =
+            Date.parse(startAt);
+
+        if(
+            !Number.isNaN(startTime) &&
+            Date.now() < startTime
+        ){
+
+            return false;
+
+        }
+
     }
 
     const endAt =
         getDiscountEndAt(exam);
 
-    if(!endAt){
-        return true;
+    if(endAt){
+
+        const endTime =
+            Date.parse(endAt);
+
+        if(
+            Number.isNaN(endTime) ||
+            Date.now() >= endTime
+        ){
+
+            return false;
+
+        }
+
     }
 
-    const endTime =
-        Date.parse(endAt);
-
-    if(Number.isNaN(endTime)){
-        return false;
-    }
-
-    return Date.now() < endTime;
+    return true;
 
 }
 
@@ -1242,7 +1292,9 @@ function formatCountdown(milliseconds){
     const totalSeconds =
         Math.max(
             0,
-            Math.floor(milliseconds / 1000)
+            Math.floor(
+                milliseconds / 1000
+            )
         );
 
     const days =
@@ -1264,18 +1316,23 @@ function formatCountdown(milliseconds){
         totalSeconds % 60;
 
     return {
+
         days:toPersianNumber(
-            String(days).padStart(2,"0")
+            String(days)
         ),
+
         hours:toPersianNumber(
             String(hours).padStart(2,"0")
         ),
+
         minutes:toPersianNumber(
             String(minutes).padStart(2,"0")
         ),
+
         seconds:toPersianNumber(
             String(seconds).padStart(2,"0")
         )
+
     };
 
 }
@@ -1331,10 +1388,6 @@ function startDiscountCountdown(){
 
             stopDiscountCountdown();
 
-            /*
-             * تخفیف تمام شده است.
-             * قیمت اصلی را دوباره نمایش می‌دهیم.
-             */
             renderExamInfo();
 
             return;
@@ -1354,21 +1407,13 @@ function startDiscountCountdown(){
 
                 element.innerHTML = `
                     مهلت استفاده از تخفیف:
-                    <strong>
-                        ${countdown.days}
-                    </strong>
+                    <strong>${countdown.days}</strong>
                     روز
-                    <strong>
-                        ${countdown.hours}
-                    </strong>
+                    <strong>${countdown.hours}</strong>
                     ساعت
-                    <strong>
-                        ${countdown.minutes}
-                    </strong>
+                    <strong>${countdown.minutes}</strong>
                     دقیقه
-                    <strong>
-                        ${countdown.seconds}
-                    </strong>
+                    <strong>${countdown.seconds}</strong>
                     ثانیه
                 `;
 
@@ -1388,96 +1433,32 @@ function startDiscountCountdown(){
 
 
 /* =========================
-   نمایش اطلاعات آزمون
+   ساخت بخش قیمت
 ========================= */
 
-function renderExamInfo(){
+function buildPriceHtml(
+    exam,
+    hasDiscount,
+    basePrice,
+    finalPrice,
+    discountPercent,
+    discountEndAt
+){
 
-    if(!examData){
-        return;
-    }
-
-    const exam =
-        examData.exam || {};
-
-    const questions =
-        examData.questions || [];
-
-    const finalPrice =
-        Number(
-            exam.finalPrice ??
-            exam.final_price ??
-            exam.price ??
-            0
-        );
-
-    const basePrice =
-        Number(
-            exam.basePrice ??
-            exam.base_price ??
-            exam.price ??
-            0
-        );
-
-    const discountEnabled =
-        exam.discountEnabled === true ||
-        Number(exam.discountEnabled || 0) === 1 ||
-        Number(exam.discount_enabled || 0) === 1;
-
-    const discountActive =
-        exam.discountActive === true ||
-        Number(exam.discountActive || 0) === 1 ||
-        exam.discount_active === true ||
-        Number(exam.discount_active || 0) === 1;
-
-    const discountPercent =
-        Number(
-            exam.discountPercent ??
-            exam.discount_percent ??
-            0
-        );
-
-    const discountEndAt =
-        getDiscountEndAt(exam);
-
-    let hasDiscount =
-        discountEnabled &&
-        discountActive &&
-        discountPercent > 0 &&
-        basePrice > finalPrice;
-
-    /*
-     * اگر زمان پایان تخفیف مشخص شده،
-     * زمان واقعی مرورگر نیز بررسی می‌شود.
-     */
-    if(hasDiscount && discountEndAt){
-
-        const endTime =
-            Date.parse(discountEndAt);
-
-        if(
-            Number.isNaN(endTime) ||
-            Date.now() >= endTime
-        ){
-
-            hasDiscount = false;
-
-        }
-
-    }
-
-    let priceHtml = "";
+    const title =
+        exam.title ||
+        "آزمون ریاضی";
 
     if(hasDiscount){
 
-        priceHtml = `
+        return `
 
             <div class="price-main">
 
                 <div>
 
                     <div class="price-label">
-                        نام محصول
+                        قیمت محصول
                     </div>
 
                     <div style="
@@ -1486,9 +1467,7 @@ function renderExamInfo(){
                         color:#1f2937;
                         font-weight:bold;
                     ">
-                        ${escapeHtml(
-                            exam.title || "آزمون ریاضی"
-                        )}
+                        ${escapeHtml(title)}
                     </div>
 
                     <div class="discount-badge">
@@ -1527,88 +1506,176 @@ function renderExamInfo(){
         `;
 
     }
-    else{
 
-        priceHtml = `
+    return `
 
-            <div class="price-main">
+        <div class="price-main">
 
-                <div>
+            <div>
 
-                    <div class="price-label">
-                        نام محصول
-                    </div>
-
-                    <div style="
-                        margin-top:5px;
-                        font-size:13px;
-                        color:#1f2937;
-                        font-weight:bold;
-                    ">
-                        ${escapeHtml(
-                            exam.title || "آزمون ریاضی"
-                        )}
-                    </div>
-
+                <div class="price-label">
+                    قیمت محصول
                 </div>
 
-                <div class="price">
-                    ${basePrice.toLocaleString("fa-IR")}
-                    تومان
+                <div style="
+                    margin-top:5px;
+                    font-size:13px;
+                    color:#1f2937;
+                    font-weight:bold;
+                ">
+                    ${escapeHtml(title)}
                 </div>
 
             </div>
 
-        `;
+            <div class="price">
+                ${basePrice.toLocaleString("fa-IR")}
+                تومان
+            </div>
 
+        </div>
+
+    `;
+
+}
+
+
+/* =========================
+   نمایش اطلاعات آزمون
+========================= */
+
+function renderExamInfo(){
+
+    if(!examData){
+        return;
     }
+
+    const exam =
+        examData.exam || {};
+
+    const questions =
+        Array.isArray(examData.questions)
+        ? examData.questions
+        : [];
+
+    const basePrice =
+        Number(
+            exam.basePrice ??
+            exam.base_price ??
+            exam.price ??
+            0
+        );
+
+    const finalPrice =
+        Number(
+            exam.finalPrice ??
+            exam.final_price ??
+            exam.price ??
+            basePrice
+        );
+
+    const discountEnabled =
+        exam.discountEnabled === true ||
+        Number(exam.discountEnabled || 0) === 1 ||
+        Number(exam.discount_enabled || 0) === 1;
+
+    const discountActive =
+        exam.discountActive === true ||
+        Number(exam.discountActive || 0) === 1 ||
+        exam.discount_active === true ||
+        Number(exam.discount_active || 0) === 1;
+
+    const discountPercent =
+        Number(
+            exam.discountPercent ??
+            exam.discount_percent ??
+            0
+        );
+
+    const discountEndAt =
+        getDiscountEndAt(exam);
+
+    const hasDiscount =
+        discountEnabled &&
+        discountActive &&
+        discountPercent > 0 &&
+        basePrice > finalPrice &&
+        isDiscountCurrentlyActive(exam);
+
+    const questionCount =
+        Number(
+            examData.questionCount ??
+            examQuestionsCount ??
+            questions.length
+        );
+
+    /*
+     * بخش اصلی اطلاعات محصول
+     */
 
     $("examInfo").innerHTML = `
 
         <div class="exam-info">
 
             <div class="info-row">
+
                 <span class="info-label">
                     نام محصول
                 </span>
 
                 <span class="info-value">
                     ${escapeHtml(
-                        exam.title || "آزمون ریاضی"
+                        exam.title ||
+                        "آزمون ریاضی"
                     )}
                 </span>
+
             </div>
 
             <div class="info-row">
+
                 <span class="info-label">
                     تعداد سؤال
                 </span>
 
                 <span class="info-value">
                     ${toPersianNumber(
-                        examData.questionCount ??
-                        examQuestionsCount ??
-                        questions.length
+                        questionCount
                     )}
                 </span>
+
             </div>
 
             <div class="info-row">
+
                 <span class="info-label">
-                    زمان هر سؤال
+                    مدت آزمون
                 </span>
 
                 <span class="info-value">
-                    زمان تعیین‌شده برای همان سؤال
+                    ${
+                        exam.duration_seconds
+                        ? toPersianNumber(
+                            Math.floor(
+                                Number(
+                                    exam.duration_seconds
+                                ) / 60
+                            )
+                          ) + " دقیقه"
+                        : "زمان‌بندی‌شده"
+                    }
                 </span>
+
             </div>
 
             <div class="info-row">
+
                 <span class="info-label">
-                    قیمت
+                    قیمت محصول
                 </span>
 
                 <span class="info-value">
+
                     ${
                         hasDiscount
                         ? `
@@ -1616,6 +1683,7 @@ function renderExamInfo(){
                                 ${basePrice.toLocaleString("fa-IR")}
                                 تومان
                             </span>
+
                             <span style="
                                 color:#2563eb;
                                 font-size:15px;
@@ -1629,8 +1697,21 @@ function renderExamInfo(){
                             تومان
                           `
                     }
+
                 </span>
+
             </div>
+
+            ${
+                hasDiscount
+                ? `
+                    <div class="discount-badge">
+                        ${toPersianNumber(discountPercent)}
+                        ٪ تخفیف فعال
+                    </div>
+                  `
+                : ""
+            }
 
             ${
                 hasDiscount && discountEndAt
@@ -1646,13 +1727,30 @@ function renderExamInfo(){
 
     `;
 
-    $("paymentPriceBox").innerHTML =
-        `<div>${priceHtml}</div>`;
 
     /*
-     * بعد از ساخت HTML شمارش معکوس را فعال می‌کنیم.
+     * قیمت صفحه پرداخت
      */
-    if(hasDiscount && discountEndAt){
+
+    $("paymentPriceBox").innerHTML =
+        buildPriceHtml(
+            exam,
+            hasDiscount,
+            basePrice,
+            finalPrice,
+            discountPercent,
+            discountEndAt
+        );
+
+
+    /*
+     * فعال‌سازی شمارش معکوس
+     */
+
+    if(
+        hasDiscount &&
+        discountEndAt
+    ){
 
         startDiscountCountdown();
 
@@ -1716,15 +1814,16 @@ async function loadExam(){
 
         }
 
-        examData = data;
+        examData =
+            data;
 
         examQuestionsCount =
             Number(
                 data.questionCount ||
                 (
                     Array.isArray(data.questions)
-                        ? data.questions.length
-                        : 0
+                    ? data.questions.length
+                    : 0
                 )
             );
 
@@ -1749,7 +1848,8 @@ async function loadExam(){
             </div>
         `;
 
-        $("startPaymentButton").disabled = true;
+        $("startPaymentButton").disabled =
+            true;
 
     }
 
@@ -1783,4 +1883,230 @@ async function createOrderAndPay(){
 
         showError(
             "startError",
-            "لطفاً نام و نام
+            "لطفاً نام و نام خانوادگی را وارد کنید."
+        );
+
+        return;
+
+    }
+
+    if(!isValidPhone(phone)){
+
+        showError(
+            "startError",
+            "لطفاً شماره موبایل ۱۱ رقمی معتبر وارد کنید؛ مانند ۰۹۱۲۱۲۳۴۵۶۷."
+        );
+
+        return;
+
+    }
+
+    $("startPaymentButton").disabled =
+        true;
+
+    $("startPaymentButton").textContent =
+        "در حال ایجاد سفارش...";
+
+    try{
+
+        const response =
+            await fetch(
+                `${API}/api/create-order`,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        examId:
+                            EXAM_ID,
+
+                        name:
+                            name,
+
+                        phone:
+                            phone
+
+                    })
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if(!response.ok || !data.ok){
+
+            throw new Error(
+                data.error ||
+                "ثبت سفارش انجام نشد."
+            );
+
+        }
+
+        if(!data.orderId){
+
+            throw new Error(
+                "شناسه سفارش از سرور دریافت نشد."
+            );
+
+        }
+
+        if(!data.paymentUrl){
+
+            throw new Error(
+                "لینک پرداخت از زرین‌پال دریافت نشد."
+            );
+
+        }
+
+        orderId =
+            String(data.orderId);
+
+        attemptId =
+            null;
+
+        examStartedAt =
+            null;
+
+        examFinishedAt =
+            null;
+
+        localStorage.setItem(
+            "math_exam_order_id",
+            orderId
+        );
+
+        localStorage.setItem(
+            "math_exam_name",
+            name
+        );
+
+        localStorage.setItem(
+            "math_exam_phone",
+            phone
+        );
+
+        localStorage.setItem(
+            "math_exam_paid",
+            "0"
+        );
+
+        localStorage.removeItem(
+            "math_exam_attempt_id"
+        );
+
+        localStorage.removeItem(
+            "math_exam_started"
+        );
+
+        localStorage.removeItem(
+            "math_exam_started_at"
+        );
+
+        localStorage.removeItem(
+            "math_exam_finished_at"
+        );
+
+        pendingPaymentUrl =
+            data.paymentUrl;
+
+        /*
+         * انتقال مستقیم به درگاه واقعی زرین‌پال
+         */
+
+        window.location.href =
+            data.paymentUrl;
+
+    }
+    catch(error){
+
+        showError(
+            "startError",
+            error.message ||
+            "خطایی هنگام ایجاد سفارش رخ داد."
+        );
+
+        $("startPaymentButton").disabled =
+            false;
+
+        $("startPaymentButton").textContent =
+            "پرداخت و شروع آزمون";
+
+    }
+
+}
+
+
+/* =========================
+   صفحه پرداخت
+========================= */
+
+$("payButton").addEventListener(
+    "click",
+    function(){
+
+        clearError(
+            "paymentError"
+        );
+
+        if(!pendingPaymentUrl){
+
+            showError(
+                "paymentError",
+                "لینک پرداخت موجود نیست. لطفاً دوباره سفارش را ثبت کنید."
+            );
+
+            return;
+
+        }
+
+        window.location.href =
+            pendingPaymentUrl;
+
+    }
+);
+
+$("backToStartButton").addEventListener(
+    "click",
+    function(){
+
+        hide("paymentCard");
+
+        show("startCard");
+
+        clearError(
+            "paymentError"
+        );
+
+    }
+);
+
+
+/* =========================
+   پارامترهای URL
+========================= */
+
+function getQueryParams(){
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+    return {
+
+        payment:
+            params.get("payment"),
+
+        returnedOrderId:
+            params.get("orderId"),
+
+        status:
+            params.get("Status"),
+
+        authority:
+            params.get("Authority
