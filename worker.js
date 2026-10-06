@@ -1,15 +1,8 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-
-    // =========================================================
-    // CORS
-    // =========================================================
-    const cors = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    };
+    const origin = request.headers.get("Origin") || "";
+    const cors = getCorsHeaders(origin);
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
@@ -19,6 +12,148 @@ export default {
     }
 
     try {
+
+      // =========================================================
+      // POST /api/teacher/login
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/login"
+      ) {
+        const body = await request.json().catch(() => ({}));
+        const username = String(body.username || "").trim();
+        const password = String(body.password || "");
+
+        const expectedUser = String(env.TEACHER_USERNAME || "");
+        const expectedPass = String(env.TEACHER_PASSWORD || "");
+
+        if (
+          !expectedUser ||
+          !expectedPass ||
+          username !== expectedUser ||
+          password !== expectedPass
+        ) {
+          return json(
+            {
+              ok: false,
+              error: "نام کاربری یا رمز عبور اشتباه است",
+            },
+            401,
+            cors
+          );
+        }
+
+        const token =
+          crypto.randomUUID() +
+          "-" +
+          crypto.randomUUID() +
+          "-" +
+          crypto.randomUUID();
+
+        const tokenHash = await hashToken(token);
+        const now = new Date();
+        const expiresAt = new Date(
+          now.getTime() + 7 * 24 * 60 * 60 * 1000
+        ).toISOString();
+        const sessionId = crypto.randomUUID();
+
+        await env.DB
+          .prepare(`
+            INSERT INTO teacher_sessions (
+              id,
+              token_hash,
+              expires_at,
+              created_at
+            )
+            VALUES (?, ?, ?, ?)
+          `)
+          .bind(
+            sessionId,
+            tokenHash,
+            expiresAt,
+            now.toISOString()
+          )
+          .run();
+
+        const headers = {
+          ...cors,
+          "Set-Cookie": buildSessionCookie(token, 7 * 24 * 60 * 60),
+        };
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            message: "ورود با موفقیت انجام شد",
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=UTF-8",
+              ...headers,
+            },
+          }
+        );
+      }
+
+
+      // =========================================================
+      // POST /api/teacher/logout
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/logout"
+      ) {
+        const token = getCookie(request, "teacher_session");
+
+        if (token) {
+          const tokenHash = await hashToken(token);
+          await env.DB
+            .prepare(`
+              DELETE FROM teacher_sessions
+              WHERE token_hash = ?
+            `)
+            .bind(tokenHash)
+            .run();
+        }
+
+        const headers = {
+          ...cors,
+          "Set-Cookie": clearSessionCookie(),
+        };
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            message: "خروج با موفقیت انجام شد",
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=UTF-8",
+              ...headers,
+            },
+          }
+        );
+      }
+
+
+      // =========================================================
+      // محافظت تمام مسیرهای /api/teacher/*
+      // =========================================================
+      if (url.pathname.startsWith("/api/teacher/")) {
+        const session = await getValidTeacherSession(request, env);
+        if (!session) {
+          return json(
+            {
+              ok: false,
+              error: "احراز هویت لازم است. لطفاً وارد شوید.",
+            },
+            401,
+            cors
+          );
+        }
+      }
+
 
       // =========================================================
       // GET /api/exam
@@ -864,7 +999,7 @@ export default {
 
           await env.DB
             .prepare(`
-              DELETE from question_folders
+              DELETE FROM question_folders
               WHERE id = ?
             `)
             .bind(folderId)
@@ -2405,7 +2540,7 @@ export default {
         }
 
         const callbackUrl =
-          `${url.origin}/api/payment/callback?orderId=${encodeURIComponent(orderId)}`;
+          `\( {url.origin}/api/payment/callback?orderId= \){encodeURIComponent(orderId)}`;
 
         let paymentResponse;
 
@@ -2413,7 +2548,7 @@ export default {
 
           const vpsResponse =
             await fetch(
-              `${vpsBase.replace(/\/+$/, "")}/pay`,
+              `\( {vpsBase.replace(/\/+ \)/, "")}/pay`,
               {
                 method: "POST",
 
@@ -2650,7 +2785,7 @@ export default {
 
           const vpsResponse =
             await fetch(
-              `${vpsBase.replace(/\/+$/, "")}/verify`,
+              `\( {vpsBase.replace(/\/+ \)/, "")}/verify`,
               {
                 method: "POST",
 
@@ -4282,7 +4417,7 @@ export default {
 
           env.DB
             .prepare(`
-              DELETE FROM attempts
+              DELETE from attempts
               WHERE order_id IN (
                 SELECT id
                 FROM orders
@@ -4370,6 +4505,81 @@ export default {
     }
   },
 };
+
+
+// =============================================================
+// CORS امن
+// =============================================================
+const ALLOWED_ORIGINS = [
+  "https://azmoonmath.ir",
+  "https://www.azmoonmath.ir",
+  "https://azmon.hosseinkhorasani1.workers.dev",
+];
+
+function getCorsHeaders(origin) {
+  const headers = {
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Credentials": "true",
+  };
+
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+
+  return headers;
+}
+
+
+// =============================================================
+// Session Helpers
+// =============================================================
+async function hashToken(token) {
+  const data = new TextEncoder().encode(token);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function getCookie(request, name) {
+  const cookieHeader = request.headers.get("Cookie") || "";
+  const cookies = cookieHeader.split(";").map(c => c.trim());
+  for (const cookie of cookies) {
+    if (cookie.startsWith(name + "=")) {
+      return decodeURIComponent(cookie.slice(name.length + 1));
+    }
+  }
+  return null;
+}
+
+function buildSessionCookie(token, maxAgeSeconds) {
+  return `teacher_session=\( {encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age= \){maxAgeSeconds}`;
+}
+
+function clearSessionCookie() {
+  return `teacher_session=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`;
+}
+
+async function getValidTeacherSession(request, env) {
+  const token = getCookie(request, "teacher_session");
+  if (!token) return null;
+
+  const tokenHash = await hashToken(token);
+  const now = new Date().toISOString();
+
+  const session = await env.DB
+    .prepare(`
+      SELECT id, expires_at
+      FROM teacher_sessions
+      WHERE token_hash = ?
+        AND expires_at > ?
+      LIMIT 1
+    `)
+    .bind(tokenHash, now)
+    .first();
+
+  return session || null;
+}
 
 
 // =============================================================
