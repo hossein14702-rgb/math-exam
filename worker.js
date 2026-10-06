@@ -864,7 +864,7 @@ export default {
 
           await env.DB
             .prepare(`
-              DELETE FROM question_folders
+              DELETE from question_folders
               WHERE id = ?
             `)
             .bind(folderId)
@@ -2364,53 +2364,37 @@ export default {
           )
           .run();
 
-        /*
-         * اگر VPS هنوز تنظیم نشده باشد،
-         * سفارش ساخته می‌شود ولی پرداخت واقعی
-         * شروع نمی‌شود.
-         *
-         * بعداً فقط PAYMENT_VPS_URL را در
-         * Cloudflare Worker تنظیم می‌کنیم.
-         */
+        // =====================================================
+        // اتصال به VPS پرداخت
+        // =====================================================
 
         const vpsBase =
           String(
-            env.PAYMENT_VPS_URL || ""
+            env.VPS_BASE_URL || ""
           ).trim();
 
         if (!vpsBase) {
           return json(
             {
               ok: true,
-
               paymentReady: false,
-
               orderId,
-
               amount,
-
               message:
                 "سفارش ایجاد شد. درگاه پرداخت هنوز فعال نشده است.",
-
               pricing: {
                 basePrice:
                   pricing.basePrice,
-
                 finalPrice:
                   pricing.finalPrice,
-
                 discountEnabled:
                   pricing.discountEnabled,
-
                 discountActive:
                   pricing.discountActive,
-
                 discountPercent:
                   pricing.discountPercent,
-
                 discountStartAt:
                   pricing.discountStartAt,
-
                 discountEndAt:
                   pricing.discountEndAt,
               },
@@ -2420,9 +2404,6 @@ export default {
           );
         }
 
-        /*
-         * درخواست ساخت پرداخت به VPS
-         */
         const callbackUrl =
           `${url.origin}/api/payment/callback?orderId=${encodeURIComponent(orderId)}`;
 
@@ -2432,7 +2413,7 @@ export default {
 
           const vpsResponse =
             await fetch(
-              `${vpsBase.replace(/\/+$/, "")}/request`,
+              `${vpsBase.replace(/\/+$/, "")}/pay`,
               {
                 method: "POST",
 
@@ -2442,7 +2423,7 @@ export default {
 
                   ...(env.PAYMENT_VPS_SECRET
                     ? {
-                        "X-Payment-Secret":
+                        "X-Bridge-Secret":
                           String(
                             env.PAYMENT_VPS_SECRET
                           ),
@@ -2457,7 +2438,7 @@ export default {
                     description:
                       `پرداخت آزمون ${examId} - ${name}`,
                     callbackUrl,
-                    mobile: phone,
+                    phone,
                   }),
               }
             );
@@ -2530,15 +2511,10 @@ export default {
         return json(
           {
             ok: true,
-
             paymentReady: true,
-
             orderId,
-
             amount,
-
             authority,
-
             paymentUrl:
               paymentResponse.paymentUrl,
 
@@ -2573,8 +2549,6 @@ export default {
 
       // =========================================================
       // GET /api/payment/callback
-      //
-      // زرین‌پال پس از پرداخت به این آدرس برمی‌گردد.
       // =========================================================
       if (
         request.method === "GET" &&
@@ -2635,12 +2609,7 @@ export default {
           );
         }
 
-        /*
-         * اگر قبلاً پرداخت شده باشد،
-         * دوباره Verify نمی‌کنیم.
-         */
         if (order.status === "paid") {
-
           return paymentRedirect(
             env,
             true,
@@ -2653,7 +2622,6 @@ export default {
           status !== "OK" ||
           !authority
         ) {
-
           return paymentRedirect(
             env,
             false,
@@ -2664,11 +2632,10 @@ export default {
 
         const vpsBase =
           String(
-            env.PAYMENT_VPS_URL || ""
+            env.VPS_BASE_URL || ""
           ).trim();
 
         if (!vpsBase) {
-
           return paymentRedirect(
             env,
             false,
@@ -2693,7 +2660,7 @@ export default {
 
                   ...(env.PAYMENT_VPS_SECRET
                     ? {
-                        "X-Payment-Secret":
+                        "X-Bridge-Secret":
                           String(
                             env.PAYMENT_VPS_SECRET
                           ),
@@ -2751,10 +2718,6 @@ export default {
         const paidAt =
           new Date().toISOString();
 
-        /*
-         * idempotency:
-         * فقط سفارش pending را paid می‌کنیم.
-         */
         const updateResult =
           await env.DB
             .prepare(`
@@ -2777,10 +2740,6 @@ export default {
             )
             .run();
 
-        /*
-         * اگر همزمان callback دوباره اجرا شده باشد،
-         * سفارش ممکن است قبلاً paid شده باشد.
-         */
         if (
           Number(
             updateResult?.meta?.changes || 0
@@ -2821,102 +2780,6 @@ export default {
           true,
           orderId,
           "پرداخت با موفقیت تأیید شد"
-        );
-      }
-
-
-      // =========================================================
-      // POST /api/demo-pay
-      // فقط برای تست فعلی
-      // =========================================================
-      if (
-        request.method === "POST" &&
-        url.pathname === "/api/demo-pay"
-      ) {
-        const body =
-          await request.json();
-
-        const orderId =
-          String(
-            body.orderId || ""
-          ).trim();
-
-        if (!orderId) {
-          return json(
-            {
-              ok: false,
-              error:
-                "orderId الزامی است",
-            },
-            400,
-            cors
-          );
-        }
-
-        const order =
-          await env.DB
-            .prepare(`
-              SELECT
-                id,
-                status
-              FROM orders
-              WHERE id = ?
-            `)
-            .bind(orderId)
-            .first();
-
-        if (!order) {
-          return json(
-            {
-              ok: false,
-              error:
-                "سفارش پیدا نشد",
-            },
-            404,
-            cors
-          );
-        }
-
-        if (order.status === "paid") {
-          return json(
-            {
-              ok: true,
-              orderId,
-              status: "paid",
-              message:
-                "این سفارش قبلاً پرداخت شده است",
-            },
-            200,
-            cors
-          );
-        }
-
-        const paidAt =
-          new Date().toISOString();
-
-        await env.DB
-          .prepare(`
-            UPDATE orders
-            SET
-              status = 'paid',
-              paid_at = ?
-            WHERE id = ?
-          `)
-          .bind(
-            paidAt,
-            orderId
-          )
-          .run();
-
-        return json(
-          {
-            ok: true,
-            orderId,
-            status: "paid",
-            paidAt,
-          },
-          200,
-          cors
         );
       }
 
@@ -5056,8 +4919,8 @@ function teacherQuestion(q) {
 
     correctIndex:
       compact.correctIndex === null
-        ? 0
-        : compact.correctIndex,
+      ? 0
+      : compact.correctIndex,
 
     durationSeconds:
       Number(
@@ -5585,14 +5448,6 @@ function paymentRedirect(
   orderId,
   message
 ) {
-
-  /*
-   * بعداً می‌توانی STUDENT_URL را در
-   * Worker Variables تنظیم کنی.
-   *
-   * مثال:
-   * https://azmoonmath.ir
-   */
 
   const studentUrl =
     String(
