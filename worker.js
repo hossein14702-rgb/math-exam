@@ -4553,12 +4553,11 @@ function getCookie(request, name) {
 }
 
 function buildSessionCookie(token, maxAgeSeconds) {
-  return `teacher_session=\( {encodeURIComponent(token)}; HttpOnly; Secure; SameSite=None; Path=/; Max-Age= \){maxAgeSeconds}`;
+  return `teacher_session=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=${maxAgeSeconds}`;
 }
 
 function clearSessionCookie() {
   return `teacher_session=; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=0`;
-}
 }
 
 async function getValidTeacherSession(request, env) {
