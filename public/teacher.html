@@ -1,11 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>پنل معلم</title>
-
-<style>
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>پنل معلم</title>
+  <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f5f7fb;color:#222}
 .container{width:95%;max-width:1450px;margin:25px auto}
@@ -23,7 +22,2344 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .small-btn{padding:6px 10px;font-size:12px;margin:2px}
 .section-title{margin:0 0 6px;font-size:20px}
 .section-description{color:#64748b;font-size:13px;margin-bottom:18px}
-
+ 
 /* صفحه ورود */
 .login-wrapper{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#eff6ff 0%,#f5f7fb 100%)}
 .login-box{width:100%;max-width:420px;background:#fff;border-radius:18px;padding:32px 28px;box-shadow:0 10px 40px rgba(0,0,0,.1)}
+.login-box h1{margin:0 0 6px;font-size:24px;text-align:center}
+.login-box p{margin:0 0 24px;color:#64748b;font-size:13px;text-align:center}
+.login-form .form-group{margin-bottom:16px}
+.login-form label{display:block;font-size:13px;font-weight:bold;color:#374151;margin-bottom:6px}
+.login-form input{width:100%;border:1px solid #d1d5db;border-radius:10px;padding:12px 14px;font-family:inherit;font-size:14px;outline:none}
+.login-form input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.login-btn{width:100%;background:#2563eb;color:#fff;padding:13px;font-size:15px;margin-top:8px}
+.login-message{display:none;padding:10px 12px;border-radius:9px;margin-bottom:14px;font-size:13px;text-align:center}
+.login-message.error{background:#fee2e2;color:#991b1b;display:block}
+.login-message.success{background:#dcfce7;color:#166534;display:block}
+.logout-btn{background:#64748b;color:#fff}
+ 
+/* تنظیمات قیمت */
+.settings-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+.form-group{display:flex;flex-direction:column;gap:7px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:13px;font-weight:bold;color:#374151}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid #d1d5db;border-radius:10px;padding:11px 12px;font-family:inherit;font-size:14px;background:#fff;outline:none}
+.form-group textarea{min-height:100px;resize:vertical}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.discount-toggle{display:flex;align-items:center;gap:10px;background:#f8fafc;border-radius:10px;padding:13px;min-height:45px}
+.discount-toggle input{width:18px;height:18px}
+.discount-disabled-area{opacity:.5;pointer-events:none}
+.price-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.price-card{background:#f8fafc;border-radius:12px;padding:14px}
+.price-card-title{font-size:12px;color:#64748b;margin-bottom:7px}
+.price-card-value{font-size:19px;font-weight:bold}
+.final-price-card{background:#ecfdf5}
+.final-price-card .price-card-value{color:#166534}
+.discount-status{display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:bold}
+.discount-active{background:#dcfce7;color:#166534}
+.discount-inactive{background:#fef3c7;color:#92400e}
+.discount-disabled{background:#e5e7eb;color:#4b5563}
+.settings-actions{margin-top:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.save-settings-btn{background:#16a34a;color:#fff}
+.settings-message{font-size:13px;display:none;padding:8px 12px;border-radius:8px}
+.settings-success{background:#dcfce7;color:#166534}
+.settings-error{background:#fee2e2;color:#991b1b}
+ 
+/* تقویم */
+.jalali-date-wrapper{position:relative}
+.jalali-date-input{cursor:pointer;background:#fff!important}
+.date-time-row{display:grid;grid-template-columns:1fr 120px;gap:8px}
+.time-input{text-align:center;direction:ltr}
+.jalali-picker{display:none;position:absolute;top:calc(100% + 7px);right:0;width:330px;max-width:95vw;background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);border:1px solid #e5e7eb;z-index:2000;padding:12px}
+.jalali-picker.show{display:block}
+.jalali-picker-header{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:10px}
+.jalali-picker-header button{background:#f1f5f9;color:#111827;padding:7px 12px}
+.jalali-month-title{flex:1;text-align:center;font-weight:bold;font-size:14px}
+.jalali-weekdays,.jalali-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.jalali-weekdays div{text-align:center;font-size:11px;color:#64748b;padding:6px 0;font-weight:bold}
+.jalali-day{border:0;background:#fff;padding:8px 2px;border-radius:8px;font-size:12px;cursor:pointer}
+.jalali-day:hover{background:#dbeafe}
+.jalali-day.empty-day{cursor:default;background:transparent}
+.jalali-day.today{border:1px solid #2563eb}
+.jalali-day.selected{background:#2563eb;color:#fff;font-weight:bold}
+.jalali-picker-footer{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #eee}
+.jalali-picker-footer button{flex:1;padding:8px;background:#f1f5f9}
+.jalali-picker-footer .today-btn{background:#2563eb;color:#fff}
+ 
+/* بانک سؤال */
+.question-bank-box{overflow:hidden}
+.bank-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:15px}
+.bank-toolbar input,.bank-toolbar select{border:1px solid #d1d5db;border-radius:10px;padding:10px 12px;font-family:inherit;background:#fff;min-width:160px}
+.bank-toolbar input{flex:1;min-width:220px}
+.bank-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.bank-stat{background:#f8fafc;border-radius:12px;padding:13px}
+.bank-stat-title{color:#64748b;font-size:12px;margin-bottom:5px}
+.bank-stat-value{font-size:20px;font-weight:bold}
+.folder-layout{display:grid;grid-template-columns:270px 1fr;gap:15px}
+.folder-panel{background:#f8fafc;border-radius:14px;padding:14px}
+.folder-panel h3{margin:0 0 12px;font-size:15px}
+.folder-list{display:flex;flex-direction:column;gap:7px}
+.folder-item{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px;cursor:pointer}
+.folder-item:hover{border-color:#93c5fd}
+.folder-item.active-folder{border-color:#2563eb;background:#eff6ff}
+.folder-item-name{font-weight:bold;font-size:13px}
+.folder-item-count{color:#64748b;font-size:11px;margin-top:4px}
+.folder-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.questions-panel{min-width:0}
+.questions-table{overflow-x:auto}
+.questions-table table{min-width:1050px}
+table{width:100%;border-collapse:collapse}
+th{background:#f1f5f9;padding:11px 9px;text-align:center;font-size:12px;white-space:nowrap}
+td{padding:11px 9px;border-bottom:1px solid #eee;text-align:center;font-size:12px;vertical-align:middle}
+tr:hover td{background:#fafafa}
+.question-text-cell{text-align:right;white-space:normal;min-width:280px;max-width:420px;line-height:1.8}
+.active-badge,.inactive-badge,.random-badge,.manual-badge{display:inline-block;padding:5px 9px;border-radius:15px;font-size:11px;font-weight:bold}
+.active-badge{background:#dcfce7;color:#166534}
+.inactive-badge{background:#fee2e2;color:#991b1b}
+.random-badge{background:#dbeafe;color:#1e40af}
+.manual-badge{background:#ede9fe;color:#6d28d9}
+.empty{text-align:center;padding:35px;color:#777}
+.loading{text-align:center;padding:30px;color:#555}
+.error{background:#fee2e2;color:#991b1b;padding:15px;border-radius:10px;margin-bottom:15px;display:none}
+ 
+/* قوانین آزمون */
+.rules-box{margin-top:20px;padding-top:18px;border-top:1px solid #e5e7eb}
+.rules-table-wrap{overflow-x:auto}
+.rules-table{min-width:800px}
+.rules-table input,.rules-table select{border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-family:inherit;background:#fff}
+.rule-count-input{width:90px;text-align:center}
+.manual-box{margin-top:18px;background:#f8fafc;border-radius:12px;padding:14px}
+.manual-question-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.manual-question-item{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px}
+.manual-question-text{flex:1;line-height:1.7;font-size:12px}
+.manual-buttons{display:flex;gap:4px}
+ 
+/* آمار دانش‌آموز */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat{background:#fff;border-radius:14px;padding:18px;box-shadow:0 4px 18px rgba(0,0,0,.06)}
+.stat-title{color:#666;font-size:13px;margin-bottom:8px}
+.stat-value{font-size:25px;font-weight:bold}
+.table-box{overflow-x:auto}
+.students-table{min-width:1350px}
+.status{display:inline-block;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:bold}
+.status-payment-paid,.status-finished{background:#dcfce7;color:#166534}
+.status-pending,.status-not-started{background:#fef3c7;color:#92400e}
+.status-payment-failed,.status-unpaid{background:#fee2e2;color:#991b1b}
+.status-payment-cancelled,.status-unknown{background:#e5e7eb;color:#4b5563}
+.status-payment-demo{background:#ede9fe;color:#6d28d9}
+.status-progress{background:#dbeafe;color:#1e40af}
+.score{font-weight:bold}
+ 
+/* مودال */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;padding:20px;overflow-y:auto}
+.modal-box{background:#fff;width:95%;max-width:1100px;margin:30px auto;border-radius:18px;padding:22px;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+.modal-small{max-width:750px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:20px}
+.modal-header h2{margin:0;font-size:21px}
+.close-btn{background:#e5e7eb;color:#111827;font-size:20px;padding:5px 12px}
+.modal-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.modal-form-full{grid-column:1/-1}
+.options-editor{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.option-editor{background:#f8fafc;border-radius:10px;padding:10px}
+.option-editor label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px}
+.correct-selector{display:flex;gap:8px;flex-wrap:wrap}
+.correct-option{display:flex;align-items:center;gap:6px;background:#f8fafc;padding:8px 12px;border-radius:9px;cursor:pointer}
+.correct-option input{width:auto}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:15px;border-top:1px solid #eee}
+.student-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.summary-item{background:#f8fafc;border-radius:12px;padding:12px}
+.summary-title{color:#64748b;font-size:12px;margin-bottom:5px}
+.summary-value{font-weight:bold;font-size:14px}
+.correct-row td{background:#f0fdf4}
+.wrong-row td{background:#fef2f2}
+.empty-row td{background:#f8fafc}
+.result-correct{color:#166534;font-weight:bold}
+.result-wrong{color:#991b1b;font-weight:bold}
+.result-empty{color:#64748b;font-weight:bold}
+.answer-box{white-space:normal;min-width:180px;max-width:280px}
+.modal-loading{text-align:center;padding:30px;color:#555}
+.message-box{display:none;padding:10px 12px;border-radius:9px;margin-bottom:12px;font-size:13px}
+.message-success{background:#dcfce7;color:#166534}
+.message-error{background:#fee2e2;color:#991b1b}
+ 
+/* موبایل */
+@media(max-width:900px){
+.folder-layout,.settings-grid,.modal-form-grid,.options-editor,.price-preview{grid-template-columns:1fr}
+.form-group.full,.modal-form-full{grid-column:auto}
+.bank-stats,.stats,.student-summary{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:450px){
+.container{width:97%;margin:10px auto}
+.header,.settings-box,.question-bank-box,.table-box{padding:13px}
+.bank-stats,.stats{gap:7px}
+.stat{padding:13px}
+.stat-value{font-size:20px}
+.modal{padding:8px}
+.modal-box{width:100%;margin:10px auto;padding:15px}
+.date-time-row{grid-template-columns:1fr 105px}
+}
+</style>
+ </head>
+ <body>
+  <!-- ===================== صفحه ورود ===================== -->
+  <div id="loginSection" class="login-wrapper">
+   <div class="login-box">
+    <h1>ورود به پنل معلم</h1>
+    <p>برای دسترسی به پنل مدیریت آزمون وارد شوید</p>
+    <div id="loginMessage" class="login-message"></div>
+    <form class="login-form" onsubmit="handleLogin(event)">
+     <div class="form-group">
+      <label for="loginUsername">نام کاربری</label> <input id="loginUsername" type="text" autocomplete="username" required placeholder="نام کاربری">
+     </div>
+     <div class="form-group">
+      <label for="loginPassword">رمز عبور</label> <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="رمز عبور">
+     </div>
+     <button type="submit" class="login-btn" id="loginBtn">ورود</button>
+    </form>
+   </div>
+  </div>
+  <!-- ===================== پنل اصلی ===================== -->
+  <div id="panelSection" style="display:none;">
+   <div class="container">
+    <div class="header">
+     <h1>پنل معلم</h1>
+     <p>مدیریت آزمون ریاضی، بانک سؤال، قیمت، تخفیف و شرکت‌کنندگان</p>
+     <div class="controls">
+      <button class="refresh-btn" onclick="loadAll()">🔄 بروزرسانی</button>
+      <button class="primary-btn" onclick="openQuestionModal()">➕ افزودن سؤال</button>
+      <button class="delete-all-btn" onclick="deleteAllStudents()">🗑 حذف همه دانش‌آموزان</button>
+      <button class="logout-btn" onclick="handleLogout()">🚪 خروج</button>
+     </div>
+    </div>
+    <div id="errorBox" class="error"></div>
+    <!-- تنظیمات قیمت -->
+    <div class="settings-box">
+     <h2 class="section-title">تنظیمات قیمت آزمون</h2>
+     <div class="section-description">قیمت اصلی آزمون و شرایط تخفیف را از این بخش تنظیم کنید.</div>
+     <div class="settings-grid">
+      <div class="form-group">
+       <label>قیمت اصلی آزمون</label> <input id="basePrice" type="number" min="1" placeholder="مثلاً 50000">
+      </div>
+      <div class="form-group">
+       <label>وضعیت تخفیف</label>
+       <div class="discount-toggle">
+        <input id="discountEnabled" type="checkbox" onchange="toggleDiscountFields()"> <label for="discountEnabled">فعال کردن تخفیف</label>
+       </div>
+      </div>
+      <div id="discountPercentGroup" class="form-group">
+       <label>درصد تخفیف</label> <input id="discountPercent" type="number" min="0" max="100" step="0.01" placeholder="مثلاً 20">
+      </div>
+      <div id="discountStartGroup" class="form-group">
+       <label>شروع تخفیف</label>
+       <div class="date-time-row">
+        <div class="jalali-date-wrapper">
+         <input id="discountStart" class="jalali-date-input" type="text" readonly placeholder="انتخاب تاریخ">
+         <div id="discountStartPicker" class="jalali-picker"></div>
+        </div>
+        <input id="discountStartTime" class="time-input" type="time" value="00:00">
+       </div>
+      </div>
+      <div id="discountEndGroup" class="form-group">
+       <label>پایان تخفیف</label>
+       <div class="date-time-row">
+        <div class="jalali-date-wrapper">
+         <input id="discountEnd" class="jalali-date-input" type="text" readonly placeholder="انتخاب تاریخ">
+         <div id="discountEndPicker" class="jalali-picker"></div>
+        </div>
+        <input id="discountEndTime" class="time-input" type="time" value="23:59">
+       </div>
+      </div>
+     </div>
+     <div class="price-preview">
+      <div class="price-card">
+       <div class="price-card-title">قیمت اصلی</div>
+       <div id="previewBasePrice" class="price-card-value">—</div>
+      </div>
+      <div class="price-card final-price-card">
+       <div class="price-card-title">قیمت نهایی فعلی</div>
+       <div id="previewFinalPrice" class="price-card-value">—</div>
+      </div>
+      <div class="price-card">
+       <div class="price-card-title">وضعیت تخفیف</div>
+       <div id="discountStatus">
+        <span class="discount-status discount-disabled">غیرفعال</span>
+       </div>
+      </div>
+     </div>
+     <div class="settings-actions">
+      <button class="save-settings-btn" onclick="saveExamSettings()">💾 ذخیره تنظیمات</button>
+      <div id="settingsMessage" class="settings-message"></div>
+     </div>
+    </div>
+    <!-- بانک سؤال -->
+    <div class="question-bank-box">
+     <h2 class="section-title">📚 بانک سؤال</h2>
+     <div class="section-description">در این بخش می‌توانید سؤال‌ها، گزینه‌ها، پاسخ صحیح، زمان پاسخ‌گویی و پوشه هر سؤال را مدیریت کنید.</div>
+     <div id="bankMessage" class="message-box"></div>
+     <div class="bank-stats">
+      <div class="bank-stat">
+       <div class="bank-stat-title">کل سؤال‌ها</div>
+       <div id="questionTotalCount" class="bank-stat-value">۰</div>
+      </div>
+      <div class="bank-stat">
+       <div class="bank-stat-title">سؤال‌های فعال</div>
+       <div id="questionActiveCount" class="bank-stat-value">۰</div>
+      </div>
+      <div class="bank-stat">
+       <div class="bank-stat-title">پوشه‌ها</div>
+       <div id="folderTotalCount" class="bank-stat-value">۰</div>
+      </div>
+      <div class="bank-stat">
+       <div class="bank-stat-title">سؤال‌های انتخاب دستی</div>
+       <div id="manualTotalCount" class="bank-stat-value">۰</div>
+      </div>
+     </div>
+     <div class="bank-toolbar">
+      <input id="questionSearch" type="text" placeholder="🔎 جستجوی سؤال..." oninput="debouncedLoadQuestions()"> <select id="questionFolderFilter" onchange="loadQuestions()"> <option value="">همه پوشه‌ها</option> </select> <select id="questionActiveFilter" onchange="loadQuestions()"> <option value="">همه وضعیت‌ها</option> <option value="1">فقط فعال</option> <option value="0">فقط غیرفعال</option> </select>
+      <button class="primary-btn" onclick="openQuestionModal()">➕ سؤال جدید</button>
+      <button class="gray-btn" onclick="loadQuestionBank()">🔄 بروزرسانی بانک</button>
+     </div>
+     <div class="folder-layout">
+      <div class="folder-panel">
+       <h3>📁 پوشه‌های سؤال</h3>
+       <button class="success-btn small-btn" onclick="createFolder()" style="width:100%;margin-bottom:10px;">➕ ایجاد پوشه</button>
+       <div id="folderList" class="folder-list">
+        <div class="empty">در حال دریافت...</div>
+       </div>
+      </div>
+      <div class="questions-panel">
+       <div class="questions-table">
+        <table>
+         <thead>
+          <tr>
+           <th>ردیف</th>
+           <th>سؤال</th>
+           <th>پوشه</th>
+           <th>تعداد گزینه</th>
+           <th>پاسخ صحیح</th>
+           <th>زمان</th>
+           <th>وضعیت</th>
+           <th>عملیات</th>
+          </tr>
+         </thead>
+         <tbody id="questionsBody">
+          <tr>
+           <td colspan="8">
+            <div class="loading">در حال دریافت سؤال‌ها...</div>
+           </td>
+          </tr>
+         </tbody>
+        </table>
+       </div>
+      </div>
+     </div>
+     <div class="rules-box">
+      <h3>🎯 تنظیم سؤال‌های آزمون</h3>
+      <div class="section-description">مشخص کنید از هر پوشه چند سؤال وارد آزمون شود و انتخاب سؤال تصادفی باشد یا دستی.</div>
+      <div class="rules-table-wrap">
+       <table class="rules-table">
+        <thead>
+         <tr>
+          <th>پوشه</th>
+          <th>تعداد فعال</th>
+          <th>تعداد انتخاب</th>
+          <th>نوع انتخاب</th>
+          <th>عملیات</th>
+         </tr>
+        </thead>
+        <tbody id="rulesBody">
+         <tr>
+          <td colspan="5">
+           <div class="loading">در حال دریافت قوانین...</div>
+          </td>
+         </tr>
+        </tbody>
+       </table>
+      </div>
+      <div class="manual-box">
+       <strong>📌 سؤال‌های انتخاب دستی</strong>
+       <div class="section-description" style="margin-top:6px;margin-bottom:8px;">وقتی برای یک پوشه حالت «دستی» انتخاب شود، سؤال‌های موردنظر را از جدول بالا با گزینه «انتخاب دستی» اضافه کنید.</div>
+       <div id="manualQuestionsList" class="manual-question-list">
+        <div class="empty">هنوز سؤال دستی انتخاب نشده است.</div>
+       </div>
+      </div>
+     </div>
+    </div>
+    <!-- آمار دانش‌آموز -->
+    <div class="stats">
+     <div class="stat">
+      <div class="stat-title">کل شرکت‌کنندگان</div>
+      <div class="stat-value" id="totalCount">۰</div>
+     </div>
+     <div class="stat">
+      <div class="stat-title">در حال انجام</div>
+      <div class="stat-value" id="progressCount">۰</div>
+     </div>
+     <div class="stat">
+      <div class="stat-title">تمام شده</div>
+      <div class="stat-value" id="finishedCount">۰</div>
+     </div>
+     <div class="stat">
+      <div class="stat-title">پرداخت نکرده</div>
+      <div class="stat-value" id="unpaidCount">۰</div>
+     </div>
+    </div>
+    <!-- جدول دانش‌آموزان -->
+    <div class="table-box">
+     <div id="loading" class="loading">در حال دریافت اطلاعات...</div>
+     <table id="studentsTable" class="students-table" style="display:none;">
+      <thead>
+       <tr>
+        <th>ردیف</th>
+        <th>نام</th>
+        <th>موبایل</th>
+        <th>مبلغ</th>
+        <th>ثبت سفارش</th>
+        <th>تاریخ پرداخت</th>
+        <th>وضعیت پرداخت</th>
+        <th>وضعیت آزمون</th>
+        <th>شروع آزمون</th>
+        <th>پایان آزمون</th>
+        <th>نمره</th>
+        <th>صحیح</th>
+        <th>غلط</th>
+        <th>بدون پاسخ</th>
+        <th>عملیات</th>
+       </tr>
+      </thead>
+      <tbody id="studentsBody"></tbody>
+     </table>
+     <div id="emptyBox" class="empty" style="display:none;">هنوز شرکت‌کننده‌ای ثبت نشده است.</div>
+    </div>
+   </div>
+   <!-- مودال افزودن / ویرایش سؤال -->
+   <div id="questionModal" class="modal" onclick="closeQuestionModalByBackground(event)">
+    <div class="modal-box modal-small" onclick="event.stopPropagation()">
+     <div class="modal-header">
+      <h2 id="questionModalTitle">افزودن سؤال</h2>
+      <button class="close-btn" onclick="closeQuestionModal()">×</button>
+     </div>
+     <div id="questionModalMessage" class="message-box"></div>
+     <div class="modal-form-grid">
+      <div class="form-group modal-form-full">
+       <label>متن سؤال</label> <textarea id="questionText" placeholder="متن سؤال را وارد کنید..."></textarea>
+      </div>
+      <div class="form-group">
+       <label>تعداد گزینه‌ها</label> <select id="optionCount" onchange="renderOptionEditors()"> <option value="2">۲ گزینه</option> <option value="3">۳ گزینه</option> <option value="4" selected>۴ گزینه</option> </select>
+      </div>
+      <div class="form-group">
+       <label>پوشه</label> <select id="questionFolder"><option value="">بدون پوشه</option></select>
+      </div>
+      <div class="form-group">
+       <label>زمان پاسخ‌گویی</label> <select id="durationSeconds"> <option value="15">۱۵ ثانیه</option> <option value="30" selected>۳۰ ثانیه</option> <option value="45">۴۵ ثانیه</option> <option value="60">۶۰ ثانیه</option> <option value="90">۹۰ ثانیه</option> <option value="120">۱۲۰ ثانیه</option> <option value="180">۱۸۰ ثانیه</option> <option value="300">۵ دقیقه</option> <option value="600">۱۰ دقیقه</option> </select>
+      </div>
+      <div class="form-group">
+       <label>پاسخ صحیح</label>
+       <div id="correctOptions" class="correct-selector"></div>
+      </div>
+      <div class="form-group modal-form-full">
+       <label>گزینه‌ها</label>
+       <div id="optionsEditor" class="options-editor"></div>
+      </div>
+     </div>
+     <div class="modal-actions">
+      <button id="saveQuestionBtn" class="success-btn" onclick="saveQuestion()">💾 ذخیره سؤال</button>
+      <button class="gray-btn" onclick="closeQuestionModal()">انصراف</button>
+     </div>
+    </div>
+   </div>
+   <!-- مودال جزئیات آزمون -->
+   <div id="attemptModal" class="modal" onclick="closeModalByBackground(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+     <div class="modal-header">
+      <h2>جزئیات آزمون</h2>
+      <button class="close-btn" onclick="closeAttemptModal()">×</button>
+     </div>
+     <div id="attemptContent">
+      <div class="modal-loading">در حال دریافت جزئیات...</div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <!-- end #panelSection -->
+  <script>
+const API_BASE = "https://azmon.hosseinkhorasani1.workers.dev";
+const EXAM_ID = 1;
+ 
+let folders = [];
+let questions = [];
+let rules = [];
+let manualQuestions = [];
+let editingQuestionId = null;
+let selectedFolderFilter = "";
+let searchTimer = null;
+ 
+ 
+/* ===== ورود / خروج ===== */
+ 
+function showLogin() {
+    document.getElementById("loginSection").style.display = "flex";
+    document.getElementById("panelSection").style.display = "none";
+}
+ 
+function showPanel() {
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("panelSection").style.display = "block";
+}
+ 
+function showLoginMessage(text, type = "error") {
+    const box = document.getElementById("loginMessage");
+    box.textContent = text;
+    box.className = text ? "login-message " + type : "login-message";
+}
+ 
+async function handleLogin(event) {
+    event.preventDefault();
+ 
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    const btn = document.getElementById("loginBtn");
+ 
+    if (!username || !password) {
+        showLoginMessage("نام کاربری و رمز عبور را وارد کنید.");
+        return;
+    }
+ 
+    btn.disabled = true;
+    btn.textContent = "⏳ در حال ورود...";
+    showLoginMessage("");
+ 
+    try {
+        const response = await fetch(API_BASE + "/api/teacher/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ username, password })
+        });
+ 
+        let data = {};
+        try { data = await response.json(); } catch (e) {}
+ 
+        if (!response.ok || data.ok === false) {
+            throw new Error(data.error || "ورود ناموفق بود");
+        }
+ 
+        document.getElementById("loginPassword").value = "";
+        showLoginMessage("");
+        showPanel();
+        await loadAll();
+ 
+    } catch (error) {
+        showLoginMessage(error.message || "خطا در ورود");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "ورود";
+    }
+}
+ 
+async function handleLogout() {
+    try {
+        await fetch(API_BASE + "/api/teacher/logout", {
+            method: "POST",
+            credentials: "include"
+        });
+    } catch (e) {}
+ 
+    showLogin();
+    document.getElementById("loginUsername").value = "";
+    document.getElementById("loginPassword").value = "";
+    showLoginMessage("");
+}
+ 
+ 
+/* ===== API عمومی ===== */
+ 
+async function apiRequest(url, options = {}) {
+    const opts = {
+        ...options,
+        credentials: "include",
+        headers: { ...(options.headers || {}) }
+    };
+ 
+    const response = await fetch(API_BASE + url, opts);
+ 
+    if (response.status === 401) {
+        showLogin();
+        throw new Error("نشست شما منقضی شده. لطفاً دوباره وارد شوید.");
+    }
+ 
+    let data = {};
+    try { data = await response.json(); } catch (e) { data = {}; }
+ 
+    if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `خطای سرور: ${response.status}`);
+    }
+ 
+    return data;
+}
+ 
+function postJson(url, body) {
+    return apiRequest(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+}
+ 
+ 
+/* ===== ابزارها ===== */
+ 
+function faNumber(value) {
+    if (value === null || value === undefined) return "—";
+    return String(value).replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
+}
+ 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ 
+ 
+/* ===== تبدیل تاریخ شمسی/میلادی ===== */
+ 
+function gregorianToJalali(gy, gm, gd) {
+    const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    let jy;
+ 
+    if (gy > 1600) { jy = 979; gy -= 1600; }
+    else { jy = 0; gy -= 621; }
+ 
+    const gy2 = gm > 2 ? gy + 1 : gy;
+ 
+    let days =
+        365 * gy +
+        Math.floor((gy2 + 3) / 4) -
+        Math.floor((gy2 + 99) / 100) +
+        Math.floor((gy2 + 399) / 400) -
+        80 + gd + g_d_m[gm - 1];
+ 
+    jy += 33 * Math.floor(days / 12053);
+    days %= 12053;
+ 
+    jy += 4 * Math.floor(days / 1461);
+    days %= 1461;
+ 
+    if (days > 365) {
+        jy += Math.floor((days - 1) / 365);
+        days = (days - 1) % 365;
+    }
+ 
+    const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+    const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
+ 
+    return [jy, jm, jd];
+}
+ 
+function jalaliToGregorian(jy, jm, jd) {
+    let gy;
+ 
+    if (jy > 979) { gy = 1600; jy -= 979; }
+    else { gy = 621; }
+ 
+    let days =
+        365 * jy +
+        Math.floor(jy / 33) * 8 +
+        Math.floor(((jy % 33) + 3) / 4) +
+        78 + jd +
+        (jm < 7 ? (jm - 1) * 31 : (jm - 7) * 30 + 186);
+ 
+    gy += 400 * Math.floor(days / 146097);
+    days %= 146097;
+ 
+    if (days > 36524) {
+        gy += 100 * Math.floor(--days / 36524);
+        days %= 36524;
+        if (days >= 365) days++;
+    }
+ 
+    gy += 4 * Math.floor(days / 1461);
+    days %= 1461;
+ 
+    if (days > 365) {
+        gy += Math.floor((days - 1) / 365);
+        days = (days - 1) % 365;
+    }
+ 
+    const gd = days + 1;
+ 
+    const sal_a = [
+        0, 31,
+        (gy % 4 === 0 && (gy % 100 !== 0 || gy % 400 === 0)) ? 29 : 28,
+        31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+    ];
+ 
+    let gm = 0;
+    let remaining = gd;
+ 
+    while (remaining > sal_a[gm]) {
+        remaining -= sal_a[gm];
+        gm++;
+    }
+ 
+    return [gy, gm, remaining];
+}
+ 
+// اصلاح‌شده: return در یک خط، و تشخیص درست سال کبیسه
+function jalaliMonthDays(year, month) {
+    if (month <= 6) return 31;
+    if (month <= 11) return 30;
+ 
+    const g = jalaliToGregorian(year, 12, 30);
+    const j = gregorianToJalali(g[0], g[1], g[2]);
+ 
+    return j[1] === 12 ? 30 : 29;
+}
+ 
+const jalaliMonths = [
+    "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
+    "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
+];
+ 
+const jalaliWeekdays = ["ش", "ی", "د", "س", "چ", "پ", "ج"];
+ 
+function getTodayJalali() {
+    const now = new Date();
+    return gregorianToJalali(now.getFullYear(), now.getMonth() + 1, now.getDate());
+}
+ 
+function jalaliWeekDay(jy, jm, jd) {
+    const g = jalaliToGregorian(jy, jm, jd);
+    const date = new Date(g[0], g[1] - 1, g[2]);
+    return (date.getDay() + 1) % 7;
+}
+ 
+function formatJalaliDate(y, m, d) {
+    return faNumber(y) + "/" +
+        faNumber(String(m).padStart(2, "0")) + "/" +
+        faNumber(String(d).padStart(2, "0"));
+}
+ 
+ 
+/* ===== تقویم ===== */
+ 
+const datePickerState = {
+    start: { year: 0, month: 0, day: 0 },
+    end: { year: 0, month: 0, day: 0 }
+};
+ 
+function pickerInputId(type) {
+    return type === "start" ? "discountStart" : "discountEnd";
+}
+ 
+function pickerBoxId(type) {
+    return type === "start" ? "discountStartPicker" : "discountEndPicker";
+}
+ 
+function openJalaliPicker(type) {
+    const input = document.getElementById(pickerInputId(type));
+    const picker = document.getElementById(pickerBoxId(type));
+ 
+    let selected = parseJalaliInput(input.value);
+    const today = getTodayJalali();
+ 
+    if (!selected) {
+        selected = { year: today[0], month: today[1], day: today[2] };
+    }
+ 
+    datePickerState[type] = { year: selected.year, month: selected.month, day: selected.day };
+ 
+    renderJalaliPicker(type);
+    picker.classList.add("show");
+}
+ 
+function closeAllDatePickers() {
+    document.querySelectorAll(".jalali-picker").forEach(p => p.classList.remove("show"));
+}
+ 
+function renderJalaliPicker(type) {
+    const picker = document.getElementById(pickerBoxId(type));
+    const state = datePickerState[type];
+    const days = jalaliMonthDays(state.year, state.month);
+    const firstDay = jalaliWeekDay(state.year, state.month, 1);
+    const today = getTodayJalali();
+ 
+    let html = `
+        <div class="jalali-picker-header">
+            <button type="button" onclick="changeJalaliMonth('${type}',-1)">‹</button>
+            <div class="jalali-month-title">${jalaliMonths[state.month - 1]} ${faNumber(state.year)}</div>
+            <button type="button" onclick="changeJalaliMonth('${type}',1)">›</button>
+        </div>
+        <div class="jalali-weekdays">
+    `;
+ 
+    jalaliWeekdays.forEach(d => html += `<div>${d}</div>`);
+ 
+    html += `</div><div class="jalali-days">`;
+ 
+    for (let i = 0; i < firstDay; i++) {
+        html += `<button type="button" class="jalali-day empty-day"></button>`;
+    }
+ 
+    for (let day = 1; day <= days; day++) {
+        let classes = "jalali-day";
+ 
+        if (today[0] === state.year && today[1] === state.month && today[2] === day) {
+            classes += " today";
+        }
+ 
+        if (state.day === day) {
+            classes += " selected";
+        }
+ 
+        html += `
+            <button type="button" class="${classes}"
+                onclick="selectJalaliDate('${type}',${state.year},${state.month},${day})">
+                ${faNumber(day)}
+            </button>
+        `;
+    }
+ 
+    html += `
+        </div>
+        <div class="jalali-picker-footer">
+            <button type="button" onclick="clearJalaliDate('${type}')">پاک کردن</button>
+            <button type="button" class="today-btn" onclick="selectTodayJalali('${type}')">امروز</button>
+        </div>
+    `;
+ 
+    picker.innerHTML = html;
+}
+ 
+function changeJalaliMonth(type, amount) {
+    const state = datePickerState[type];
+ 
+    state.month += amount;
+ 
+    if (state.month > 12) { state.month = 1; state.year++; }
+    if (state.month < 1) { state.month = 12; state.year--; }
+ 
+    const maxDay = jalaliMonthDays(state.year, state.month);
+    if (state.day > maxDay) state.day = maxDay;
+ 
+    renderJalaliPicker(type);
+}
+ 
+function selectJalaliDate(type, year, month, day) {
+    const input = document.getElementById(pickerInputId(type));
+ 
+    datePickerState[type] = { year, month, day };
+    input.value = formatJalaliDate(year, month, day);
+ 
+    closeAllDatePickers();
+    calculateDiscountPreview();
+}
+ 
+function selectTodayJalali(type) {
+    const today = getTodayJalali();
+    selectJalaliDate(type, today[0], today[1], today[2]);
+}
+ 
+function clearJalaliDate(type) {
+    document.getElementById(pickerInputId(type)).value = "";
+    closeAllDatePickers();
+    calculateDiscountPreview();
+}
+ 
+function parseJalaliInput(value) {
+    if (!value) return null;
+ 
+    const converted = String(value).replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+    const numbers = converted.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+ 
+    if (!numbers) return null;
+ 
+    const year = Number(numbers[1]);
+    const month = Number(numbers[2]);
+    const day = Number(numbers[3]);
+ 
+    if (year < 1200 || month < 1 || month > 12 || day < 1 || day > jalaliMonthDays(year, month)) {
+        return null;
+    }
+ 
+    return { year, month, day };
+}
+ 
+function isoToJalaliParts(value) {
+    if (!value) return null;
+ 
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return null;
+ 
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Tehran",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+    }).formatToParts(date);
+ 
+    const getPart = type => {
+        const item = parts.find(p => p.type === type);
+        return item ? Number(item.value) : 0;
+    };
+ 
+    const j = gregorianToJalali(getPart("year"), getPart("month"), getPart("day"));
+ 
+    return {
+        year: j[0],
+        month: j[1],
+        day: j[2],
+        hour: getPart("hour"),
+        minute: getPart("minute")
+    };
+}
+ 
+function setISOToJalaliFields(iso, type) {
+    const dateEl = document.getElementById(pickerInputId(type));
+    const timeEl = document.getElementById(type === "start" ? "discountStartTime" : "discountEndTime");
+ 
+    if (!iso) {
+        dateEl.value = "";
+        return;
+    }
+ 
+    const data = isoToJalaliParts(iso);
+    if (!data) return;
+ 
+    dateEl.value = formatJalaliDate(data.year, data.month, data.day);
+ 
+    timeEl.value =
+        String(data.hour).padStart(2, "0") + ":" +
+        String(data.minute).padStart(2, "0");
+ 
+    datePickerState[type] = { year: data.year, month: data.month, day: data.day };
+}
+ 
+function jalaliFieldsToISO(type) {
+    const dateInput = document.getElementById(pickerInputId(type));
+    const timeInput = document.getElementById(type === "start" ? "discountStartTime" : "discountEndTime");
+ 
+    const dateData = parseJalaliInput(dateInput.value);
+    if (!dateData) return null;
+ 
+    const match = (timeInput.value || "00:00").match(/^(\d{2}):(\d{2})$/);
+    if (!match) return null;
+ 
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+ 
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+ 
+    const g = jalaliToGregorian(dateData.year, dateData.month, dateData.day);
+ 
+    // ایران = UTC+3:30 (بدون ساعت تابستانی)
+    const utcMillis = Date.UTC(g[0], g[1] - 1, g[2], hour, minute) - 3.5 * 60 * 60 * 1000;
+ 
+    return new Date(utcMillis).toISOString();
+}
+ 
+ 
+/* ===== نمایش تاریخ و قیمت ===== */
+ 
+function formatDate(value) {
+    if (!value) return "—";
+ 
+    try {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return "—";
+ 
+        return new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+            dateStyle: "short",
+            timeStyle: "short",
+            timeZone: "Asia/Tehran"
+        }).format(date);
+    } catch (e) {
+        return "—";
+    }
+}
+ 
+function formatPrice(value) {
+    return Number(value || 0).toLocaleString("fa-IR") + " تومان";
+}
+ 
+ 
+/* ===== تنظیمات قیمت ===== */
+ 
+function calculateDiscountPreview() {
+    const basePrice = Math.max(0, Math.round(Number(document.getElementById("basePrice").value || 0)));
+    const enabled = document.getElementById("discountEnabled").checked;
+    const percent = Math.max(0, Math.min(100, Number(document.getElementById("discountPercent").value || 0)));
+ 
+    let finalPrice = basePrice;
+    let status = "disabled";
+ 
+    if (enabled) {
+        const startISO = jalaliFieldsToISO("start");
+        const endISO = jalaliFieldsToISO("end");
+ 
+        if (startISO && endISO && percent > 0) {
+            const start = new Date(startISO);
+            const end = new Date(endISO);
+            const now = new Date();
+ 
+            if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
+                if (now >= start && now <= end) {
+                    finalPrice = Math.max(0, Math.round(basePrice * (1 - percent / 100)));
+                    status = "active";
+                } else {
+                    status = "inactive";
+                }
+            }
+        } else {
+            status = "inactive";
+        }
+    }
+ 
+    document.getElementById("previewBasePrice").textContent = formatPrice(basePrice);
+    document.getElementById("previewFinalPrice").textContent = formatPrice(finalPrice);
+ 
+    const statusBox = document.getElementById("discountStatus");
+ 
+    if (status === "active") {
+        statusBox.innerHTML = `<span class="discount-status discount-active">فعال</span>`;
+    } else if (status === "inactive") {
+        statusBox.innerHTML = `<span class="discount-status discount-inactive">خارج از بازه</span>`;
+    } else {
+        statusBox.innerHTML = `<span class="discount-status discount-disabled">غیرفعال</span>`;
+    }
+}
+ 
+function toggleDiscountFields() {
+    const enabled = document.getElementById("discountEnabled").checked;
+ 
+    ["discountPercentGroup", "discountStartGroup", "discountEndGroup"].forEach(id => {
+        const element = document.getElementById(id);
+        if (enabled) element.classList.remove("discount-disabled-area");
+        else element.classList.add("discount-disabled-area");
+    });
+ 
+    calculateDiscountPreview();
+}
+ 
+function showSettingsMessage(message, type = "success") {
+    const box = document.getElementById("settingsMessage");
+ 
+    box.textContent = message;
+    box.className = "settings-message " + (type === "success" ? "settings-success" : "settings-error");
+    box.style.display = "block";
+ 
+    setTimeout(() => { box.style.display = "none"; }, 4000);
+}
+ 
+async function loadExamSettings() {
+    try {
+        const data = await apiRequest(`/api/teacher/exam-settings?examId=${EXAM_ID}&_=${Date.now()}`);
+        const exam = data.exam || data.settings || data;
+ 
+        document.getElementById("basePrice").value = exam.price ?? exam.basePrice ?? 0;
+ 
+        document.getElementById("discountEnabled").checked =
+            Number(exam.discountEnabled ?? exam.discount_enabled ?? 0) === 1;
+ 
+        document.getElementById("discountPercent").value =
+            exam.discountPercent ?? exam.discount_percent ?? 0;
+ 
+        setISOToJalaliFields(exam.discountStartAt ?? exam.discount_start_at, "start");
+        setISOToJalaliFields(exam.discountEndAt ?? exam.discount_end_at, "end");
+ 
+        toggleDiscountFields();
+ 
+    } catch (error) {
+        console.error(error);
+        showSettingsMessage("خطا در دریافت تنظیمات قیمت: " + error.message, "error");
+    }
+}
+ 
+async function saveExamSettings() {
+    const basePrice = Math.round(Number(document.getElementById("basePrice").value));
+    const discountEnabled = document.getElementById("discountEnabled").checked;
+    const discountPercent = Number(document.getElementById("discountPercent").value || 0);
+ 
+    let discountStartAt = null;
+    let discountEndAt = null;
+ 
+    if (!Number.isFinite(basePrice) || basePrice <= 0) {
+        showSettingsMessage("قیمت اصلی باید بیشتر از صفر باشد.", "error");
+        return;
+    }
+ 
+    if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+        showSettingsMessage("درصد تخفیف باید بین صفر تا صد باشد.", "error");
+        return;
+    }
+ 
+    if (discountEnabled) {
+        discountStartAt = jalaliFieldsToISO("start");
+        discountEndAt = jalaliFieldsToISO("end");
+ 
+        if (!discountStartAt || !discountEndAt) {
+            showSettingsMessage("تاریخ شروع و پایان را انتخاب کنید.", "error");
+            return;
+        }
+ 
+        if (new Date(discountEndAt) <= new Date(discountStartAt)) {
+            showSettingsMessage("تاریخ پایان باید بعد از شروع باشد.", "error");
+            return;
+        }
+    }
+ 
+    const button = document.querySelector(".save-settings-btn");
+    const oldText = button.textContent;
+ 
+    button.disabled = true;
+    button.textContent = "⏳ در حال ذخیره...";
+ 
+    try {
+        await postJson("/api/teacher/exam-settings", {
+            examId: EXAM_ID,
+            price: basePrice,
+            discountEnabled,
+            discountPercent,
+            discountStartAt,
+            discountEndAt
+        });
+ 
+        showSettingsMessage("تنظیمات قیمت با موفقیت ذخیره شد.", "success");
+        calculateDiscountPreview();
+ 
+    } catch (error) {
+        showSettingsMessage(error.message, "error");
+    } finally {
+        button.disabled = false;
+        button.textContent = oldText;
+    }
+}
+ 
+ 
+/* ===== پیام بانک ===== */
+ 
+function showBankMessage(message, type = "success") {
+    const box = document.getElementById("bankMessage");
+ 
+    box.textContent = message;
+    box.className = "message-box " + (type === "success" ? "message-success" : "message-error");
+    box.style.display = "block";
+ 
+    setTimeout(() => { box.style.display = "none"; }, 3500);
+}
+ 
+ 
+/* ===== پوشه‌ها ===== */
+ 
+async function loadFolders() {
+    const data = await apiRequest(`/api/teacher/folders?examId=${EXAM_ID}&_=${Date.now()}`);
+ 
+    folders = data.folders || [];
+ 
+    renderFolders();
+    populateFolderSelects();
+}
+ 
+function renderFolders() {
+    const list = document.getElementById("folderList");
+ 
+    document.getElementById("folderTotalCount").textContent = faNumber(folders.length);
+ 
+    if (!folders.length) {
+        list.innerHTML = `<div class="empty">هنوز پوشه‌ای ایجاد نشده است.</div>`;
+        return;
+    }
+ 
+    let html = "";
+ 
+    folders.forEach(folder => {
+        const active = selectedFolderFilter === String(folder.id);
+ 
+        html += `
+            <div class="folder-item ${active ? "active-folder" : ""}"
+                 onclick="selectFolderFilter(${folder.id})">
+ 
+                <div class="folder-item-name">📁 ${escapeHtml(folder.name)}</div>
+ 
+                <div class="folder-item-count">
+                    ${faNumber(folder.activeQuestionCount || 0)}
+                    سؤال فعال از
+                    ${faNumber(folder.questionCount || 0)}
+                </div>
+ 
+                <div class="folder-actions">
+                    <button class="gray-btn small-btn"
+                        onclick="event.stopPropagation();renameFolder(${folder.id})">✏️ نام</button>
+ 
+                    <button class="${folder.active ? "warning-btn" : "success-btn"} small-btn"
+                        onclick="event.stopPropagation();toggleFolder(${folder.id},${!folder.active})">
+                        ${folder.active ? "غیرفعال" : "فعال"}
+                    </button>
+ 
+                    <button class="danger-btn small-btn"
+                        onclick="event.stopPropagation();deleteFolder(${folder.id})">🗑</button>
+                </div>
+            </div>
+        `;
+    });
+ 
+    list.innerHTML = html;
+}
+ 
+function selectFolderFilter(id) {
+    selectedFolderFilter = String(id);
+    document.getElementById("questionFolderFilter").value = String(id);
+ 
+    loadQuestions();
+    renderFolders();
+}
+ 
+function populateFolderSelects() {
+    const filter = document.getElementById("questionFolderFilter");
+    const questionFolder = document.getElementById("questionFolder");
+ 
+    const currentFilter = filter.value;
+    const currentQuestionFolder = questionFolder.value;
+ 
+    let filterHtml = `<option value="">همه پوشه‌ها</option>`;
+    let folderHtml = `<option value="">بدون پوشه</option>`;
+ 
+    folders.forEach(folder => {
+        filterHtml += `<option value="${folder.id}">${escapeHtml(folder.name)}</option>`;
+        folderHtml += `<option value="${folder.id}">${escapeHtml(folder.name)}</option>`;
+    });
+ 
+    filter.innerHTML = filterHtml;
+    questionFolder.innerHTML = folderHtml;
+ 
+    filter.value = currentFilter || selectedFolderFilter || "";
+    questionFolder.value = currentQuestionFolder || "";
+ 
+    if (!filter.value && selectedFolderFilter) {
+        selectedFolderFilter = "";
+    }
+}
+ 
+function findFolder(folderId) {
+    return folders.find(f => Number(f.id) === Number(folderId));
+}
+ 
+async function createFolder() {
+    const name = prompt("نام پوشه را وارد کنید:");
+ 
+    if (!name || !name.trim()) return;
+ 
+    try {
+        await postJson("/api/teacher/folders", {
+            action: "create",
+            examId: EXAM_ID,
+            name: name.trim()
+        });
+ 
+        await loadQuestionBank();
+        showBankMessage("پوشه با موفقیت ایجاد شد.");
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+async function renameFolder(folderId) {
+    const folder = findFolder(folderId);
+    if (!folder) return;
+ 
+    const name = prompt("نام جدید پوشه:", folder.name);
+ 
+    if (name === null || !name.trim()) return;
+ 
+    try {
+        await postJson("/api/teacher/folders", {
+            action: "update",
+            examId: EXAM_ID,
+            folderId,
+            name: name.trim()
+        });
+ 
+        await loadQuestionBank();
+        showBankMessage("نام پوشه تغییر کرد.");
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+async function toggleFolder(folderId, active) {
+    try {
+        await postJson("/api/teacher/folders", {
+            action: "toggle",
+            examId: EXAM_ID,
+            folderId,
+            active
+        });
+ 
+        await loadQuestionBank();
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+async function deleteFolder(folderId) {
+    const folder = findFolder(folderId);
+    const name = folder ? folder.name : "";
+ 
+    if (!confirm(
+        `پوشه «${name}» حذف شود؟\n\n` +
+        "اگر سؤال داخل پوشه باشد، سرور اجازه حذف پوشه را نمی‌دهد."
+    )) {
+        return;
+    }
+ 
+    try {
+        await postJson("/api/teacher/folders", {
+            action: "delete",
+            examId: EXAM_ID,
+            folderId
+        });
+ 
+        if (selectedFolderFilter === String(folderId)) {
+            selectedFolderFilter = "";
+            document.getElementById("questionFolderFilter").value = "";
+        }
+ 
+        await loadQuestionBank();
+        showBankMessage("پوشه حذف شد.");
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+ 
+/* ===== سؤال‌ها ===== */
+ 
+async function loadQuestions() {
+    const body = document.getElementById("questionsBody");
+ 
+    body.innerHTML = `<tr><td colspan="8"><div class="loading">در حال دریافت سؤال‌ها...</div></td></tr>`;
+ 
+    const search = document.getElementById("questionSearch").value.trim();
+    const folderId = document.getElementById("questionFolderFilter").value;
+    const active = document.getElementById("questionActiveFilter").value;
+ 
+    selectedFolderFilter = folderId;
+ 
+    let query = `?examId=${EXAM_ID}`;
+ 
+    if (folderId) query += `&folderId=${encodeURIComponent(folderId)}`;
+    if (search) query += `&search=${encodeURIComponent(search)}`;
+    if (active !== "") query += `&active=${encodeURIComponent(active)}`;
+ 
+    query += `&_=${Date.now()}`;
+ 
+    try {
+        const data = await apiRequest(`/api/teacher/questions${query}`);
+ 
+        questions = data.questions || [];
+        renderQuestions();
+ 
+    } catch (error) {
+        body.innerHTML = `
+            <tr><td colspan="8">
+                <div class="message-box message-error" style="display:block">${escapeHtml(error.message)}</div>
+            </td></tr>
+        `;
+    }
+}
+ 
+function renderQuestions() {
+    const body = document.getElementById("questionsBody");
+ 
+    document.getElementById("questionTotalCount").textContent = faNumber(questions.length);
+    document.getElementById("questionActiveCount").textContent = faNumber(questions.filter(q => q.active).length);
+ 
+    if (!questions.length) {
+        body.innerHTML = `<tr><td colspan="8"><div class="empty">سؤال موردنظر پیدا نشد.</div></td></tr>`;
+        return;
+    }
+ 
+    body.innerHTML = "";
+ 
+    questions.forEach((q, index) => {
+        const options = q.options || [];
+        const correctText = options[Number(q.correctIndex)] || "—";
+ 
+        const tr = document.createElement("tr");
+ 
+        tr.innerHTML = `
+            <td>${faNumber(index + 1)}</td>
+ 
+            <td class="question-text-cell">${escapeHtml(q.questionText || q.question || "")}</td>
+ 
+            <td>${q.folderName ? "📁 " + escapeHtml(q.folderName) : "بدون پوشه"}</td>
+ 
+            <td>${faNumber(options.length)}</td>
+ 
+            <td>${escapeHtml(correctText)}</td>
+ 
+            <td>${faNumber(q.durationSeconds)} ثانیه</td>
+ 
+            <td>
+                ${q.active
+                    ? `<span class="active-badge">فعال</span>`
+                    : `<span class="inactive-badge">غیرفعال</span>`}
+            </td>
+ 
+            <td>
+                <button class="primary-btn small-btn" onclick="openQuestionModal(${q.id})">✏️ ویرایش</button>
+ 
+                <button class="warning-btn small-btn" onclick="moveQuestion(${q.id})">📁 انتقال</button>
+ 
+                <button class="${q.active ? "danger-btn" : "success-btn"} small-btn"
+                    onclick="toggleQuestion(${q.id},${!q.active})">
+                    ${q.active ? "غیرفعال" : "فعال"}
+                </button>
+ 
+                <button class="gray-btn small-btn" onclick="toggleManualQuestion(${q.id})">
+                    ${isManualQuestion(q.id) ? "📌 حذف از دستی" : "📌 انتخاب دستی"}
+                </button>
+ 
+                <button class="danger-btn small-btn" onclick="deleteQuestion(${q.id})">🗑</button>
+            </td>
+        `;
+ 
+        body.appendChild(tr);
+    });
+}
+ 
+function debouncedLoadQuestions() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadQuestions, 350);
+}
+ 
+ 
+/* ===== مودال سؤال ===== */
+ 
+function openQuestionModal(questionId = null) {
+    editingQuestionId = questionId;
+ 
+    document.getElementById("questionModalMessage").style.display = "none";
+ 
+    if (questionId) {
+        const q = questions.find(x => Number(x.id) === Number(questionId));
+ 
+        if (!q) {
+            showBankMessage("سؤال پیدا نشد.", "error");
+            return;
+        }
+ 
+        document.getElementById("questionModalTitle").textContent = "✏️ ویرایش سؤال";
+        document.getElementById("questionText").value = q.questionText || q.question || "";
+ 
+        const optionCount = (q.options || []).length;
+ 
+        document.getElementById("optionCount").value = String(Math.min(4, Math.max(2, optionCount)));
+        document.getElementById("durationSeconds").value = String(q.durationSeconds || 30);
+        document.getElementById("questionFolder").value = q.folderId ? String(q.folderId) : "";
+ 
+        renderOptionEditors(q.options || [], Number(q.correctIndex));
+ 
+    } else {
+        document.getElementById("questionModalTitle").textContent = "➕ افزودن سؤال";
+        document.getElementById("questionText").value = "";
+        document.getElementById("optionCount").value = "4";
+        document.getElementById("durationSeconds").value = "30";
+        document.getElementById("questionFolder").value = "";
+ 
+        renderOptionEditors(["", "", "", ""], 0);
+    }
+ 
+    document.getElementById("questionModal").style.display = "block";
+}
+ 
+function closeQuestionModal() {
+    document.getElementById("questionModal").style.display = "none";
+    editingQuestionId = null;
+}
+ 
+function closeQuestionModalByBackground(event) {
+    if (event.target.id === "questionModal") closeQuestionModal();
+}
+ 
+// اگر correctIndex داده نشود، گزینهٔ صحیح فعلی حفظ می‌شود
+function renderOptionEditors(values = [], correctIndex = null) {
+    const count = Number(document.getElementById("optionCount").value);
+    const editor = document.getElementById("optionsEditor");
+    const correctBox = document.getElementById("correctOptions");
+ 
+    if (correctIndex === null) {
+        const checked = document.querySelector('input[name="correctOption"]:checked');
+        correctIndex = checked ? Number(checked.value) : 0;
+    }
+ 
+    if (correctIndex >= count) correctIndex = 0;
+ 
+    const oldInputs = [...document.querySelectorAll(".option-input")];
+ 
+    if (!values.length && oldInputs.length) {
+        values = oldInputs.map(input => input.value);
+    }
+ 
+    values = Array.from({ length: 4 }, (_, i) => values[i] || "");
+ 
+    let html = "";
+    let correctHtml = "";
+ 
+    for (let i = 0; i < count; i++) {
+        const letter = String.fromCharCode(65 + i);
+ 
+        html += `
+            <div class="option-editor">
+                <label>گزینه ${letter}</label>
+                <input class="option-input" id="option${letter}" data-index="${i}"
+                    type="text" value="${escapeHtml(values[i])}" placeholder="متن گزینه ${letter}">
+            </div>
+        `;
+ 
+        correctHtml += `
+            <label class="correct-option">
+                <input type="radio" name="correctOption" value="${i}" ${i === correctIndex ? "checked" : ""}>
+                گزینه ${letter}
+            </label>
+        `;
+    }
+ 
+    editor.innerHTML = html;
+    correctBox.innerHTML = correctHtml;
+}
+ 
+function showQuestionModalMessage(message, type = "error") {
+    const box = document.getElementById("questionModalMessage");
+ 
+    box.textContent = message;
+    box.className = "message-box " + (type === "success" ? "message-success" : "message-error");
+    box.style.display = "block";
+}
+ 
+async function saveQuestion() {
+    const text = document.getElementById("questionText").value.trim();
+    const optionCount = Number(document.getElementById("optionCount").value);
+    const durationSeconds = Number(document.getElementById("durationSeconds").value);
+    const folderId = document.getElementById("questionFolder").value;
+    const correct = document.querySelector('input[name="correctOption"]:checked');
+ 
+    if (!text) {
+        showQuestionModalMessage("متن سؤال را وارد کنید.");
+        return;
+    }
+ 
+    if (optionCount < 2 || optionCount > 4) {
+        showQuestionModalMessage("تعداد گزینه باید ۲ تا ۴ باشد.");
+        return;
+    }
+ 
+    if (!durationSeconds || durationSeconds < 1 || durationSeconds > 3600) {
+        showQuestionModalMessage("زمان باید بین ۱ تا ۳۶۰۰ ثانیه باشد.");
+        return;
+    }
+ 
+    if (!correct) {
+        showQuestionModalMessage("پاسخ صحیح را انتخاب کنید.");
+        return;
+    }
+ 
+    const values = [...document.querySelectorAll(".option-input")].map(input => input.value.trim());
+ 
+    for (let i = 0; i < optionCount; i++) {
+        if (!values[i]) {
+            showQuestionModalMessage(`گزینه ${String.fromCharCode(65 + i)} را وارد کنید.`);
+            return;
+        }
+    }
+ 
+    const isEdit = Boolean(editingQuestionId);
+ 
+    const body = {
+        action: isEdit ? "update" : "create",
+        examId: EXAM_ID,
+        questionText: text,
+        optionCount,
+        optionA: values[0] || "",
+        optionB: values[1] || "",
+        optionC: optionCount >= 3 ? values[2] : "",
+        optionD: optionCount >= 4 ? values[3] : "",
+        correctIndex: Number(correct.value),
+        durationSeconds,
+        folderId: folderId ? Number(folderId) : null
+    };
+ 
+    if (isEdit) body.questionId = editingQuestionId;
+ 
+    const button = document.getElementById("saveQuestionBtn");
+ 
+    button.disabled = true;
+    button.textContent = "⏳ در حال ذخیره...";
+ 
+    try {
+        await postJson("/api/teacher/questions", body);
+ 
+        closeQuestionModal();
+        await loadQuestionBank();
+ 
+        showBankMessage(isEdit ? "سؤال با موفقیت ویرایش شد." : "سؤال با موفقیت ایجاد شد.");
+ 
+    } catch (error) {
+        showQuestionModalMessage(error.message);
+    } finally {
+        button.disabled = false;
+        button.textContent = "💾 ذخیره سؤال";
+    }
+}
+ 
+async function toggleQuestion(questionId, active) {
+    try {
+        await postJson("/api/teacher/questions", {
+            action: "toggle",
+            examId: EXAM_ID,
+            questionId,
+            active
+        });
+ 
+        await loadQuestionBank();
+        showBankMessage(active ? "سؤال فعال شد." : "سؤال غیرفعال شد.");
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+async function deleteQuestion(questionId) {
+    if (!confirm("این سؤال برای همیشه حذف شود؟")) return;
+ 
+    try {
+        await postJson("/api/teacher/questions", {
+            action: "delete",
+            examId: EXAM_ID,
+            questionId
+        });
+ 
+        await loadQuestionBank();
+        showBankMessage("سؤال حذف شد.");
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+async function moveQuestion(questionId) {
+    const q = questions.find(x => Number(x.id) === Number(questionId));
+    if (!q) return;
+ 
+    let message = "پوشه مقصد را وارد کنید:\n\n";
+ 
+    folders.forEach(folder => {
+        message += `${folder.id} = ${folder.name}\n`;
+    });
+ 
+    message += "\nبرای بدون پوشه بودن، خالی بگذارید.";
+ 
+    const value = prompt(message, q.folderId ? String(q.folderId) : "");
+ 
+    if (value === null) return;
+ 
+    let folderId = null;
+ 
+    if (value.trim()) {
+        folderId = Number(value.trim());
+ 
+        if (!folders.some(f => Number(f.id) === folderId)) {
+            alert("شناسه پوشه صحیح نیست.");
+            return;
+        }
+    }
+ 
+    try {
+        await postJson("/api/teacher/questions", {
+            action: "move",
+            examId: EXAM_ID,
+            questionId,
+            folderId
+        });
+ 
+        await loadQuestionBank();
+        showBankMessage("سؤال منتقل شد.");
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+ 
+/* ===== سؤال‌های دستی ===== */
+ 
+function manualId(q) {
+    return Number(q.question_id ?? q.questionId);
+}
+ 
+function isManualQuestion(questionId) {
+    return manualQuestions.some(q => manualId(q) === Number(questionId));
+}
+ 
+async function loadManualQuestions() {
+    const data = await apiRequest(`/api/teacher/manual-questions?examId=${EXAM_ID}&_=${Date.now()}`);
+ 
+    manualQuestions = data.questions || data.manualQuestions || [];
+ 
+    renderManualQuestions();
+ 
+    document.getElementById("manualTotalCount").textContent = faNumber(manualQuestions.length);
+}
+ 
+function renderManualQuestions() {
+    const box = document.getElementById("manualQuestionsList");
+ 
+    if (!manualQuestions.length) {
+        box.innerHTML = `<div class="empty">هنوز سؤال دستی انتخاب نشده است.</div>`;
+        return;
+    }
+ 
+    box.innerHTML = "";
+ 
+    manualQuestions.forEach((q, index) => {
+        const questionId = manualId(q);
+        const text = q.question_text ?? q.questionText ?? "سؤال";
+ 
+        const item = document.createElement("div");
+        item.className = "manual-question-item";
+ 
+        item.innerHTML = `
+            <strong>${faNumber(index + 1)}</strong>
+ 
+            <div class="manual-question-text">
+                ${escapeHtml(text)}
+                ${q.folder_name ? `<br><small>📁 ${escapeHtml(q.folder_name)}</small>` : ""}
+            </div>
+ 
+            <div class="manual-buttons">
+                <button class="gray-btn small-btn" onclick="moveManualQuestion(${index},-1)"
+                    ${index === 0 ? "disabled" : ""}>↑</button>
+ 
+                <button class="gray-btn small-btn" onclick="moveManualQuestion(${index},1)"
+                    ${index === manualQuestions.length - 1 ? "disabled" : ""}>↓</button>
+ 
+                <button class="danger-btn small-btn" onclick="removeManualQuestion(${questionId})">حذف</button>
+            </div>
+        `;
+ 
+        box.appendChild(item);
+    });
+}
+ 
+async function toggleManualQuestion(questionId) {
+    if (isManualQuestion(questionId)) {
+        await removeManualQuestion(questionId);
+        return;
+    }
+ 
+    try {
+        await postJson("/api/teacher/manual-questions", {
+            action: "add",
+            examId: EXAM_ID,
+            questionId
+        });
+ 
+        await loadManualQuestions();
+        renderQuestions();
+ 
+        showBankMessage("سؤال به انتخاب‌های دستی اضافه شد.");
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+async function removeManualQuestion(questionId) {
+    try {
+        await postJson("/api/teacher/manual-questions", {
+            action: "remove",
+            examId: EXAM_ID,
+            questionId
+        });
+ 
+        await loadManualQuestions();
+        renderQuestions();
+ 
+        showBankMessage("سؤال از انتخاب دستی حذف شد.");
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+async function moveManualQuestion(index, direction) {
+    const newIndex = index + direction;
+ 
+    if (newIndex < 0 || newIndex >= manualQuestions.length) return;
+ 
+    const copy = [...manualQuestions];
+    const temp = copy[index];
+ 
+    copy[index] = copy[newIndex];
+    copy[newIndex] = temp;
+ 
+    const items = copy.map(q => ({ questionId: manualId(q) }));
+ 
+    try {
+        await postJson("/api/teacher/manual-questions", {
+            action: "reorder",
+            examId: EXAM_ID,
+            items
+        });
+ 
+        await loadManualQuestions();
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+ 
+/* ===== قوانین پوشه‌ها ===== */
+ 
+async function loadRules() {
+    const data = await apiRequest(`/api/teacher/exam-rules?examId=${EXAM_ID}&_=${Date.now()}`);
+ 
+    rules = data.rules || [];
+ 
+    renderRules();
+}
+ 
+function renderRules() {
+    const body = document.getElementById("rulesBody");
+ 
+    if (!folders.length) {
+        body.innerHTML = `<tr><td colspan="5"><div class="empty">ابتدا پوشه ایجاد کنید.</div></td></tr>`;
+        return;
+    }
+ 
+    body.innerHTML = "";
+ 
+    folders.forEach(folder => {
+        const rule = rules.find(r => Number(r.folderId) === Number(folder.id));
+ 
+        const count = rule ? Number(rule.selectionCount || 0) : 0;
+        const mode = rule ? rule.selectionMode : "random";
+ 
+        const tr = document.createElement("tr");
+ 
+        tr.innerHTML = `
+            <td>📁 ${escapeHtml(folder.name)}</td>
+ 
+            <td>${faNumber(folder.activeQuestionCount || 0)}</td>
+ 
+            <td>
+                <input class="rule-count-input" id="ruleCount_${folder.id}"
+                    type="number" min="0" value="${count}">
+            </td>
+ 
+            <td>
+                <select id="ruleMode_${folder.id}">
+                    <option value="random" ${mode === "random" ? "selected" : ""}>تصادفی</option>
+                    <option value="manual" ${mode === "manual" ? "selected" : ""}>دستی</option>
+                </select>
+            </td>
+ 
+            <td>
+                <button class="success-btn small-btn" onclick="saveFolderRule(${folder.id})">💾 ذخیره</button>
+ 
+                ${rule
+                    ? `<button class="danger-btn small-btn" onclick="deleteFolderRule(${rule.id})">حذف قانون</button>`
+                    : ""}
+            </td>
+        `;
+ 
+        body.appendChild(tr);
+    });
+}
+ 
+async function saveFolderRule(folderId) {
+    const count = Number(document.getElementById(`ruleCount_${folderId}`).value);
+    const mode = document.getElementById(`ruleMode_${folderId}`).value;
+ 
+    if (!Number.isInteger(count) || count < 0) {
+        showBankMessage("تعداد سؤال صحیح نیست.", "error");
+        return;
+    }
+ 
+    const folder = findFolder(folderId);
+ 
+    if (folder && count > Number(folder.activeQuestionCount || 0)) {
+        if (!confirm(
+            "تعداد انتخابی بیشتر از تعداد سؤال فعال این پوشه است.\n\n" +
+            "آیا همچنان ذخیره شود؟"
+        )) {
+            return;
+        }
+    }
+ 
+    const existing = rules.find(r => Number(r.folderId) === Number(folderId));
+ 
+    try {
+        if (existing) {
+            await postJson("/api/teacher/exam-rules", {
+                action: "update",
+                examId: EXAM_ID,
+                ruleId: existing.id,
+                folderId,
+                selectionCount: count,
+                selectionMode: mode
+            });
+        } else {
+            await postJson("/api/teacher/exam-rules", {
+                action: "create",
+                examId: EXAM_ID,
+                folderId,
+                selectionCount: count,
+                selectionMode: mode
+            });
+        }
+ 
+        await loadRules();
+        showBankMessage("قانون انتخاب سؤال ذخیره شد.");
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+async function deleteFolderRule(ruleId) {
+    if (!confirm("این قانون حذف شود؟")) return;
+ 
+    try {
+        await postJson("/api/teacher/exam-rules", {
+            action: "delete",
+            examId: EXAM_ID,
+            ruleId
+        });
+ 
+        await loadRules();
+        showBankMessage("قانون حذف شد.");
+ 
+    } catch (error) {
+        showBankMessage(error.message, "error");
+    }
+}
+ 
+ 
+/* ===== بارگذاری کامل بانک ===== */
+ 
+async function loadQuestionBank() {
+    try {
+        await loadFolders();
+ 
+        await Promise.all([
+            loadQuestions(),
+            loadRules(),
+            loadManualQuestions()
+        ]);
+ 
+        renderFolders();
+        renderQuestions();
+ 
+    } catch (error) {
+        console.error(error);
+        showBankMessage("خطا در دریافت بانک سؤال: " + error.message, "error");
+    }
+}
+ 
+ 
+/* ===== وضعیت‌ها ===== */
+ 
+function getPaymentStatus(paymentStatus) {
+    const status = String(paymentStatus || "").toLowerCase();
+ 
+    if (status === "paid") return `<span class="status status-payment-paid">پرداخت شده</span>`;
+    if (status === "pending") return `<span class="status status-pending">در انتظار پرداخت</span>`;
+    if (status === "failed") return `<span class="status status-payment-failed">پرداخت ناموفق</span>`;
+    if (status === "cancelled") return `<span class="status status-payment-cancelled">لغو شده</span>`;
+    if (status === "demo") return `<span class="status status-payment-demo">پرداخت آزمایشی</span>`;
+    if (!status) return `<span class="status status-unknown">نامشخص</span>`;
+ 
+    return `<span class="status status-unknown">${escapeHtml(paymentStatus)}</span>`;
+}
+ 
+function getExamStatus(status) {
+    if (status === "unpaid" || status === "paid_not_started") {
+        return `<span class="status status-not-started">شروع نشده</span>`;
+    }
+ 
+    if (status === "in_progress") return `<span class="status status-progress">در حال انجام</span>`;
+    if (status === "finished") return `<span class="status status-finished">تمام شده</span>`;
+ 
+    return `<span class="status status-unknown">${escapeHtml(status || "نامشخص")}</span>`;
+}
+ 
+function showError(message) {
+    const box = document.getElementById("errorBox");
+    box.textContent = message;
+    box.style.display = "block";
+}
+ 
+function hideError() {
+    document.getElementById("errorBox").style.display = "none";
+}
+ 
+ 
+/* ===== دانش‌آموزان ===== */
+ 
+function updateStats(students) {
+    let progress = 0;
+    let finished = 0;
+    let unpaid = 0;
+ 
+    students.forEach(student => {
+        if (student.status === "in_progress") progress++;
+        if (student.status === "finished") finished++;
+        if (student.status === "unpaid") unpaid++;
+    });
+ 
+    document.getElementById("totalCount").textContent = faNumber(students.length);
+    document.getElementById("progressCount").textContent = faNumber(progress);
+    document.getElementById("finishedCount").textContent = faNumber(finished);
+    document.getElementById("unpaidCount").textContent = faNumber(unpaid);
+}
+ 
+async function loadStudents() {
+    const loading = document.getElementById("loading");
+    const table = document.getElementById("studentsTable");
+    const empty = document.getElementById("emptyBox");
+    const body = document.getElementById("studentsBody");
+ 
+    hideError();
+ 
+    loading.style.display = "block";
+    table.style.display = "none";
+    empty.style.display = "none";
+ 
+    try {
+        const data = await apiRequest(`/api/teacher/students?examId=${EXAM_ID}&_=${Date.now()}`);
+        const students = data.students || [];
+ 
+        updateStats(students);
+ 
+        body.innerHTML = "";
+ 
+        if (!students.length) {
+            loading.style.display = "none";
+            empty.style.display = "block";
+            return;
+        }
+ 
+        students.forEach((student, index) => {
+            const tr = document.createElement("tr");
+ 
+            tr.innerHTML = `
+                <td>${faNumber(index + 1)}</td>
+                <td><strong>${escapeHtml(student.name || "—")}</strong></td>
+                <td dir="ltr">${escapeHtml(student.phone || "—")}</td>
+                <td>${faNumber(Number(student.amount || 0).toLocaleString("en-US"))}</td>
+                <td>${formatDate(student.createdAt)}</td>
+                <td>${formatDate(student.paidAt)}</td>
+                <td>${getPaymentStatus(student.paymentStatus)}</td>
+                <td>${getExamStatus(student.status)}</td>
+                <td>${formatDate(student.startedAt)}</td>
+                <td>${formatDate(student.finishedAt)}</td>
+                <td class="score">
+                    ${student.score !== null && student.score !== undefined
+                        ? faNumber(student.score) + " از ۲۰"
+                        : "—"}
+                </td>
+                <td>${faNumber(student.correct ?? 0)}</td>
+                <td>${faNumber(student.wrong ?? 0)}</td>
+                <td>${faNumber(student.empty ?? 0)}</td>
+                <td>
+                    ${student.attemptId
+                        ? `<button class="primary-btn small-btn"
+                              data-attempt-id="${escapeHtml(student.attemptId)}"
+                              onclick="showAttempt(this.dataset.attemptId)">مشاهده</button>`
+                        : ""}
+ 
+                    <button class="danger-btn small-btn"
+                        data-order-id="${escapeHtml(student.orderId)}"
+                        data-name="${escapeHtml(student.name || "")}"
+                        onclick="deleteStudent(this.dataset.orderId,this.dataset.name)">حذف</button>
+                </td>
+            `;
+ 
+            body.appendChild(tr);
+        });
+ 
+        loading.style.display = "none";
+        table.style.display = "table";
+ 
+    } catch (error) {
+        loading.style.display = "none";
+        showError("خطا در دریافت اطلاعات: " + error.message);
+    }
+}
+ 
+ 
+/* ===== جزئیات آزمون ===== */
+ 
+async function showAttempt(attemptId) {
+    const modal = document.getElementById("attemptModal");
+    const content = document.getElementById("attemptContent");
+ 
+    modal.style.display = "block";
+ 
+    content.innerHTML = `<div class="modal-loading">در حال دریافت جزئیات آزمون...</div>`;
+ 
+    try {
+        const data = await apiRequest(
+            `/api/teacher/attempt?attemptId=${encodeURIComponent(attemptId)}&_=${Date.now()}`
+        );
+ 
+        renderAttempt(data);
+ 
+    } catch (error) {
+        content.innerHTML = `
+            <div class="message-box message-error" style="display:block">${escapeHtml(error.message)}</div>
+        `;
+    }
+}
+ 
+function renderAttempt(data) {
+    const student = data.student || {};
+    const payment = data.payment || {};
+    const attempt = data.attempt || {};
+    const list = data.questions || [];
+ 
+    const examStatus = attempt.finishedAt
+        ? getExamStatus("finished")
+        : attempt.startedAt
+            ? getExamStatus("in_progress")
+            : getExamStatus("paid_not_started");
+ 
+    let html = `
+        <div class="student-summary">
+            <div class="summary-item"><div class="summary-title">نام</div>
+                <div class="summary-value">${escapeHtml(student.name || "—")}</div></div>
+ 
+            <div class="summary-item"><div class="summary-title">موبایل</div>
+                <div class="summary-value" dir="ltr">${escapeHtml(student.phone || "—")}</div></div>
+ 
+            <div class="summary-item"><div class="summary-title">مبلغ</div>
+                <div class="summary-value">
+                    ${faNumber(Number(payment.amount || 0).toLocaleString("en-US"))} تومان
+                </div></div>
+ 
+            <div class="summary-item"><div class="summary-title">وضعیت پرداخت</div>
+                <div class="summary-value">${getPaymentStatus(payment.status)}</div></div>
+ 
+            <div class="summary-item"><div class="summary-title">وضعیت آزمون</div>
+                <div class="summary-value">${examStatus}</div></div>
+ 
+            <div class="summary-item"><div class="summary-title">نمره</div>
+                <div class="summary-value">
+                    ${attempt.score !== null && attempt.score !== undefined
+                        ? faNumber(attempt.score) + " از ۲۰"
+                        : "—"}
+                </div></div>
+ 
+            <div class="summary-item"><div class="summary-title">صحیح</div>
+                <div class="summary-value">${faNumber(attempt.correct ?? 0)}</div></div>
+ 
+            <div class="summary-item"><div class="summary-title">غلط</div>
+                <div class="summary-value">${faNumber(attempt.wrong ?? 0)}</div></div>
+ 
+            <div class="summary-item"><div class="summary-title">بدون پاسخ</div>
+                <div class="summary-value">${faNumber(attempt.empty ?? 0)}</div></div>
+ 
+            <div class="summary-item"><div class="summary-title">شروع آزمون</div>
+                <div class="summary-value">${formatDate(attempt.startedAt)}</div></div>
+ 
+            <div class="summary-item"><div class="summary-title">پایان آزمون</div>
+                <div class="summary-value">${formatDate(attempt.finishedAt)}</div></div>
+        </div>
+ 
+        <div class="questions-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>سؤال</th><th>متن سؤال</th><th>پاسخ دانش‌آموز</th>
+                        <th>پاسخ صحیح</th><th>نتیجه</th><th>زمان پاسخ</th><th>زمان مجاز</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+ 
+    list.forEach(question => {
+        let rowClass = "empty-row";
+        let resultText = "— بدون پاسخ";
+        let resultClass = "result-empty";
+ 
+        if (question.result === "correct") {
+            rowClass = "correct-row";
+            resultText = "✓ صحیح";
+            resultClass = "result-correct";
+        } else if (question.result === "wrong") {
+            rowClass = "wrong-row";
+            resultText = "✕ غلط";
+            resultClass = "result-wrong";
+        }
+ 
+        const opts = question.options || [];
+ 
+        const selectedAnswer =
+            question.selectedIndex !== null && question.selectedIndex !== undefined && opts[question.selectedIndex]
+                ? opts[question.selectedIndex]
+                : "بدون پاسخ";
+ 
+        const correctAnswer =
+            question.correctIndex !== null && question.correctIndex !== undefined && opts[question.correctIndex]
+                ? opts[question.correctIndex]
+                : "—";
+ 
+        html += `
+            <tr class="${rowClass}">
+                <td>${faNumber(question.number)}</td>
+                <td class="answer-box">${escapeHtml(question.question || "—")}</td>
+                <td class="answer-box">${escapeHtml(selectedAnswer)}</td>
+                <td class="answer-box">${escapeHtml(correctAnswer)}</td>
+                <td class="${resultClass}">${resultText}</td>
+                <td>${question.elapsedSeconds !== null && question.elapsedSeconds !== undefined
+                        ? faNumber(question.elapsedSeconds) + " ثانیه" : "—"}</td>
+                <td>${question.durationSeconds !== null && question.durationSeconds !== undefined
+                        ? faNumber(question.durationSeconds) + " ثانیه" : "—"}</td>
+            </tr>
+        `;
+    });
+ 
+    html += `</tbody></table></div>`;
+ 
+    document.getElementById("attemptContent").innerHTML = html;
+}
+ 
+function closeAttemptModal() {
+    document.getElementById("attemptModal").style.display = "none";
+}
+ 
+function closeModalByBackground(event) {
+    if (event.target.id === "attemptModal") closeAttemptModal();
+}
+ 
+ 
+/* ===== حذف دانش‌آموز ===== */
+ 
+async function deleteStudent(orderId, studentName) {
+    if (!confirm(
+        "آیا مطمئن هستید؟\n\n" +
+        "دانش‌آموز:\n" + (studentName || "این دانش‌آموز") + "\n\n" +
+        "تمام اطلاعات سفارش، آزمون و پاسخ‌های او حذف خواهد شد."
+    )) {
+        return;
+    }
+ 
+    try {
+        await apiRequest(`/api/teacher/student?orderId=${encodeURIComponent(orderId)}`, { method: "DELETE" });
+ 
+        alert("اطلاعات دانش‌آموز با موفقیت حذف شد.");
+ 
+        await loadStudents();
+ 
+    } catch (error) {
+        alert("خطا در حذف دانش‌آموز:\n\n" + error.message);
+    }
+}
+ 
+async function deleteAllStudents() {
+    if (!confirm(
+        "⚠️ هشدار\n\n" +
+        "تمام دانش‌آموزان، سفارش‌ها، آزمون‌های انجام‌شده و پاسخ‌های ثبت‌شده حذف می‌شوند.\n\n" +
+        "سؤالات و تنظیمات آزمون حذف نمی‌شوند.\n\n" +
+        "آیا مطمئن هستید؟"
+    )) {
+        return;
+    }
+ 
+    if (!confirm(
+        "این عملیات قابل بازگشت نیست.\n\n" +
+        "آیا واقعاً می‌خواهید همه دانش‌آموزان حذف شوند؟"
+    )) {
+        return;
+    }
+ 
+    try {
+        await apiRequest(`/api/teacher/students?examId=${EXAM_ID}`, { method: "DELETE" });
+ 
+        alert("تمام اطلاعات دانش‌آموزان حذف شد.");
+ 
+        await loadStudents();
+ 
+    } catch (error) {
+        alert("خطا در حذف همه:\n\n" + error.message);
+    }
+}
+ 
+ 
+/* ===== بروزرسانی همه ===== */
+ 
+async function loadAll() {
+    await Promise.all([
+        loadExamSettings(),
+        loadStudents(),
+        loadQuestionBank()
+    ]);
+}
+ 
+ 
+/* ===== رویدادهای صفحه ===== */
+ 
+document.getElementById("discountStart").addEventListener("click", event => {
+    event.stopPropagation();
+    closeAllDatePickers();
+    openJalaliPicker("start");
+});
+ 
+document.getElementById("discountEnd").addEventListener("click", event => {
+    event.stopPropagation();
+    closeAllDatePickers();
+    openJalaliPicker("end");
+});
+ 
+["discountStartTime", "discountEndTime"].forEach(id => {
+    document.getElementById(id).addEventListener("input", calculateDiscountPreview);
+});
+ 
+["basePrice", "discountPercent"].forEach(id => {
+    document.getElementById(id).addEventListener("input", calculateDiscountPreview);
+});
+ 
+document.addEventListener("click", event => {
+    if (!event.target.closest(".jalali-date-wrapper")) {
+        closeAllDatePickers();
+    }
+});
+ 
+ 
+/* ===== اجرای اولیه: بررسی نشست موجود ===== */
+ 
+(async function init() {
+    try {
+        await apiRequest(`/api/teacher/exam-settings?examId=${EXAM_ID}&_=${Date.now()}`);
+        showPanel();
+        await loadAll();
+    } catch (e) {
+        showLogin();
+    }
+})();
+ 
+</script>
+ </body>
+</html>
