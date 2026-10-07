@@ -116,6 +116,103 @@ button:disabled{
 }
 
 /* ==============================
+   صفحه ورود
+============================== */
+
+.login-wrapper{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:linear-gradient(135deg,#eff6ff 0%,#f5f7fb 100%);
+}
+
+.login-box{
+    width:100%;
+    max-width:420px;
+    background:#fff;
+    border-radius:18px;
+    padding:32px 28px;
+    box-shadow:0 10px 40px rgba(0,0,0,.1);
+}
+
+.login-box h1{
+    margin:0 0 6px;
+    font-size:24px;
+    text-align:center;
+}
+
+.login-box p{
+    margin:0 0 24px;
+    color:#64748b;
+    font-size:13px;
+    text-align:center;
+}
+
+.login-form .form-group{
+    margin-bottom:16px;
+}
+
+.login-form label{
+    display:block;
+    font-size:13px;
+    font-weight:bold;
+    color:#374151;
+    margin-bottom:6px;
+}
+
+.login-form input{
+    width:100%;
+    border:1px solid #d1d5db;
+    border-radius:10px;
+    padding:12px 14px;
+    font-family:inherit;
+    font-size:14px;
+    outline:none;
+}
+
+.login-form input:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.12);
+}
+
+.login-btn{
+    width:100%;
+    background:#2563eb;
+    color:#fff;
+    padding:13px;
+    font-size:15px;
+    margin-top:8px;
+}
+
+.login-message{
+    display:none;
+    padding:10px 12px;
+    border-radius:9px;
+    margin-bottom:14px;
+    font-size:13px;
+    text-align:center;
+}
+
+.login-message.error{
+    background:#fee2e2;
+    color:#991b1b;
+    display:block;
+}
+
+.login-message.success{
+    background:#dcfce7;
+    color:#166534;
+    display:block;
+}
+
+.logout-btn{
+    background:#64748b;
+    color:#fff;
+}
+
+/* ==============================
    تنظیمات قیمت
 ============================== */
 
@@ -1037,6 +1134,38 @@ tr:hover td{
 
 <body>
 
+<!-- ===================== صفحه ورود ===================== -->
+
+<div id="loginSection" class="login-wrapper">
+    <div class="login-box">
+        <h1>ورود به پنل معلم</h1>
+        <p>برای دسترسی به پنل مدیریت آزمون وارد شوید</p>
+
+        <div id="loginMessage" class="login-message"></div>
+
+        <form class="login-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="loginUsername">نام کاربری</label>
+                <input id="loginUsername" type="text" autocomplete="username" required placeholder="نام کاربری">
+            </div>
+
+            <div class="form-group">
+                <label for="loginPassword">رمز عبور</label>
+                <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="رمز عبور">
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                ورود
+            </button>
+        </form>
+    </div>
+</div>
+
+
+<!-- ===================== پنل اصلی (مخفی تا ورود) ===================== -->
+
+<div id="panelSection" style="display:none;">
+
 <div class="container">
 
     <!-- ================= HEADER ================= -->
@@ -1067,6 +1196,12 @@ tr:hover td{
                 class="delete-all-btn"
                 onclick="deleteAllStudents()">
                 🗑 حذف همه دانش‌آموزان
+            </button>
+
+            <button
+                class="logout-btn"
+                onclick="handleLogout()">
+                🚪 خروج
             </button>
 
         </div>
@@ -1907,6 +2042,8 @@ tr:hover td{
 
 </div>
 
+</div><!-- end #panelSection -->
+
 
 <script>
 
@@ -1932,40 +2069,126 @@ let searchTimer = null;
 
 
 /* =========================================================
-   API عمومی
+   ورود / خروج / Session
 ========================================================= */
 
-async function apiRequest(
-    url,
-    options = {}
-){
+function showLogin() {
+    document.getElementById("loginSection").style.display = "flex";
+    document.getElementById("panelSection").style.display = "none";
+}
 
-    const response =
-        await fetch(
-            API_BASE + url,
-            options
-        );
+function showPanel() {
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("panelSection").style.display = "block";
+}
+
+function showLoginMessage(text, type = "error") {
+    const box = document.getElementById("loginMessage");
+    box.textContent = text;
+    box.className = "login-message " + type;
+}
+
+async function handleLogin(event) {
+    event.preventDefault();
+
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    const btn = document.getElementById("loginBtn");
+
+    if (!username || !password) {
+        showLoginMessage("نام کاربری و رمز عبور را وارد کنید.");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "⏳ در حال ورود...";
+    showLoginMessage("", "success");
+
+    try {
+        const response = await fetch(API_BASE + "/api/teacher/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "include",
+            body: JSON.stringify({ username, password })
+        });
+
+        let data = {};
+        try {
+            data = await response.json();
+        } catch (e) {}
+
+        if (!response.ok || data.ok === false) {
+            throw new Error(data.error || "ورود ناموفق بود");
+        }
+
+        showLoginMessage("ورود موفق. در حال بارگذاری پنل...", "success");
+        document.getElementById("loginPassword").value = "";
+
+        showPanel();
+        await loadAll();
+
+    } catch (error) {
+        showLoginMessage(error.message || "خطا در ورود");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "ورود";
+    }
+}
+
+async function handleLogout() {
+    try {
+        await fetch(API_BASE + "/api/teacher/logout", {
+            method: "POST",
+            credentials: "include"
+        });
+    } catch (e) {
+        // ignore
+    }
+
+    showLogin();
+    document.getElementById("loginUsername").value = "";
+    document.getElementById("loginPassword").value = "";
+    showLoginMessage("");
+}
+
+
+/* =========================================================
+   API عمومی (با credentials و مدیریت 401)
+========================================================= */
+
+async function apiRequest(url, options = {}) {
+
+    const opts = {
+        ...options,
+        credentials: "include",
+        headers: {
+            ...(options.headers || {})
+        }
+    };
+
+    const response = await fetch(API_BASE + url, opts);
+
+    // اگر Session منقضی شده باشد
+    if (response.status === 401) {
+        showLogin();
+        throw new Error("نشست شما منقضی شده. لطفاً دوباره وارد شوید.");
+    }
 
     let data = {};
 
-    try{
-        data =
-            await response.json();
-    }
-    catch(e){
+    try {
+        data = await response.json();
+    } catch (e) {
         data = {};
     }
 
-    if(
-        !response.ok ||
-        data.ok === false
-    ){
-
+    if (!response.ok || data.ok === false) {
         throw new Error(
             data.error ||
             `خطای سرور: ${response.status}`
         );
-
     }
 
     return data;
@@ -3035,7 +3258,7 @@ async function loadExamSettings(){
 
         const data =
             await apiRequest(
-                `/api/teacher/exam-settings?examId=${EXAM_ID}&_=${Date.now()}`
+                `/api/teacher/exam-settings?examId=\( {EXAM_ID}&_= \){Date.now()}`
             );
 
         const exam =
@@ -3280,7 +3503,7 @@ async function loadFolders(){
 
     const data =
         await apiRequest(
-            `/api/teacher/folders?examId=${EXAM_ID}&_=${Date.now()}`
+            `/api/teacher/folders?examId=\( {EXAM_ID}&_= \){Date.now()}`
         );
 
     folders =
@@ -3344,13 +3567,13 @@ function renderFolders(){
 
                     <button
                         class="gray-btn small-btn"
-                        onclick="event.stopPropagation();renameFolder(${folder.id},'${escapeHtml(folder.name)}')">
+                        onclick="event.stopPropagation();renameFolder(\( {folder.id},' \){escapeHtml(folder.name)}')">
                         ✏️ نام
                     </button>
 
                     <button
                         class="${folder.active?'warning-btn':'success-btn'} small-btn"
-                        onclick="event.stopPropagation();toggleFolder(${folder.id},${!folder.active})">
+                        onclick="event.stopPropagation();toggleFolder(\( {folder.id}, \){!folder.active})">
 
                         ${folder.active?"غیرفعال":"فعال"}
 
@@ -3358,7 +3581,7 @@ function renderFolders(){
 
                     <button
                         class="danger-btn small-btn"
-                        onclick="event.stopPropagation();deleteFolder(${folder.id},'${escapeHtml(folder.name)}')">
+                        onclick="event.stopPropagation();deleteFolder(\( {folder.id},' \){escapeHtml(folder.name)}')">
                         🗑
                     </button>
 
@@ -3737,9 +3960,6 @@ function renderQuestions(){
     ).textContent=
         faNumber(total);
 
-    /*
-     * این شمارنده بر اساس بانک سؤال فعلی است.
-     */
     document.getElementById(
         "questionActiveCount"
     ).textContent=
@@ -3846,7 +4066,7 @@ function renderQuestions(){
 
                     <button
                         class="${q.active?'danger-btn':'success-btn'} small-btn"
-                        onclick="toggleQuestion(${q.id},${!q.active})">
+                        onclick="toggleQuestion(\( {q.id}, \){!q.active})">
 
                         ${q.active?"غیرفعال":"فعال"}
 
@@ -4537,7 +4757,7 @@ async function loadManualQuestions(){
 
     const data =
         await apiRequest(
-            `/api/teacher/manual-questions?examId=${EXAM_ID}&_=${Date.now()}`
+            `/api/teacher/manual-questions?examId=\( {EXAM_ID}&_= \){Date.now()}`
         );
 
     manualQuestions =
@@ -4809,7 +5029,7 @@ async function loadRules(){
 
     const data =
         await apiRequest(
-            `/api/teacher/exam-rules?examId=${EXAM_ID}&_=${Date.now()}`
+            `/api/teacher/exam-rules?examId=\( {EXAM_ID}&_= \){Date.now()}`
         );
 
     rules =
@@ -5385,7 +5605,7 @@ async function loadStudents(){
 
         const data =
             await apiRequest(
-                `/api/teacher/students?examId=${EXAM_ID}&_=${Date.now()}`
+                `/api/teacher/students?examId=\( {EXAM_ID}&_= \){Date.now()}`
             );
 
         const students =
@@ -5575,7 +5795,7 @@ async function showAttempt(
 
         const data =
             await apiRequest(
-                `/api/teacher/attempt?attemptId=${encodeURIComponent(attemptId)}&_=${Date.now()}`
+                `/api/teacher/attempt?attemptId=\( {encodeURIComponent(attemptId)}&_= \){Date.now()}`
             );
 
         renderAttempt(data);
@@ -6047,10 +6267,21 @@ document.addEventListener(
 
 
 /* =========================================================
-   اجرای اولیه
+   اجرای اولیه — بررسی Session موجود
 ========================================================= */
 
-loadAll();
+(async function init() {
+    // تلاش برای تشخیص Session معتبر با یک درخواست سبک
+    try {
+        await apiRequest(`/api/teacher/exam-settings?examId=\( {EXAM_ID}&_= \){Date.now()}`);
+        // Session معتبر است
+        showPanel();
+        await loadAll();
+    } catch (e) {
+        // Session نیست یا منقضی شده → فرم ورود
+        showLogin();
+    }
+})();
 
 </script>
 
