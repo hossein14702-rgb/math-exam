@@ -1658,8 +1658,18 @@ async function deleteQuestion(questionId) {
 }
  
 async function moveQuestion(questionId) {
-    const q = questions.find(x => Number(x.id) === Number(questionId));
-    if (!q) return;
+    // شناسه سؤال را از همه نام‌های رایج پاسخ Worker پیدا می‌کنیم
+    // تا اگر API به‌جای id از questionId یا question_id برگرداند،
+    // انتقال سؤال همچنان درست انجام شود.
+    const normalizedQuestionId = Number(questionId);
+    const q = questions.find(x =>
+        Number(x.id ?? x.questionId ?? x.question_id) === normalizedQuestionId
+    );
+ 
+    if (!q || !Number.isFinite(normalizedQuestionId) || normalizedQuestionId <= 0) {
+        alert("شناسه سؤال پیدا نشد.");
+        return;
+    }
  
     let message = "پوشه مقصد را وارد کنید:\n\n";
  
@@ -1688,7 +1698,7 @@ async function moveQuestion(questionId) {
         await postJson("/api/teacher/questions", {
             action: "move",
             examId: EXAM_ID,
-            questionId,
+            questionId: normalizedQuestionId,
             folderId
         });
  
@@ -2348,16 +2358,22 @@ document.addEventListener("click", event => {
 });
  
  
-/* ===== اجرای اولیه: بررسی نشست موجود ===== */
+/* ===== اجرای اولیه: ورود اجباری در هر بار باز شدن صفحه ===== */
  
 (async function init() {
+    // حتی اگر نشست قبلی هنوز معتبر باشد، برای هر بار باز شدن teacher.html
+    // ابتدا آن نشست را با Worker باطل می‌کنیم تا نام کاربری و رمز عبور
+    // دوباره درخواست شود.
     try {
-        await apiRequest(`/api/teacher/exam-settings?examId=${EXAM_ID}&_=${Date.now()}`);
-        showPanel();
-        await loadAll();
+        await fetch(API_BASE + "/api/teacher/logout", {
+            method: "POST",
+            credentials: "include"
+        });
     } catch (e) {
-        showLogin();
+        // اگر logout به هر دلیل در دسترس نبود، صفحه همچنان باید ورود بخواهد.
     }
+ 
+    showLogin();
 })();
  
 </script>
