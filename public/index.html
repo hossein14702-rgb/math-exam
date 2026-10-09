@@ -7,9 +7,4060 @@
 <title>آزمون ریاضی | آزمون آنلاین</title>
 <style>
 *{box-sizing:border-box}
-<footer>
-    <p>© تمامی حقوق محفوظ است</p>
 
+body{
+    margin:0;
+    font-family:Tahoma,Arial,sans-serif;
+    background:#f4f7fb;
+    color:#1f2937;
+}
+
+/* عمداً صفحه را مخفی نمی‌کنیم تا خطای احتمالی JavaScript باعث صفحه سفید نشود */
+body.page-loading{
+    visibility:visible;
+}
+
+.container{
+    width:min(760px,94%);
+    margin:30px auto;
+}
+
+.header{
+    background:white;
+    border-radius:20px;
+    padding:20px;
+    box-shadow:0 8px 30px rgba(0,0,0,.06);
+    margin-bottom:18px;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.logo{
+    width:52px;
+    height:52px;
+    border-radius:15px;
+    background:#2563eb;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:26px;
+}
+
+.brand-text h1{
+    margin:0;
+    font-size:21px;
+}
+
+.brand-text span{
+    display:block;
+    color:#6b7280;
+    font-size:13px;
+    margin-top:5px;
+}
+
+.steps{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-top:22px;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.step{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:#9ca3af;
+    font-size:12px;
+}
+
+.step.active{
+    color:#2563eb;
+    font-weight:bold;
+}
+
+.step.done{
+    color:#16a34a;
+}
+
+.step-circle{
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    background:#e5e7eb;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+}
+
+.step.active .step-circle{
+    background:#2563eb;
+    color:white;
+}
+
+.step.done .step-circle{
+    background:#16a34a;
+    color:white;
+}
+
+.step-line{
+    height:2px;
+    width:35px;
+    background:#e5e7eb;
+}
+
+.card{
+    background:white;
+    border-radius:20px;
+    padding:25px;
+    box-shadow:0 8px 30px rgba(0,0,0,.06);
+    margin-bottom:18px;
+}
+
+.hidden{
+    display:none !important;
+}
+
+.card-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.card-title-icon{
+    width:42px;
+    height:42px;
+    border-radius:12px;
+    background:#eff6ff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:21px;
+}
+
+.card-title h2{
+    margin:0;
+    font-size:20px;
+}
+
+.subtitle{
+    color:#6b7280;
+    font-size:14px;
+    line-height:2;
+}
+
+.field{
+    margin-top:18px;
+}
+
+.field label{
+    display:block;
+    margin-bottom:7px;
+    font-size:14px;
+    font-weight:bold;
+}
+
+.input-wrap{
+    display:flex;
+    align-items:center;
+    border:1px solid #d1d5db;
+    border-radius:12px;
+    overflow:hidden;
+    background:white;
+}
+
+.input-wrap:focus-within{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.08);
+}
+
+.input-icon{
+    padding:0 12px;
+    color:#6b7280;
+}
+
+.input-wrap input{
+    flex:1;
+    border:0;
+    outline:none;
+    padding:13px 10px;
+    font-size:15px;
+    font-family:inherit;
+    background:white;
+}
+
+.hint{
+    display:block;
+    margin-top:6px;
+    color:#9ca3af;
+    font-size:11px;
+}
+
+.primary-btn{
+    width:100%;
+    border:0;
+    border-radius:13px;
+    padding:14px;
+    margin-top:22px;
+    background:#2563eb;
+    color:white;
+    font-family:inherit;
+    font-size:15px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.primary-btn:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+}
+
+.secondary-btn{
+    width:100%;
+    border:1px solid #d1d5db;
+    border-radius:13px;
+    padding:13px;
+    margin-top:10px;
+    background:white;
+    color:#374151;
+    font-family:inherit;
+    font-size:14px;
+    cursor:pointer;
+}
+
+.secondary-btn:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+}
+
+.error{
+    background:#fef2f2;
+    color:#b91c1c;
+    border-radius:10px;
+    padding:11px;
+    margin-top:15px;
+    font-size:13px;
+    line-height:1.8;
+}
+
+.success{
+    background:#f0fdf4;
+    color:#15803d;
+    border-radius:10px;
+    padding:11px;
+    margin-top:15px;
+    font-size:13px;
+    line-height:1.8;
+}
+
+.exam-info{
+    margin-top:18px;
+    background:#f8fafc;
+    border-radius:15px;
+    padding:17px;
+    line-height:2;
+    font-size:13px;
+}
+
+.info-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1px solid #e5e7eb;
+    padding:7px 0;
+}
+
+.info-row:last-child{
+    border-bottom:0;
+}
+
+.info-label{
+    color:#6b7280;
+}
+
+.info-value{
+    font-weight:bold;
+}
+
+.price-box{
+    margin-top:20px;
+    padding:18px;
+    background:#f8fafc;
+    border-radius:15px;
+}
+
+.price-main{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+}
+
+.price-label{
+    font-weight:bold;
+}
+
+.price{
+    font-size:22px;
+    font-weight:bold;
+    color:#2563eb;
+}
+
+.old-price{
+    color:#9ca3af;
+    text-decoration:line-through;
+    font-size:14px;
+    margin-left:8px;
+}
+
+.discount-badge{
+    display:inline-block;
+    background:#dcfce7;
+    color:#15803d;
+    padding:4px 9px;
+    border-radius:20px;
+    font-size:11px;
+    margin-top:7px;
+}
+
+/* شمارش معکوس تخفیف */
+.discount-countdown{
+    margin-top:12px;
+    padding:10px 12px;
+    border-radius:12px;
+    background:#fff7ed;
+    color:#c2410c;
+    font-size:12px;
+    line-height:1.9;
+    text-align:center;
+}
+
+.discount-countdown strong{
+    font-size:14px;
+}
+
+.payment-status{
+    margin-top:15px;
+    padding:13px;
+    border-radius:12px;
+    background:#f0fdf4;
+    color:#15803d;
+    text-align:center;
+    font-size:13px;
+}
+
+.rules{
+    margin-top:18px;
+}
+
+.rule{
+    display:flex;
+    gap:10px;
+    margin:12px 0;
+    padding:13px;
+    border-radius:12px;
+    background:#f8fafc;
+    line-height:1.9;
+    font-size:13px;
+}
+
+.rule-icon{
+    color:#16a34a;
+    font-weight:bold;
+}
+
+.exam-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+}
+
+.exam-label{
+    color:#6b7280;
+    font-size:12px;
+}
+
+.exam-number{
+    font-size:20px;
+    font-weight:bold;
+    margin-top:5px;
+}
+
+.timer{
+    min-width:85px;
+    height:70px;
+    border-radius:15px;
+    background:#eff6ff;
+    color:#2563eb;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+}
+
+.timer span{
+    font-size:27px;
+    font-weight:bold;
+    line-height:1;
+}
+
+.timer small{
+    font-size:11px;
+    margin-top:6px;
+}
+
+.progress-container{
+    margin-top:20px;
+}
+
+.progress-info{
+    display:flex;
+    justify-content:space-between;
+    color:#6b7280;
+    font-size:12px;
+    margin-bottom:7px;
+}
+
+.progress-bar{
+    width:100%;
+    height:7px;
+    background:#e5e7eb;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.progress-fill{
+    height:100%;
+    width:0%;
+    background:#2563eb;
+    transition:width .2s;
+}
+
+.question-box{
+    margin-top:22px;
+}
+
+.question-text{
+    font-size:19px;
+    font-weight:bold;
+    line-height:2;
+    margin-bottom:20px;
+}
+
+.options{
+    display:grid;
+    gap:12px;
+}
+
+.option{
+    border:1px solid #d1d5db;
+    border-radius:13px;
+    padding:15px;
+    background:white;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    transition:.15s;
+}
+
+.option:hover{
+    border-color:#2563eb;
+    background:#eff6ff;
+}
+
+.option-letter{
+    width:34px;
+    height:34px;
+    border-radius:9px;
+    background:#f3f4f6;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    flex:none;
+}
+
+.result-hero{
+    text-align:center;
+}
+
+.result-icon{
+    width:65px;
+    height:65px;
+    border-radius:50%;
+    background:#dcfce7;
+    color:#16a34a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:0 auto 15px;
+    font-size:32px;
+}
+
+.result-hero h2{
+    margin:0;
+}
+
+.result-hero p{
+    color:#6b7280;
+}
+
+.score-circle{
+    width:130px;
+    height:130px;
+    border-radius:50%;
+    border:8px solid #2563eb;
+    background:#eff6ff;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    margin:22px auto 12px;
+}
+
+.score-number{
+    font-size:38px;
+    line-height:1;
+    font-weight:bold;
+    color:#2563eb;
+}
+
+.score-label{
+    margin-top:7px;
+    font-size:12px;
+    color:#6b7280;
+}
+
+.result-counts{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin:0 auto 20px;
+    flex-wrap:wrap;
+}
+
+.result-count{
+    min-width:100px;
+    background:#f8fafc;
+    border-radius:12px;
+    padding:12px 15px;
+    text-align:center;
+}
+
+.result-count strong{
+    display:block;
+    font-size:18px;
+}
+
+.result-count span{
+    display:block;
+    font-size:11px;
+    color:#6b7280;
+    margin-top:4px;
+}
+
+.result-times{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:12px;
+}
+
+.result-time{
+    background:#f8fafc;
+    border-radius:12px;
+    padding:13px;
+    text-align:center;
+}
+
+.result-time strong{
+    display:block;
+    font-size:14px;
+    margin-top:5px;
+}
+
+.result-time span{
+    color:#6b7280;
+    font-size:11px;
+}
+
+.answer-sheet{
+    margin-top:12px;
+}
+
+.answer-item{
+    border-radius:13px;
+    padding:15px;
+    margin-bottom:10px;
+    background:#f8fafc;
+}
+
+.answer-item.correct{
+    border-right:4px solid #16a34a;
+}
+
+.answer-item.wrong{
+    border-right:4px solid #dc2626;
+}
+
+.answer-item.empty{
+    border-right:4px solid #f59e0b;
+}
+
+.answer-question{
+    font-weight:bold;
+    line-height:1.8;
+}
+
+.answer-detail{
+    margin-top:8px;
+    font-size:13px;
+    color:#6b7280;
+    line-height:2;
+}
+
+.status-correct{
+    color:#15803d;
+}
+
+.status-wrong{
+    color:#b91c1c;
+}
+
+.status-empty{
+    color:#b45309;
+}
+
+.loading{
+    text-align:center;
+    color:#6b7280;
+    padding:20px;
+}
+
+@media(max-width:600px){
+
+    .container{
+        width:95%;
+        margin:15px auto;
+    }
+
+    .card{
+        padding:18px;
+    }
+
+    .steps{
+        gap:3px;
+    }
+
+    .step-line{
+        width:15px;
+    }
+
+    .step span{
+        display:none;
+    }
+
+    .result-times{
+        grid-template-columns:1fr;
+    }
+
+    .question-text{
+        font-size:17px;
+    }
+
+    .score-circle{
+        width:120px;
+        height:120px;
+    }
+
+    .result-count{
+        min-width:90px;
+    }
+
+    .price-main{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+}
+
+/* فوتر و اینماد - پایین وسط */
+.site-footer{
+    width:100%;
+    max-width:760px;
+    margin:10px auto 30px;
+    padding:20px 12px 28px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    text-align:center;
+}
+
+.site-footer .footer-copy{
+    margin:0;
+    color:#9ca3af;
+    font-size:12px;
+}
+
+.site-footer .enamad-logo a{
+    display:inline-block;
+    line-height:0;
+}
+
+.site-footer .enamad-logo img{
+    width:125px;
+    height:auto;
+    display:block;
+    margin:0 auto;
+    cursor:pointer;
+}
+
+</style>
+</head>
+
+<body class="page-loading">
+
+<div class="container">
+
+<div class="header">
+
+    <div class="brand">
+
+        <div class="logo">∑</div>
+
+        <div class="brand-text">
+            <h1>آزمون آنلاین ریاضی</h1>
+            <span>آزمون هوشمند و زمان‌دار</span>
+        </div>
+
+    </div>
+
+    <div class="steps hidden" id="steps"></div>
+
+</div>
+
+
+<!-- شروع آزمون -->
+
+<div class="card" id="startCard">
+
+    <div class="card-title">
+        <div class="card-title-icon">👤</div>
+        <h2>آزمون ریاضی</h2>
+    </div>
+
+    <p class="subtitle">
+        برای شرکت در محصول «آزمون ریاضی»، نام و شماره موبایل خود را وارد کنید.
+        سپس به صفحه پرداخت امن منتقل می‌شوید.
+    </p>
+
+    <div id="examInfo">
+
+        <div class="loading">
+            در حال دریافت اطلاعات آزمون...
+        </div>
+
+    </div>
+
+    <div class="field">
+
+        <label>نام و نام خانوادگی</label>
+
+        <div class="input-wrap">
+
+            <span class="input-icon">👤</span>
+
+            <input
+                id="nameInput"
+                type="text"
+                placeholder="مثلاً حسین خراسانی"
+                autocomplete="name"
+            >
+
+        </div>
+
+    </div>
+
+    <div class="field">
+
+        <label>شماره موبایل</label>
+
+        <div class="input-wrap">
+
+            <span class="input-icon">📱</span>
+
+            <input
+                id="phoneInput"
+                type="tel"
+                placeholder="مثلاً ۰۹۱۲۱۲۳۴۵۶۷"
+                autocomplete="tel"
+                inputmode="tel"
+                dir="ltr"
+                maxlength="11"
+            >
+
+        </div>
+
+        <span class="hint">
+            شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود.
+        </span>
+
+    </div>
+
+    <div id="startError"></div>
+
+    <button id="startPaymentButton" class="primary-btn">
+        پرداخت و شروع آزمون
+    </button>
+
+</div>
+
+
+<!-- پرداخت -->
+
+<div class="card hidden" id="paymentCard">
+
+    <div class="card-title">
+
+        <div class="card-title-icon">💳</div>
+
+        <h2>پرداخت آزمون ریاضی</h2>
+
+    </div>
+
+    <p class="subtitle">
+        سفارش شما ثبت شده است. برای پرداخت روی دکمه زیر بزنید.
+    </p>
+
+    <div id="paymentPriceBox" class="price-box">
+
+        <div class="loading">
+            در حال دریافت قیمت...
+        </div>
+
+    </div>
+
+    <div class="payment-status">
+        🔒 پرداخت امن از طریق درگاه زرین‌پال
+    </div>
+
+    <button id="payButton" class="primary-btn">
+        ورود به صفحه پرداخت
+    </button>
+
+    <button id="backToStartButton" class="secondary-btn">
+        بازگشت
+    </button>
+
+    <div id="paymentError"></div>
+
+</div>
+
+
+<!-- قوانین -->
+
+<div class="card hidden" id="rulesCard">
+
+    <div class="card-title">
+
+        <div class="card-title-icon">📋</div>
+
+        <h2>آماده‌ای برای آزمون؟</h2>
+
+    </div>
+
+    <p class="subtitle">
+        قبل از شروع، قوانین آزمون را با دقت مطالعه کنید.
+    </p>
+
+    <div class="rules">
+
+        <div class="rule">
+            <div class="rule-icon">✓</div>
+            <div>
+                هر سؤال زمان مشخصی دارد و با پایان زمان،
+                سؤال به‌صورت خودکار بسته می‌شود.
+            </div>
+        </div>
+
+        <div class="rule">
+            <div class="rule-icon">✓</div>
+            <div>
+                پس از عبور از هر سؤال،
+                امکان بازگشت به سؤال قبلی وجود ندارد.
+            </div>
+        </div>
+
+        <div class="rule">
+            <div class="rule-icon">✓</div>
+            <div>
+                پاسخ‌ها به‌صورت خودکار در سامانه ثبت می‌شوند.
+            </div>
+        </div>
+
+        <div class="rule">
+            <div class="rule-icon">✓</div>
+            <div>
+                در پایان آزمون، نتیجه و پاسخنامه نمایش داده خواهد شد.
+            </div>
+        </div>
+
+    </div>
+
+    <button id="beginExamButton" class="primary-btn">
+        شروع آزمون
+    </button>
+
+    <button id="cancelResumeButton" class="secondary-btn hidden">
+        بازگشت به صفحه شروع
+    </button>
+
+    <div id="rulesError"></div>
+
+</div>
+
+
+<!-- آزمون -->
+
+<div class="card hidden" id="examCard">
+
+    <div class="exam-top">
+
+        <div>
+
+            <div class="exam-label">
+                آزمون ریاضی
+            </div>
+
+            <div class="exam-number" id="progress">
+                سؤال ۱
+            </div>
+
+        </div>
+
+        <div class="timer">
+
+            <span id="timer">۳۰</span>
+
+            <small>ثانیه</small>
+
+        </div>
+
+    </div>
+
+    <div class="progress-container">
+
+        <div class="progress-info">
+
+            <span id="progressText">
+                در حال پاسخگویی
+            </span>
+
+            <span id="progressPercent">
+                ۰٪
+            </span>
+
+        </div>
+
+        <div class="progress-bar">
+
+            <div
+                class="progress-fill"
+                id="progressFill"
+            ></div>
+
+        </div>
+
+    </div>
+
+    <div class="question-box" id="questionBox"></div>
+
+    <div id="examError"></div>
+
+</div>
+
+
+<!-- نتیجه -->
+
+<div class="card hidden" id="resultCard">
+
+    <div class="result-hero">
+
+        <div class="result-icon">✓</div>
+
+        <h2>آزمون به پایان رسید</h2>
+
+        <p>نتیجه عملکرد شما در این آزمون</p>
+
+    </div>
+
+    <div id="resultSummary"></div>
+
+    <h3 style="font-size:16px;margin-top:25px">
+        پاسخنامه
+    </h3>
+
+    <div id="answerSheet" class="answer-sheet"></div>
+</div>
+</div>
+<script>
+const API =
+    "https://azmoonmath.ir";
+
+const EXAM_ID = 1;
+
+let orderId = null;
+let attemptId = null;
+
+let currentQuestion = null;
+
+let timerInterval = null;
+let discountTimerInterval = null;
+
+let submitting = false;
+
+let examQuestionsCount = 0;
+let examData = null;
+
+let examStartedAt = null;
+let examFinishedAt = null;
+
+let pendingPaymentUrl = null;
+
+
+/* =========================
+   ابزارها
+========================= */
+
+const $ = id =>
+    document.getElementById(id);
+
+
+function show(id){
+
+    const element = $(id);
+
+    if(element){
+        element.classList.remove("hidden");
+    }
+
+}
+
+
+function hide(id){
+
+    const element = $(id);
+
+    if(element){
+        element.classList.add("hidden");
+    }
+
+}
+
+
+function toPersianNumber(value){
+
+    return String(value)
+        .replace(/0/g,"۰")
+        .replace(/1/g,"۱")
+        .replace(/2/g,"۲")
+        .replace(/3/g,"۳")
+        .replace(/4/g,"۴")
+        .replace(/5/g,"۵")
+        .replace(/6/g,"۶")
+        .replace(/7/g,"۷")
+        .replace(/8/g,"۸")
+        .replace(/9/g,"۹");
+
+}
+
+
+function normalizeDigits(value){
+
+    return String(value || "")
+        .replace(/[۰-۹]/g,d =>
+            String(
+                "۰۱۲۳۴۵۶۷۸۹".indexOf(d)
+            )
+        )
+        .replace(/[٠-٩]/g,d =>
+            String(
+                "٠١٢٣٤٥٦٧٨٩".indexOf(d)
+            )
+        );
+
+}
+
+
+function normalizePhone(value){
+
+    let phone =
+        normalizeDigits(value)
+            .replace(/\D/g,"");
+
+    if(phone.startsWith("0098")){
+
+        phone =
+            "0" + phone.slice(4);
+
+    }
+    else if(phone.startsWith("98")){
+
+        phone =
+            "0" + phone.slice(2);
+
+    }
+
+    return phone.slice(0,11);
+
+}
+
+
+function sanitizeName(value){
+
+    return String(value || "")
+        .trim()
+        .replace(
+            /[^\u0600-\u06FFa-zA-Z\s]/g,
+            ""
+        )
+        .replace(/\s+/g," ");
+
+}
+
+
+function escapeHtml(value){
+
+    return String(value ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
+
+function showError(id,message){
+
+    const element = $(id);
+
+    if(!element){
+        return;
+    }
+
+    element.innerHTML =
+        `<div class="error">
+            ${escapeHtml(message)}
+        </div>`;
+
+}
+
+
+function clearError(id){
+
+    const element = $(id);
+
+    if(element){
+        element.innerHTML = "";
+    }
+
+}
+
+
+function isValidPhone(phone){
+
+    return /^09\d{9}$/.test(phone);
+
+}
+
+
+/* =========================
+   پاک کردن Session
+========================= */
+
+function clearSession(){
+
+    const keys = [
+
+        "math_exam_order_id",
+        "math_exam_attempt_id",
+        "math_exam_started",
+        "math_exam_paid",
+        "math_exam_name",
+        "math_exam_phone",
+        "math_exam_started_at",
+        "math_exam_finished_at"
+
+    ];
+
+    keys.forEach(key =>
+        localStorage.removeItem(key)
+    );
+
+    orderId = null;
+    attemptId = null;
+
+    examStartedAt = null;
+    examFinishedAt = null;
+
+}
+
+
+/* =========================
+   اطلاعات تخفیف
+========================= */
+
+function getDiscountEndAt(exam){
+
+    return (
+        exam.discountEndAt ??
+        exam.discount_end_at ??
+        exam.discountEnd ??
+        exam.discount_end ??
+        null
+    );
+
+}
+
+
+function getDiscountStartAt(exam){
+
+    return (
+        exam.discountStartAt ??
+        exam.discount_start_at ??
+        exam.discountStart ??
+        exam.discount_start ??
+        null
+    );
+
+}
+
+
+/*
+ * تشخیص واقعی فعال بودن تخفیف
+ *
+ * اول تاریخ‌ها بررسی می‌شوند.
+ * بنابراین اگر discountActive در API قدیمی باشد،
+ * تاریخ صحیح همچنان ملاک خواهد بود.
+ */
+
+function isDiscountCurrentlyActive(exam){
+
+    if(!exam){
+        return false;
+    }
+
+    const discountEnabled =
+        exam.discountEnabled === true ||
+        Number(exam.discountEnabled || 0) === 1 ||
+        exam.discount_enabled === true ||
+        Number(exam.discount_enabled || 0) === 1;
+
+    const discountPercent =
+        Number(
+            exam.discountPercent ??
+            exam.discount_percent ??
+            0
+        );
+
+    const basePrice =
+        Number(
+            exam.basePrice ??
+            exam.base_price ??
+            exam.price ??
+            0
+        );
+
+    const finalPrice =
+        Number(
+            exam.finalPrice ??
+            exam.final_price ??
+            exam.price ??
+            0
+        );
+
+    if(
+        !discountEnabled ||
+        discountPercent <= 0 ||
+        basePrice <= finalPrice
+    ){
+
+        return false;
+
+    }
+
+    const startAt =
+        getDiscountStartAt(exam);
+
+    const endAt =
+        getDiscountEndAt(exam);
+
+    const now =
+        Date.now();
+
+
+    /* اگر تاریخ شروع وجود دارد */
+
+    if(startAt){
+
+        const startTime =
+            Date.parse(startAt);
+
+        if(
+            !Number.isNaN(startTime) &&
+            now < startTime
+        ){
+
+            return false;
+
+        }
+
+    }
+
+
+    /* اگر تاریخ پایان وجود دارد */
+
+    if(endAt){
+
+        const endTime =
+            Date.parse(endAt);
+
+        if(
+            Number.isNaN(endTime) ||
+            now >= endTime
+        ){
+
+            return false;
+
+        }
+
+        return true;
+
+    }
+
+
+    /*
+     * اگر تاریخ پایان وجود ندارد،
+     * از وضعیت فعال API استفاده می‌کنیم.
+     */
+
+    const discountActive =
+        exam.discountActive === true ||
+        Number(exam.discountActive || 0) === 1 ||
+        exam.discount_active === true ||
+        Number(exam.discount_active || 0) === 1;
+
+    return discountActive;
+
+}
+
+
+/* =========================
+   شمارش معکوس
+========================= */
+
+function formatCountdown(milliseconds){
+
+    const totalSeconds =
+        Math.max(
+            0,
+            Math.floor(
+                milliseconds / 1000
+            )
+        );
+
+    const days =
+        Math.floor(
+            totalSeconds / 86400
+        );
+
+    const hours =
+        Math.floor(
+            (totalSeconds % 86400) / 3600
+        );
+
+    const minutes =
+        Math.floor(
+            (totalSeconds % 3600) / 60
+        );
+
+    const seconds =
+        totalSeconds % 60;
+
+    return {
+
+        days:
+            toPersianNumber(days),
+
+        hours:
+            toPersianNumber(
+                String(hours).padStart(2,"0")
+            ),
+
+        minutes:
+            toPersianNumber(
+                String(minutes).padStart(2,"0")
+            ),
+
+        seconds:
+            toPersianNumber(
+                String(seconds).padStart(2,"0")
+            )
+
+    };
+
+}
+
+
+function stopDiscountCountdown(){
+
+    if(discountTimerInterval){
+
+        clearInterval(
+            discountTimerInterval
+        );
+
+        discountTimerInterval = null;
+
+    }
+
+}
+
+
+function startDiscountCountdown(){
+
+    stopDiscountCountdown();
+
+    if(
+        !examData ||
+        !examData.exam
+    ){
+        return;
+    }
+
+    const exam =
+        examData.exam;
+
+    const endAt =
+        getDiscountEndAt(exam);
+
+    if(!endAt){
+        return;
+    }
+
+    const endTime =
+        Date.parse(endAt);
+
+    if(Number.isNaN(endTime)){
+        return;
+    }
+
+
+    function updateCountdown(){
+
+        const remaining =
+            endTime - Date.now();
+
+        if(
+            remaining <= 0 ||
+            !isDiscountCurrentlyActive(exam)
+        ){
+
+            stopDiscountCountdown();
+
+            renderExamInfo();
+
+            return;
+
+        }
+
+        const countdown =
+            formatCountdown(
+                remaining
+            );
+
+        document
+            .querySelectorAll(
+                "[data-discount-countdown]"
+            )
+            .forEach(element => {
+
+                element.innerHTML = `
+                    مهلت استفاده از تخفیف:
+                    <strong>${countdown.days}</strong>
+                    روز
+                    <strong>${countdown.hours}</strong>
+                    ساعت
+                    <strong>${countdown.minutes}</strong>
+                    دقیقه
+                    <strong>${countdown.seconds}</strong>
+                    ثانیه
+                `;
+
+            });
+
+    }
+
+
+    updateCountdown();
+
+    discountTimerInterval =
+        setInterval(
+            updateCountdown,
+            1000
+        );
+
+}
+
+
+/* =========================
+   ساخت قیمت
+========================= */
+
+function buildPriceHtml(
+    exam,
+    hasDiscount,
+    basePrice,
+    finalPrice,
+    discountPercent,
+    discountEndAt
+){
+
+    const title =
+        exam.title ||
+        "آزمون ریاضی";
+
+
+    if(hasDiscount){
+
+        return `
+
+            <div class="price-main">
+
+                <div>
+
+                    <div class="price-label">
+                        قیمت محصول
+                    </div>
+
+                    <div style="
+                        margin-top:5px;
+                        font-size:13px;
+                        color:#1f2937;
+                        font-weight:bold;
+                    ">
+                        ${escapeHtml(title)}
+                    </div>
+
+                    <div class="discount-badge">
+                        ${toPersianNumber(discountPercent)}
+                        ٪ تخفیف فعال
+                    </div>
+
+                    ${
+                        discountEndAt
+                        ? `
+                            <div
+                                class="discount-countdown"
+                                data-discount-countdown
+                            >
+                                در حال محاسبه زمان تخفیف...
+                            </div>
+                          `
+                        : ""
+                    }
+
+                </div>
+
+                <div>
+
+                    <span class="old-price">
+                        ${basePrice.toLocaleString("fa-IR")}
+                        تومان
+                    </span>
+
+                    <span class="price">
+                        ${finalPrice.toLocaleString("fa-IR")}
+                        تومان
+                    </span>
+
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+
+    return `
+
+        <div class="price-main">
+
+            <div>
+
+                <div class="price-label">
+                    قیمت محصول
+                </div>
+
+                <div style="
+                    margin-top:5px;
+                    font-size:13px;
+                    color:#1f2937;
+                    font-weight:bold;
+                ">
+                    ${escapeHtml(title)}
+                </div>
+
+            </div>
+
+            <div class="price">
+                ${basePrice.toLocaleString("fa-IR")}
+                تومان
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================
+   نمایش اطلاعات محصول
+========================= */
+
+function renderExamInfo(){
+
+    if(!examData){
+        return;
+    }
+
+    const exam =
+        examData.exam || {};
+
+    const questions =
+        Array.isArray(examData.questions)
+        ? examData.questions
+        : [];
+
+
+    const basePrice =
+        Number(
+            exam.basePrice ??
+            exam.base_price ??
+            exam.price ??
+            0
+        );
+
+
+    const finalPrice =
+        Number(
+            exam.finalPrice ??
+            exam.final_price ??
+            exam.price ??
+            basePrice
+        );
+
+
+    const discountPercent =
+        Number(
+            exam.discountPercent ??
+            exam.discount_percent ??
+            0
+        );
+
+
+    const discountEndAt =
+        getDiscountEndAt(exam);
+
+
+    const hasDiscount =
+        isDiscountCurrentlyActive(exam);
+
+
+    const questionCount =
+        Number(
+            examData.questionCount ??
+            examQuestionsCount ??
+            questions.length
+        );
+
+
+    const durationSeconds =
+        Number(
+            exam.duration_seconds ??
+            exam.durationSeconds ??
+            0
+        );
+
+
+    let durationText =
+        "زمان‌بندی‌شده";
+
+
+    if(durationSeconds > 0){
+
+        const minutes =
+            Math.floor(
+                durationSeconds / 60
+            );
+
+        durationText =
+            toPersianNumber(minutes) +
+            " دقیقه";
+
+    }
+
+
+    $("examInfo").innerHTML = `
+
+        <div class="exam-info">
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    نام محصول
+                </span>
+
+                <span class="info-value">
+                    ${escapeHtml(
+                        exam.title ||
+                        "آزمون ریاضی"
+                    )}
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    تعداد سؤال
+                </span>
+
+                <span class="info-value">
+                    ${toPersianNumber(
+                        questionCount
+                    )}
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    مدت آزمون
+                </span>
+
+                <span class="info-value">
+                    ${durationText}
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    قیمت محصول
+                </span>
+
+                <span class="info-value">
+
+                    ${
+                        hasDiscount
+                        ? `
+                            <span class="old-price">
+                                ${basePrice.toLocaleString("fa-IR")}
+                                تومان
+                            </span>
+
+                            <span style="
+                                color:#2563eb;
+                                font-size:15px;
+                            ">
+                                ${finalPrice.toLocaleString("fa-IR")}
+                                تومان
+                            </span>
+                          `
+                        : `
+                            ${basePrice.toLocaleString("fa-IR")}
+                            تومان
+                          `
+                    }
+
+                </span>
+
+            </div>
+
+
+            ${
+                hasDiscount
+                ? `
+                    <div class="discount-badge">
+                        ${toPersianNumber(discountPercent)}
+                        ٪ تخفیف فعال
+                    </div>
+                  `
+                : ""
+            }
+
+
+            ${
+                hasDiscount && discountEndAt
+                ? `
+                    <div
+                        class="discount-countdown"
+                        data-discount-countdown
+                    >
+                        در حال محاسبه زمان تخفیف...
+                    </div>
+                  `
+                : ""
+            }
+
+        </div>
+
+    `;
+
+
+    $("paymentPriceBox").innerHTML =
+        buildPriceHtml(
+            exam,
+            hasDiscount,
+            basePrice,
+            finalPrice,
+            discountPercent,
+            discountEndAt
+        );
+
+
+    if(
+        hasDiscount &&
+        discountEndAt
+    ){
+
+        startDiscountCountdown();
+
+    }
+    else{
+
+        stopDiscountCountdown();
+
+    }
+
+}
+
+
+/* =========================
+   دریافت آزمون
+========================= */
+
+async function loadExam(){
+
+    $("examInfo").innerHTML =
+        `<div class="loading">
+            در حال دریافت اطلاعات آزمون...
+        </div>`;
+
+    try{
+
+        const response =
+            await fetch(
+                `${API}/api/exam?id=${EXAM_ID}`,
+                {
+                    method:"GET",
+                    cache:"no-store"
+                }
+            );
+
+
+        if(!response.ok){
+
+            throw new Error(
+                "سرور آزمون پاسخ مناسبی ارسال نکرد."
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if(!data.ok){
+
+            throw new Error(
+                data.error ||
+                "خطا در دریافت اطلاعات آزمون."
+            );
+
+        }
+
+
+        if(!data.exam){
+
+            throw new Error(
+                "اطلاعات آزمون در پاسخ سرور وجود ندارد."
+            );
+
+        }
+
+
+        examData =
+            data;
+
+
+        examQuestionsCount =
+            Number(
+                data.questionCount ||
+                (
+                    Array.isArray(data.questions)
+                    ? data.questions.length
+                    : 0
+                )
+            );
+
+
+        renderExamInfo();
+
+    }
+    catch(error){
+
+        console.error(
+            "LOAD EXAM ERROR:",
+            error
+        );
+
+
+        $("examInfo").innerHTML = `
+
+            <div class="error">
+
+                دریافت اطلاعات آزمون انجام نشد.
+
+                <br>
+
+                ${escapeHtml(
+                    error.message ||
+                    "خطای نامشخص"
+                )}
+
+            </div>
+
+        `;
+
+
+        $("startPaymentButton").disabled =
+            true;
+
+    }
+
+}
+
+
+/* =========================
+   ساخت سفارش
+========================= */
+
+$("startPaymentButton")
+    .addEventListener(
+        "click",
+        createOrderAndPay
+    );
+
+
+async function createOrderAndPay(){
+
+    clearError("startError");
+
+
+    const name =
+        sanitizeName(
+            $("nameInput").value
+        );
+
+
+    const phone =
+        normalizePhone(
+            $("phoneInput").value
+        );
+
+
+    if(name.length < 2){
+
+        showError(
+            "startError",
+            "لطفاً نام و نام خانوادگی را وارد کنید."
+        );
+
+        return;
+
+    }
+
+
+    if(!isValidPhone(phone)){
+
+        showError(
+            "startError",
+            "لطفاً شماره موبایل ۱۱ رقمی معتبر وارد کنید؛ مانند ۰۹۱۲۱۲۳۴۵۶۷."
+        );
+
+        return;
+
+    }
+
+
+    $("startPaymentButton").disabled =
+        true;
+
+
+    $("startPaymentButton").textContent =
+        "در حال ایجاد سفارش...";
+
+
+    try{
+
+        const response =
+            await fetch(
+                `${API}/api/create-order`,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        examId:
+                            EXAM_ID,
+
+                        name:
+                            name,
+
+                        phone:
+                            phone
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if(
+            !response.ok ||
+            !data.ok
+        ){
+
+            throw new Error(
+                data.error ||
+                "ثبت سفارش انجام نشد."
+            );
+
+        }
+
+
+        if(!data.orderId){
+
+            throw new Error(
+                "شناسه سفارش از سرور دریافت نشد."
+            );
+
+        }
+
+
+        if(!data.paymentUrl){
+
+            throw new Error(
+                "لینک پرداخت از زرین‌پال دریافت نشد."
+            );
+
+        }
+
+
+        orderId =
+            String(data.orderId);
+
+
+        attemptId = null;
+
+        examStartedAt = null;
+        examFinishedAt = null;
+
+
+        localStorage.setItem(
+            "math_exam_order_id",
+            orderId
+        );
+
+
+        localStorage.setItem(
+            "math_exam_name",
+            name
+        );
+
+
+        localStorage.setItem(
+            "math_exam_phone",
+            phone
+        );
+
+
+        localStorage.setItem(
+            "math_exam_paid",
+            "0"
+        );
+
+
+        localStorage.removeItem(
+            "math_exam_attempt_id"
+        );
+
+
+        localStorage.removeItem(
+            "math_exam_started"
+        );
+
+
+        localStorage.removeItem(
+            "math_exam_started_at"
+        );
+
+
+        localStorage.removeItem(
+            "math_exam_finished_at"
+        );
+
+
+        pendingPaymentUrl =
+            data.paymentUrl;
+
+
+        window.location.href =
+            data.paymentUrl;
+
+    }
+    catch(error){
+
+        showError(
+            "startError",
+            error.message ||
+            "خطایی هنگام ایجاد سفارش رخ داد."
+        );
+
+
+        $("startPaymentButton").disabled =
+            false;
+
+
+        $("startPaymentButton").textContent =
+            "پرداخت و شروع آزمون";
+
+    }
+
+}
+
+
+/* =========================
+   صفحه پرداخت
+========================= */
+
+$("payButton")
+    .addEventListener(
+        "click",
+        function(){
+
+            clearError(
+                "paymentError"
+            );
+
+
+            if(!pendingPaymentUrl){
+
+                showError(
+                    "paymentError",
+                    "لینک پرداخت موجود نیست. لطفاً دوباره سفارش را ثبت کنید."
+                );
+
+                return;
+
+            }
+
+
+            window.location.href =
+                pendingPaymentUrl;
+
+        }
+    );
+
+
+$("backToStartButton")
+    .addEventListener(
+        "click",
+        function(){
+
+            hide("paymentCard");
+
+            show("startCard");
+
+            clearError(
+                "paymentError"
+            );
+
+        }
+    );
+
+
+/* =========================
+   پارامترهای URL
+========================= */
+
+function getQueryParams(){
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+
+    return {
+
+        payment:
+            params.get("payment"),
+
+        returnedOrderId:
+            params.get("orderId"),
+
+        status:
+            params.get("Status"),
+
+        authority:
+            params.get("Authority")
+
+    };
+
+}
+
+
+/* =========================
+   بازگشت از زرین‌پال
+========================= */
+
+function handlePaymentReturn(query){
+
+    if(!query){
+        query = getQueryParams();
+    }
+
+
+    if(query.returnedOrderId){
+
+        orderId =
+            query.returnedOrderId;
+
+
+        localStorage.setItem(
+            "math_exam_order_id",
+            orderId
+        );
+
+    }
+
+
+    if(
+        query.payment === "success"
+    ){
+
+        if(orderId){
+
+            localStorage.setItem(
+                "math_exam_paid",
+                "1"
+            );
+
+
+            hide("startCard");
+            hide("paymentCard");
+
+            show("rulesCard");
+
+
+            $("rulesError").innerHTML = `
+
+                <div class="success">
+
+                    پرداخت با موفقیت تأیید شد.
+                    اکنون می‌توانید آزمون را شروع کنید.
+
+                </div>
+
+            `;
+
+        }
+
+    }
+    else if(
+        query.payment === "failed"
+    ){
+
+        show("startCard");
+
+        hide("paymentCard");
+        hide("rulesCard");
+
+
+        showError(
+            "startError",
+            "پرداخت انجام نشد یا توسط درگاه تأیید نشد."
+        );
+
+    }
+
+
+    if(
+        query.payment ||
+        query.returnedOrderId
+    ){
+
+        try{
+
+            window.history.replaceState(
+                {},
+                document.title,
+                window.location.pathname
+            );
+
+        }
+        catch(error){
+
+            console.warn(
+                "Could not clean payment query:",
+                error
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =========================
+   مراحل سؤال
+========================= */
+
+function renderQuestionSteps(){
+
+    const container =
+        $("steps");
+
+
+    if(!examQuestionsCount){
+
+        hide("steps");
+
+        return;
+
+    }
+
+
+    let html = "";
+
+
+    for(
+        let i = 0;
+        i < examQuestionsCount;
+        i++
+    ){
+
+        if(i > 0){
+
+            html +=
+                `<div class="step-line"></div>`;
+
+        }
+
+
+        html += `
+
+            <div
+                class="step"
+                id="questionStep${i}"
+            >
+
+                <div class="step-circle">
+                    ${toPersianNumber(i + 1)}
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+
+    container.innerHTML =
+        html;
+
+}
+
+
+function setStep(step){
+
+    show("steps");
+
+
+    for(
+        let i = 0;
+        i < examQuestionsCount;
+        i++
+    ){
+
+        /*
+         * خطای اصلی صفحه سفید اینجا بود.
+         * نسخه صحیح:
+         */
+
+        const item =
+            $(`questionStep${i}`);
+
+
+        if(!item){
+            continue;
+        }
+
+
+        item.classList.remove(
+            "active"
+        );
+
+        item.classList.remove(
+            "done"
+        );
+
+
+        if(i + 1 < step){
+
+            item.classList.add(
+                "done"
+            );
+
+        }
+
+
+        if(i + 1 === step){
+
+            item.classList.add(
+                "active"
+            );
+
+        }
+
+    }
+
+}
+
+
+function hideQuestionSteps(){
+
+    hide("steps");
+
+}
+
+
+/* =========================
+   شروع آزمون
+========================= */
+
+$("beginExamButton")
+    .addEventListener(
+        "click",
+        startExam
+    );
+
+
+async function startExam(){
+
+    clearError("rulesError");
+
+    clearError("examError");
+
+
+    if(!orderId){
+
+        showError(
+            "rulesError",
+            "سفارش آزمون پیدا نشد."
+        );
+
+        return;
+
+    }
+
+
+    $("beginExamButton").disabled =
+        true;
+
+
+    $("beginExamButton").textContent =
+        "در حال آماده‌سازی آزمون...";
+
+
+    try{
+
+        const response =
+            await fetch(
+                `${API}/api/start`,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        orderId:
+                            orderId,
+
+                        examId:
+                            EXAM_ID
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if(
+            !response.ok ||
+            !data.ok
+        ){
+
+            throw new Error(
+                data.error ||
+                "شروع آزمون انجام نشد."
+            );
+
+        }
+
+
+        attemptId =
+            data.attemptId;
+
+
+        if(
+            !examStartedAt &&
+            data.questionStartedAt
+        ){
+
+            examStartedAt =
+                data.questionStartedAt;
+
+
+            localStorage.setItem(
+                "math_exam_started_at",
+                examStartedAt
+            );
+
+        }
+
+
+        examFinishedAt = null;
+
+
+        localStorage.removeItem(
+            "math_exam_finished_at"
+        );
+
+
+        localStorage.setItem(
+            "math_exam_attempt_id",
+            attemptId
+        );
+
+
+        localStorage.setItem(
+            "math_exam_started",
+            "1"
+        );
+
+
+        localStorage.setItem(
+            "math_exam_paid",
+            "1"
+        );
+
+
+        hide("startCard");
+        hide("paymentCard");
+        hide("rulesCard");
+
+
+        show("examCard");
+
+
+        renderQuestionSteps();
+
+
+        showQuestion(
+            data.question,
+            data.currentQuestion,
+            data.questionStartedAt
+        );
+
+    }
+    catch(error){
+
+        showError(
+            "rulesError",
+            error.message ||
+            "خطا در شروع آزمون."
+        );
+
+    }
+    finally{
+
+        $("beginExamButton").disabled =
+            false;
+
+
+        $("beginExamButton").textContent =
+            "شروع آزمون";
+
+    }
+
+}
+
+
+/* =========================
+   نمایش سؤال
+========================= */
+
+function showQuestion(
+    question,
+    index,
+    questionStartedAt
+){
+
+    currentQuestion =
+        question;
+
+
+    if(!question){
+
+        finishExam();
+
+        return;
+
+    }
+
+
+    const questionIndex =
+        Number(index || 0);
+
+
+    const duration =
+        Number(
+            question.duration_seconds ??
+            question.durationSeconds ??
+            30
+        );
+
+
+    setStep(
+        questionIndex + 1
+    );
+
+
+    $("progress").textContent =
+        "سؤال " +
+        toPersianNumber(
+            questionIndex + 1
+        );
+
+
+    $("progressText").textContent =
+        "در حال پاسخگویی";
+
+
+    const percent =
+        examQuestionsCount > 0
+        ? Math.round(
+            (
+                (questionIndex + 1) /
+                examQuestionsCount
+            ) * 100
+          )
+        : 0;
+
+
+    $("progressPercent").textContent =
+        toPersianNumber(percent) +
+        "٪";
+
+
+    $("progressFill").style.width =
+        percent + "%";
+
+
+    const options = [
+
+        {
+            index:0,
+            letter:"الف",
+            text:question.option_a
+        },
+
+        {
+            index:1,
+            letter:"ب",
+            text:question.option_b
+        },
+
+        {
+            index:2,
+            letter:"ج",
+            text:question.option_c
+        },
+
+        {
+            index:3,
+            letter:"د",
+            text:question.option_d
+        }
+
+    ].filter(
+        option =>
+            option.text !== null &&
+            option.text !== undefined &&
+            String(option.text).trim() !== ""
+    );
+
+
+    $("questionBox").innerHTML = `
+
+        <div class="question-text">
+
+            ${escapeHtml(
+                question.question_text ??
+                question.question ??
+                ""
+            )}
+
+        </div>
+
+
+        <div class="options">
+
+            ${options.map(option => `
+
+                <div
+                    class="option"
+                    data-index="${option.index}"
+                    onclick="submitAnswer(
+                        ${questionIndex},
+                        ${option.index}
+                    )"
+                >
+
+                    <div class="option-letter">
+                        ${option.letter}
+                    </div>
+
+                    <div>
+                        ${escapeHtml(
+                            option.text
+                        )}
+                    </div>
+
+                </div>
+
+            `).join("")}
+
+        </div>
+
+    `;
+
+
+    startTimer(
+        questionStartedAt,
+        duration
+    );
+
+}
+
+
+/* =========================
+   تایمر سؤال
+========================= */
+
+function startTimer(
+    questionStartedAt,
+    duration
+){
+
+    stopTimer();
+
+
+    const totalSeconds =
+        Number(duration || 30);
+
+
+    let startedMs = null;
+
+
+    if(questionStartedAt){
+
+        const parsed =
+            Date.parse(
+                questionStartedAt
+            );
+
+
+        if(!Number.isNaN(parsed)){
+
+            startedMs =
+                parsed;
+
+        }
+
+    }
+
+
+    if(!startedMs){
+
+        startedMs =
+            Date.now();
+
+    }
+
+
+    function updateTimer(){
+
+        const elapsed =
+            Math.floor(
+                (
+                    Date.now() -
+                    startedMs
+                ) / 1000
+            );
+
+
+        const remaining =
+            totalSeconds -
+            elapsed;
+
+
+        const safeRemaining =
+            Math.max(
+                0,
+                remaining
+            );
+
+
+        $("timer").textContent =
+            toPersianNumber(
+                safeRemaining
+            );
+
+
+        if(safeRemaining <= 0){
+
+            stopTimer();
+
+
+            submitAnswer(
+                getCurrentQuestionIndex(),
+                null
+            );
+
+        }
+
+    }
+
+
+    updateTimer();
+
+
+    timerInterval =
+        setInterval(
+            updateTimer,
+            250
+        );
+
+}
+
+
+function stopTimer(){
+
+    if(timerInterval){
+
+        clearInterval(
+            timerInterval
+        );
+
+        timerInterval = null;
+
+    }
+
+}
+
+
+/* =========================
+   سؤال فعلی
+========================= */
+
+function getCurrentQuestionIndex(){
+
+    if(
+        currentQuestion &&
+        currentQuestion.question_order !== undefined
+    ){
+
+        return Number(
+            currentQuestion.question_order
+        );
+
+    }
+
+
+    const text =
+        $("progress").textContent || "";
+
+
+    const persian =
+        "۰۱۲۳۴۵۶۷۸۹";
+
+
+    const english =
+        "0123456789";
+
+
+    let normalized =
+        text;
+
+
+    for(
+        let i = 0;
+        i < 10;
+        i++
+    ){
+
+        normalized =
+            normalized.replaceAll(
+                persian[i],
+                english[i]
+            );
+
+    }
+
+
+    const match =
+        normalized.match(/\d+/);
+
+
+    if(!match){
+
+        return 0;
+
+    }
+
+
+    return Math.max(
+        0,
+        Number(match[0]) - 1
+    );
+
+}
+
+
+/* =========================
+   ارسال پاسخ
+========================= */
+
+async function submitAnswer(
+    questionIndex,
+    selectedIndex
+){
+
+    if(submitting){
+
+        return;
+
+    }
+
+
+    if(!attemptId){
+
+        showError(
+            "examError",
+            "شناسه آزمون پیدا نشد."
+        );
+
+        return;
+
+    }
+
+
+    submitting = true;
+
+
+    stopTimer();
+
+
+    document
+        .querySelectorAll(".option")
+        .forEach(item => {
+
+            item.style.pointerEvents =
+                "none";
+
+            item.style.opacity =
+                ".65";
+
+        });
+
+
+    try{
+
+        const response =
+            await fetch(
+                `${API}/api/answer`,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        attemptId:
+                            attemptId,
+
+                        questionIndex:
+                            questionIndex,
+
+                        selectedIndex:
+                            selectedIndex
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if(
+            !response.ok ||
+            !data.ok
+        ){
+
+            throw new Error(
+                data.error ||
+                "ثبت پاسخ انجام نشد."
+            );
+
+        }
+
+
+        if(data.finished){
+
+            await finishExam();
+
+            return;
+
+        }
+
+
+        showQuestion(
+            data.question,
+            data.currentQuestion,
+            data.questionStartedAt
+        );
+
+    }
+    catch(error){
+
+        showError(
+            "examError",
+            error.message ||
+            "ثبت پاسخ انجام نشد."
+        );
+
+
+        document
+            .querySelectorAll(".option")
+            .forEach(item => {
+
+                item.style.pointerEvents =
+                    "auto";
+
+                item.style.opacity =
+                    "1";
+
+            });
+
+    }
+    finally{
+
+        submitting = false;
+
+    }
+
+}
+
+
+/* =========================
+   پایان آزمون
+========================= */
+
+async function finishExam(){
+
+    stopTimer();
+
+
+    if(!attemptId){
+
+        return;
+
+    }
+
+
+    examFinishedAt =
+        new Date().toISOString();
+
+
+    localStorage.setItem(
+        "math_exam_finished_at",
+        examFinishedAt
+    );
+
+
+    try{
+
+        const response =
+            await fetch(
+                `${API}/api/submit`,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        attemptId:
+                            attemptId
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if(
+            !response.ok ||
+            !data.ok
+        ){
+
+            throw new Error(
+                data.error ||
+                "دریافت نتیجه انجام نشد."
+            );
+
+        }
+
+
+        hideQuestionSteps();
+
+
+        hide("examCard");
+        hide("rulesCard");
+        hide("paymentCard");
+        hide("startCard");
+
+
+        show("resultCard");
+
+
+        renderResult(data);
+
+
+        clearSession();
+
+    }
+    catch(error){
+
+        showError(
+            "examError",
+            error.message ||
+            "دریافت نتیجه انجام نشد."
+        );
+
+    }
+
+}
+
+
+/* =========================
+   نتیجه
+========================= */
+
+function renderResult(data){
+
+    const result =
+        data || {};
+
+
+    const rawScore =
+        Number(
+            result.score || 0
+        );
+
+
+    const score20 =
+        Math.round(
+            rawScore * 10
+        ) / 10;
+
+
+    const total =
+        Number(
+            result.total || 0
+        );
+
+
+    const correct =
+        Number(
+            result.correct || 0
+        );
+
+
+    const wrong =
+        Number(
+            result.wrong || 0
+        );
+
+
+    const empty =
+        Number(
+            result.empty || 0
+        );
+
+
+    const startedAt =
+        result.startedAt ||
+        result.started_at ||
+        examStartedAt ||
+        localStorage.getItem(
+            "math_exam_started_at"
+        ) ||
+        null;
+
+
+    const finishedAt =
+        result.finishedAt ||
+        result.finished_at ||
+        examFinishedAt ||
+        localStorage.getItem(
+            "math_exam_finished_at"
+        ) ||
+        null;
+
+
+    $("resultSummary").innerHTML = `
+
+        <div class="score-circle">
+
+            <div class="score-number">
+                ${toPersianNumber(score20)}
+            </div>
+
+            <div class="score-label">
+                از ۲۰
+            </div>
+
+        </div>
+
+
+        <div class="result-counts">
+
+            <div class="result-count">
+
+                <strong class="status-correct">
+                    ${toPersianNumber(correct)}
+                </strong>
+
+                <span>
+                    پاسخ صحیح
+                </span>
+
+            </div>
+
+
+            <div class="result-count">
+
+                <strong class="status-wrong">
+                    ${toPersianNumber(wrong)}
+                </strong>
+
+                <span>
+                    پاسخ غلط
+                </span>
+
+            </div>
+
+
+            <div class="result-count">
+
+                <strong class="status-empty">
+                    ${toPersianNumber(empty)}
+                </strong>
+
+                <span>
+                    بدون پاسخ
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div style="
+            margin-top:12px;
+            text-align:center;
+            color:#6b7280;
+            font-size:12px;
+        ">
+
+            تعداد کل سؤالات:
+            ${toPersianNumber(total)}
+
+        </div>
+
+
+        <div class="result-times">
+
+            <div class="result-time">
+
+                <span>
+                    زمان شروع آزمون
+                </span>
+
+                <strong>
+                    ${escapeHtml(
+                        formatDateTime(startedAt)
+                    )}
+                </strong>
+
+            </div>
+
+
+            <div class="result-time">
+
+                <span>
+                    زمان پایان آزمون
+                </span>
+
+                <strong>
+                    ${escapeHtml(
+                        formatDateTime(finishedAt)
+                    )}
+                </strong>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    const sheet =
+        Array.isArray(data.sheet)
+        ? data.sheet
+        : [];
+
+
+    if(!sheet.length){
+
+        $("answerSheet").innerHTML =
+            `<div class="loading">
+                پاسخنامه‌ای برای نمایش وجود ندارد.
+            </div>`;
+
+        return;
+
+    }
+
+
+    $("answerSheet").innerHTML =
+        sheet.map(
+            (item,index) => {
+
+                const selected =
+                    item.selectedIndex ??
+                    null;
+
+
+                const correctAnswer =
+                    item.correctIndex ??
+                    null;
+
+
+                const itemResult =
+                    item.result ||
+                    "empty";
+
+
+                let type =
+                    "empty";
+
+
+                let status =
+                    "بدون پاسخ";
+
+
+                let statusClass =
+                    "status-empty";
+
+
+                if(
+                    itemResult === "correct"
+                ){
+
+                    type =
+                        "correct";
+
+                    status =
+                        "صحیح";
+
+                    statusClass =
+                        "status-correct";
+
+                }
+                else if(
+                    itemResult === "wrong"
+                ){
+
+                    type =
+                        "wrong";
+
+                    status =
+                        "غلط";
+
+                    statusClass =
+                        "status-wrong";
+
+                }
+
+
+                const selectedText =
+                    selected === null ||
+                    selected === undefined
+                    ? "بدون پاسخ"
+                    : optionText(
+                        item,
+                        selected
+                    );
+
+
+                const correctText =
+                    correctAnswer === null ||
+                    correctAnswer === undefined
+                    ? "نامشخص"
+                    : optionText(
+                        item,
+                        correctAnswer
+                    );
+
+
+                const elapsed =
+                    item.elapsedSeconds ??
+                    null;
+
+
+                const questionText =
+                    item.question ||
+                    "";
+
+
+                const questionNumber =
+                    item.number ??
+                    (index + 1);
+
+
+                return `
+
+                    <div
+                        class="answer-item ${type}"
+                    >
+
+                        <div class="answer-question">
+
+                            سؤال
+                            ${toPersianNumber(
+                                questionNumber
+                            )}
+
+                            <br>
+
+                            ${escapeHtml(
+                                questionText
+                            )}
+
+                        </div>
+
+
+                        <div class="answer-detail">
+
+                            وضعیت:
+
+                            <strong
+                                class="${statusClass}"
+                            >
+                                ${status}
+                            </strong>
+
+                            <br>
+
+                            پاسخ شما:
+
+                            ${escapeHtml(
+                                selectedText
+                            )}
+
+                            <br>
+
+                            پاسخ صحیح:
+
+                            ${escapeHtml(
+                                correctText
+                            )}
+
+                            ${
+                                elapsed !== null
+                                ? `
+                                    <br>
+                                    زمان پاسخ:
+                                    ${toPersianNumber(
+                                        elapsed
+                                    )}
+                                    ثانیه
+                                  `
+                                : ""
+                            }
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+        ).join("");
+
+}
+
+
+/* =========================
+   متن گزینه
+========================= */
+
+function optionText(
+    item,
+    index
+){
+
+    if(
+        index === null ||
+        index === undefined
+    ){
+
+        return "بدون پاسخ";
+
+    }
+
+
+    const options =
+        Array.isArray(item.options)
+        ? item.options
+        : [];
+
+
+    return options[
+        Number(index)
+    ] ?? "نامشخص";
+
+}
+
+
+/* =========================
+   تاریخ
+========================= */
+
+function formatDateTime(value){
+
+    if(!value){
+
+        return "ثبت نشده";
+
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if(
+        Number.isNaN(
+            date.getTime()
+        )
+    ){
+
+        return "ثبت نشده";
+
+    }
+
+
+    return date.toLocaleString(
+        "fa-IR",
+        {
+            year:"numeric",
+            month:"2-digit",
+            day:"2-digit",
+            hour:"2-digit",
+            minute:"2-digit",
+            second:"2-digit"
+        }
+    );
+
+}
+
+
+/* =========================
+   بازیابی Session
+========================= */
+
+async function restoreSession(){
+
+    const savedOrderId =
+        localStorage.getItem(
+            "math_exam_order_id"
+        );
+
+
+    const savedAttemptId =
+        localStorage.getItem(
+            "math_exam_attempt_id"
+        );
+
+
+    const started =
+        localStorage.getItem(
+            "math_exam_started"
+        );
+
+
+    const paid =
+        localStorage.getItem(
+            "math_exam_paid"
+        );
+
+
+    const savedName =
+        localStorage.getItem(
+            "math_exam_name"
+        );
+
+
+    const savedPhone =
+        localStorage.getItem(
+            "math_exam_phone"
+        );
+
+
+    examStartedAt =
+        localStorage.getItem(
+            "math_exam_started_at"
+        );
+
+
+    examFinishedAt =
+        localStorage.getItem(
+            "math_exam_finished_at"
+        );
+
+
+    if(savedName){
+
+        $("nameInput").value =
+            savedName;
+
+    }
+
+
+    if(savedPhone){
+
+        $("phoneInput").value =
+            savedPhone;
+
+    }
+
+
+    /*
+     * آزمون نیمه‌کاره
+     */
+
+    if(
+        savedOrderId &&
+        savedAttemptId &&
+        started === "1"
+    ){
+
+        orderId =
+            savedOrderId;
+
+
+        attemptId =
+            savedAttemptId;
+
+
+        try{
+
+            const response =
+                await fetch(
+                    `${API}/api/start`,
+                    {
+                        method:"POST",
+
+                        headers:{
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:JSON.stringify({
+
+                            orderId:
+                                orderId,
+
+                            examId:
+                                EXAM_ID
+
+                        })
+
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if(
+                !response.ok ||
+                !data.ok
+            ){
+
+                clearSession();
+
+                return;
+
+            }
+
+
+            attemptId =
+                data.attemptId;
+
+
+            localStorage.setItem(
+                "math_exam_attempt_id",
+                attemptId
+            );
+
+
+            if(
+                !examStartedAt &&
+                data.questionStartedAt
+            ){
+
+                examStartedAt =
+                    data.questionStartedAt;
+
+
+                localStorage.setItem(
+                    "math_exam_started_at",
+                    examStartedAt
+                );
+
+            }
+
+
+            hide("startCard");
+            hide("paymentCard");
+            hide("rulesCard");
+
+            show("examCard");
+
+
+            renderQuestionSteps();
+
+
+            showQuestion(
+                data.question,
+                data.currentQuestion,
+                data.questionStartedAt
+            );
+
+
+            return;
+
+        }
+        catch(error){
+
+            console.error(
+                "restoreSession:",
+                error
+            );
+
+            return;
+
+        }
+
+    }
+
+
+    /*
+     * سفارش پرداخت‌شده ولی آزمون شروع نشده
+     */
+
+    if(
+        savedOrderId &&
+        paid === "1" &&
+        !savedAttemptId
+    ){
+
+        orderId =
+            savedOrderId;
+
+
+        hide("startCard");
+        hide("paymentCard");
+
+        show("rulesCard");
+
+        return;
+
+    }
+
+
+    /*
+     * سفارش ساخته شده ولی پرداخت نشده
+     */
+
+    if(
+        savedOrderId &&
+        paid !== "1" &&
+        !savedAttemptId
+    ){
+
+        orderId =
+            savedOrderId;
+
+
+        hide("startCard");
+
+        show("paymentCard");
+
+        return;
+
+    }
+
+
+    /*
+     * Session ناقص
+     */
+
+    if(
+        savedAttemptId ||
+        savedOrderId ||
+        started ||
+        paid
+    ){
+
+        clearSession();
+
+    }
+
+}
+
+
+/* =========================
+   شروع صفحه
+========================= */
+
+async function initializePage(){
+
+    hide("startCard");
+    hide("paymentCard");
+    hide("rulesCard");
+    hide("examCard");
+    hide("resultCard");
+
+    hideQuestionSteps();
+
+
+    /*
+     * query را قبل از پاک شدن URL ذخیره می‌کنیم.
+     * این هم یک اصلاح مهم نسبت به نسخه قبلی است.
+     */
+
+    const paymentQuery =
+        getQueryParams();
+
+
+    await loadExam();
+
+
+    handlePaymentReturn(
+        paymentQuery
+    );
+
+
+    await restoreSession();
+
+
+    /*
+     * اگر callback زرین‌پال موفق بوده،
+     * وضعیت پرداخت را حفظ می‌کنیم.
+     */
+
+    if(
+        paymentQuery.payment === "success" &&
+        orderId
+    ){
+
+        localStorage.setItem(
+            "math_exam_paid",
+            "1"
+        );
+
+
+        hide("startCard");
+        hide("paymentCard");
+
+        show("rulesCard");
+
+    }
+
+
+    if(
+        paymentQuery.payment === "failed"
+    ){
+
+        show("startCard");
+
+        hide("paymentCard");
+        hide("rulesCard");
+
+    }
+
+
+    if(
+        !attemptId &&
+        !orderId &&
+        !paymentQuery.payment
+    ){
+
+        show("startCard");
+
+    }
+
+
+    document.body.classList.remove(
+        "page-loading"
+    );
+
+}
+
+
+/* =========================
+   اجرای صفحه
+========================= */
+
+initializePage().catch(error => {
+
+    console.error(
+        "INITIALIZE ERROR:",
+        error
+    );
+
+
+    /*
+     * حتی اگر خطایی غیرمنتظره رخ دهد،
+     * صفحه سفید نمی‌شود.
+     */
+
+    document.body.classList.remove(
+        "page-loading"
+    );
+
+
+    hide("paymentCard");
+    hide("rulesCard");
+    hide("examCard");
+    hide("resultCard");
+
+
+    show("startCard");
+
+
+    showError(
+        "startError",
+        "خطایی هنگام بارگذاری صفحه رخ داد. لطفاً صفحه را دوباره باز کنید."
+    );
+
+});
+
+</script>
+
+
+<footer class="site-footer">
     <div class="enamad-logo">
         <a
             referrerpolicy="origin"
@@ -25,15 +4076,12 @@
             >
         </a>
     </div>
+    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
 </footer>
-body{
-    margin:0;
-    font-family:Tahoma,Arial,sans-serif;
-    background:#f4f7fb;
-    color:#1f2937;
-}
 
-/* عمداً صفحه را مخفی نمی‌کنیم تا خطای احتمالی JavaScript باعث صفحه سفید نشود */
+</body>
+</html>
+
 body.page-loading{
     visibility:visible;
 }
