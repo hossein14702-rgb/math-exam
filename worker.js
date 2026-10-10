@@ -2498,7 +2498,8 @@ export default {
           .run();
  
         // =====================================================
-        // اتصال به VPS پرداخت
+                    error
+          );// اتصال به VPS پرداخت
         // =====================================================
  
         const vpsBase =
@@ -2583,8 +2584,7 @@ export default {
  
           console.error(
             "VPS payment request error:",
-            error
-          );
+
  
           return json(
             {
@@ -2806,7 +2806,7 @@ export default {
                     orderId,
                     authority,
                     amount:
-                      Number(order.amount),
+                      Number(order.amount)*10,
                   }),
               }
             );
