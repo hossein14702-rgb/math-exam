@@ -2341,7 +2341,81 @@ export default {
         );
       }
  
- 
+ // TEMPORARY PAYMENT BRIDGE CHECK
+if (
+  request.method === "GET" &&
+  url.pathname === "/api/check-payment-bridge"
+) {
+  const vpsBase = String(
+    env.VPS_BASE_URL || ""
+  ).trim();
+
+  const secret = String(
+    env.PAYMENT_VPS_SECRET || ""
+  );
+
+  if (!vpsBase || !secret) {
+    return json(
+      {
+        ok: false,
+        error: "تنظیمات سرور پرداخت ناقص است"
+      },
+      500,
+      cors
+    );
+  }
+
+  try {
+    const response = await fetch(
+      `${vpsBase.replace(/\/+$/, "")}/check-secret`,
+      {
+        method: "POST",
+        headers: {
+          "X-Bridge-Secret": secret
+        }
+      }
+    );
+
+    if (response.status === 200) {
+      return json(
+        {
+          ok: true,
+          message: "اتصال امن برقرار است"
+        },
+        200,
+        cors
+      );
+    }
+
+    return json(
+      {
+        ok: false,
+        error:
+          response.status === 401
+            ? "رمز دو سرور یکسان نیست"
+            : response.status === 500
+              ? "رمز در سرور واسط تنظیم نشده"
+              : "پاسخ غیرمنتظره از سرور واسط"
+      },
+      502,
+      cors
+    );
+  } catch (error) {
+    console.error(
+      "Payment bridge check failed:",
+      error
+    );
+
+    return json(
+      {
+        ok: false,
+        error: "ارتباط با سرور واسط برقرار نشد"
+      },
+      502,
+      cors
+    );
+  }
+}
       // =========================================================
       // POST /api/create-order
       // =========================================================
