@@ -2340,6 +2340,8 @@ export default {
           cors
         );
       }
+ 
+ 
       // =========================================================
       // POST /api/create-order
       // =========================================================
@@ -2566,8 +2568,8 @@ export default {
  
                 body:
                   JSON.stringify({
-                    orderId,               
-                    amount: amount * 10,
+                    orderId,
+                    amount,
                     description:
                       `پرداخت آزمون ${examId} - ${name}`,
                     callbackUrl,
@@ -2806,7 +2808,7 @@ export default {
                     orderId,
                     authority,
                     amount:
-                      Number(order.amount)*10,
+                      Number(order.amount),
                   }),
               }
             );
