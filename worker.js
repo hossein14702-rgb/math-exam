@@ -2569,7 +2569,8 @@ export default {
                 body:
                   JSON.stringify({
                     orderId,
-                    amount,
+                    // مبلغ در دیتابیس تومان است؛ درگاه ریال می‌خواهد
+                    amount: amount * 10,
                     description:
                       `پرداخت آزمون ${examId} - ${name}`,
                     callbackUrl,
@@ -2807,8 +2808,9 @@ export default {
                   JSON.stringify({
                     orderId,
                     authority,
+                    // مبلغ سفارش تومان است؛ درگاه ریال می‌خواهد
                     amount:
-                      Number(order.amount),
+                      Number(order.amount) * 10,
                   }),
               }
             );
