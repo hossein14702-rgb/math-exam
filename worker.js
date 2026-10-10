@@ -2567,8 +2567,8 @@ export default {
  
                 body:
                   JSON.stringify({
-                    orderId,
-                    amount,
+                    orderId,               
+                    amount: amount * 10,
                     description:
                       `پرداخت آزمون ${examId} - ${name}`,
                     callbackUrl,
