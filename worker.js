@@ -1676,7 +1676,7 @@ export default {
  
           try {
  
-            // وابستگی‌های مستقیم را اول حذف می‌کنیم
+            // 1) انتخاب دستی
             await env.DB
               .prepare(`
                 DELETE FROM exam_manual_questions
@@ -1685,6 +1685,23 @@ export default {
               .bind(questionId)
               .run();
  
+            // 2) اسنپ‌شات آزمون‌های قبلی (برای رفع FOREIGN KEY)
+            try {
+              await env.DB
+                .prepare(`
+                  DELETE FROM attempt_questions
+                  WHERE question_id = ?
+                `)
+                .bind(questionId)
+                .run();
+            } catch (e) {
+              console.error(
+                "attempt_questions cleanup:",
+                e
+              );
+            }
+ 
+            // 3) حذف خود سؤال
             const result =
               await env.DB
                 .prepare(`
@@ -1702,7 +1719,7 @@ export default {
                 {
                   ok: false,
                   error:
-                    "سؤال حذف نشد. ممکن است قبلاً حذف شده باشد.",
+                    "سؤال حذف نشد",
                 },
                 400,
                 cors
@@ -1720,8 +1737,8 @@ export default {
               {
                 ok: false,
                 error:
-                  deleteError?.message ||
-                  "حذف سؤال به دلیل وابستگی داده‌ها ممکن نیست",
+                  "حذف کامل انجام نشد: " +
+                  (deleteError?.message || "خطای پایگاه داده"),
               },
               500,
               cors
@@ -1732,7 +1749,7 @@ export default {
             {
               ok: true,
               message:
-                "سؤال حذف شد",
+                "سؤال به‌طور کامل حذف شد",
               questionId,
             },
             200,
@@ -4801,15 +4818,12 @@ function getEffectivePrice(
     };
   }
  
+  // قیمت نهایی = قیمت اصلی × (۱۰۰ − درصد تخفیف) ÷ ۱۰۰
   const finalPrice =
     Math.max(
       0,
       Math.round(
-        basePrice *
-        (
-          1 -
-          discountPercent / 100
-        )
+        (basePrice * (100 - discountPercent)) / 100
       )
     );
  
