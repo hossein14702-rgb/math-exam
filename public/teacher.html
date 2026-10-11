@@ -995,11 +995,25 @@ function formatPrice(value) {
     return persian + " تومان";
 }
  
-function cleanNumberInput(value) {
-    return String(value || "")
-        .replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
-        .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d))
-        .replace(/[^0-9.]/g, "");
+function cleanNumberInput(value, { allowDecimal = false } = {}) {
+    // ارقام فارسی/عربی → لاتین
+    let s = String(value || "")
+        .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+        .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+ 
+    if (allowDecimal) {
+        // فقط یک نقطه اعشار مجاز؛ ویرگول/جداکننده حذف می‌شود
+        s = s.replace(/,/g, ".").replace(/[^0-9.]/g, "");
+        const parts = s.split(".");
+        if (parts.length > 1) {
+            s = parts[0] + "." + parts.slice(1).join("");
+        }
+        return s;
+    }
+ 
+    // قیمت تومان باید عدد صحیح باشد — همه جداکننده‌ها (نقطه/ویرگول) حذف شوند
+    // تا «50.000» یا «۵۰٬۰۰۰» به‌اشتباه 50 نشود
+    return s.replace(/[^0-9]/g, "");
 }
  
 function calcDiscountedPrice(basePrice, percent) {
@@ -1007,7 +1021,7 @@ function calcDiscountedPrice(basePrice, percent) {
     const base = Math.max(0, Math.round(Number(basePrice) || 0));
     const p = Math.max(0, Math.min(100, Number(percent) || 0));
     if (p <= 0) return base;
-    return Math.max(0, Math.round(base * (100 - p) / 100));
+    return Math.max(0, Math.round((base * (100 - p)) / 100));
 }
  
  
@@ -1016,19 +1030,19 @@ function calcDiscountedPrice(basePrice, percent) {
 function calculateDiscountPreview() {
     const basePrice = Math.max(0, Math.round(Number(cleanNumberInput(document.getElementById("basePrice").value) || 0)));
     const enabled = document.getElementById("discountEnabled").checked;
-    const percent = Math.max(0, Math.min(100, Number(cleanNumberInput(document.getElementById("discountPercent").value) || 0)));
+    const percent = Math.max(0, Math.min(100, Number(cleanNumberInput(document.getElementById("discountPercent").value, { allowDecimal: true }) || 0)));
  
-    // مبلغ پس از اعمال درصد تخفیف (صرف‌نظر از بازه زمانی)
+    // مبلغ پس از تخفیف (همیشه محاسبه می‌شود تا عدد درست دیده شود)
     const discountedPrice = calcDiscountedPrice(basePrice, percent);
  
     let finalPrice = basePrice;
     let status = "disabled";
  
-    if (enabled) {
+    if (enabled && percent > 0) {
         const startISO = jalaliFieldsToISO("start");
         const endISO = jalaliFieldsToISO("end");
  
-        if (startISO && endISO && percent > 0) {
+        if (startISO && endISO) {
             const start = new Date(startISO);
             const end = new Date(endISO);
             const now = new Date();
@@ -1038,10 +1052,17 @@ function calculateDiscountPreview() {
                     finalPrice = discountedPrice;
                     status = "active";
                 } else {
+                    // خارج از بازه: قیمت قابل پرداخت = قیمت اصلی
+                    finalPrice = basePrice;
                     status = "inactive";
                 }
+            } else {
+                finalPrice = discountedPrice;
+                status = "inactive";
             }
         } else {
+            // تاریخ کامل نیست؛ برای پیش‌نمایش مبلغ با تخفیف را نشان بده
+            finalPrice = discountedPrice;
             status = "inactive";
         }
     }
@@ -1052,9 +1073,9 @@ function calculateDiscountPreview() {
     const statusBox = document.getElementById("discountStatus");
  
     if (status === "active") {
-        statusBox.innerHTML = `<span class="discount-status discount-active">فعال</span>`;
+        statusBox.innerHTML = `<span class="discount-status discount-active">فعال (${formatPrice(discountedPrice)})</span>`;
     } else if (status === "inactive") {
-        statusBox.innerHTML = `<span class="discount-status discount-inactive">خارج از بازه (با تخفیف: ${formatPrice(discountedPrice)})</span>`;
+        statusBox.innerHTML = `<span class="discount-status discount-inactive">خارج از بازه — با تخفیف: ${formatPrice(discountedPrice)}</span>`;
     } else {
         statusBox.innerHTML = `<span class="discount-status discount-disabled">غیرفعال</span>`;
     }
@@ -1109,7 +1130,7 @@ async function loadExamSettings() {
 async function saveExamSettings() {
     const basePrice = Math.round(Number(cleanNumberInput(document.getElementById("basePrice").value)));
     const discountEnabled = document.getElementById("discountEnabled").checked;
-    const discountPercent = Number(cleanNumberInput(document.getElementById("discountPercent").value) || 0);
+    const discountPercent = Number(cleanNumberInput(document.getElementById("discountPercent").value, { allowDecimal: true }) || 0);
  
     let discountStartAt = null;
     let discountEndAt = null;
@@ -1682,7 +1703,7 @@ async function deleteQuestion(questionId) {
         : "";
  
     if (!confirm(
-        "این سؤال برای همیشه حذف شود؟\n\n" +
+        "این سؤال برای همیشه و به‌طور کامل حذف شود؟\n\n" +
         (title ? ("«" + title + (title.length >= 60 ? "…" : "") + "»\n\n") : "") +
         "این عمل قابل بازگشت نیست."
     )) {
@@ -1690,20 +1711,19 @@ async function deleteQuestion(questionId) {
     }
  
     try {
-        await postJson("/api/teacher/questions", {
+        const data = await postJson("/api/teacher/questions", {
             action: "delete",
             examId: EXAM_ID,
             questionId: normalizedQuestionId
         });
  
-        // از لیست محلی هم حذف شود تا UI فوری به‌روز شود
         questions = questions.filter(x =>
             Number(x.id ?? x.questionId ?? x.question_id) !== normalizedQuestionId
         );
         renderQuestions();
  
         await loadQuestionBank();
-        showBankMessage("سؤال با موفقیت حذف شد.");
+        showBankMessage(data.message || "سؤال به‌طور کامل حذف شد.");
  
     } catch (error) {
         const msg = error.message || "حذف سؤال انجام نشد.";
