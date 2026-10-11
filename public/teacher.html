@@ -985,16 +985,41 @@ function formatDate(value) {
 }
  
 function formatPrice(value) {
-    return Number(value || 0).toLocaleString("fa-IR") + " تومان";
+    // قالب‌بندی دستی تا صفرها و جداکننده هزارگان درست نمایش داده شوند
+    const n = Math.round(Number(value) || 0);
+    if (!Number.isFinite(n) || n < 0) {
+        return "۰ تومان";
+    }
+    const withSep = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "٬");
+    const persian = withSep.replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
+    return persian + " تومان";
+}
+ 
+function cleanNumberInput(value) {
+    return String(value || "")
+        .replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+        .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d))
+        .replace(/[^0-9.]/g, "");
+}
+ 
+function calcDiscountedPrice(basePrice, percent) {
+    // قیمت نهایی = قیمت اصلی × (۱۰۰ − درصد تخفیف) ÷ ۱۰۰
+    const base = Math.max(0, Math.round(Number(basePrice) || 0));
+    const p = Math.max(0, Math.min(100, Number(percent) || 0));
+    if (p <= 0) return base;
+    return Math.max(0, Math.round(base * (100 - p) / 100));
 }
  
  
 /* ===== تنظیمات قیمت ===== */
  
 function calculateDiscountPreview() {
-    const basePrice = Math.max(0, Math.round(Number(document.getElementById("basePrice").value || 0)));
+    const basePrice = Math.max(0, Math.round(Number(cleanNumberInput(document.getElementById("basePrice").value) || 0)));
     const enabled = document.getElementById("discountEnabled").checked;
-    const percent = Math.max(0, Math.min(100, Number(document.getElementById("discountPercent").value || 0)));
+    const percent = Math.max(0, Math.min(100, Number(cleanNumberInput(document.getElementById("discountPercent").value) || 0)));
+ 
+    // مبلغ پس از اعمال درصد تخفیف (صرف‌نظر از بازه زمانی)
+    const discountedPrice = calcDiscountedPrice(basePrice, percent);
  
     let finalPrice = basePrice;
     let status = "disabled";
@@ -1010,7 +1035,7 @@ function calculateDiscountPreview() {
  
             if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
                 if (now >= start && now <= end) {
-                    finalPrice = Math.max(0, Math.round(basePrice * (1 - percent / 100)));
+                    finalPrice = discountedPrice;
                     status = "active";
                 } else {
                     status = "inactive";
@@ -1029,7 +1054,7 @@ function calculateDiscountPreview() {
     if (status === "active") {
         statusBox.innerHTML = `<span class="discount-status discount-active">فعال</span>`;
     } else if (status === "inactive") {
-        statusBox.innerHTML = `<span class="discount-status discount-inactive">خارج از بازه</span>`;
+        statusBox.innerHTML = `<span class="discount-status discount-inactive">خارج از بازه (با تخفیف: ${formatPrice(discountedPrice)})</span>`;
     } else {
         statusBox.innerHTML = `<span class="discount-status discount-disabled">غیرفعال</span>`;
     }
@@ -1082,9 +1107,9 @@ async function loadExamSettings() {
 }
  
 async function saveExamSettings() {
-    const basePrice = Math.round(Number(document.getElementById("basePrice").value));
+    const basePrice = Math.round(Number(cleanNumberInput(document.getElementById("basePrice").value)));
     const discountEnabled = document.getElementById("discountEnabled").checked;
-    const discountPercent = Number(document.getElementById("discountPercent").value || 0);
+    const discountPercent = Number(cleanNumberInput(document.getElementById("discountPercent").value) || 0);
  
     let discountStartAt = null;
     let discountEndAt = null;
@@ -1431,7 +1456,7 @@ function renderQuestions() {
                     ${isManualQuestion(q.id) ? "📌 حذف از دستی" : "📌 انتخاب دستی"}
                 </button>
  
-                <button class="danger-btn small-btn" onclick="deleteQuestion(${q.id})">🗑</button>
+                <button class="danger-btn small-btn" type="button" onclick="event.stopPropagation();deleteQuestion(Number(${q.id}))">🗑 حذف</button>
             </td>
         `;
  
@@ -1641,20 +1666,49 @@ async function toggleQuestion(questionId, active) {
 }
  
 async function deleteQuestion(questionId) {
-    if (!confirm("این سؤال برای همیشه حذف شود؟")) return;
+    const normalizedQuestionId = Number(questionId);
+ 
+    if (!Number.isInteger(normalizedQuestionId) || normalizedQuestionId <= 0) {
+        alert("شناسه سؤال نامعتبر است.");
+        return;
+    }
+ 
+    const q = questions.find(x =>
+        Number(x.id ?? x.questionId ?? x.question_id) === normalizedQuestionId
+    );
+ 
+    const title = q
+        ? String(q.questionText || q.question || "").slice(0, 60)
+        : "";
+ 
+    if (!confirm(
+        "این سؤال برای همیشه حذف شود؟\n\n" +
+        (title ? ("«" + title + (title.length >= 60 ? "…" : "") + "»\n\n") : "") +
+        "این عمل قابل بازگشت نیست."
+    )) {
+        return;
+    }
  
     try {
         await postJson("/api/teacher/questions", {
             action: "delete",
             examId: EXAM_ID,
-            questionId
+            questionId: normalizedQuestionId
         });
  
+        // از لیست محلی هم حذف شود تا UI فوری به‌روز شود
+        questions = questions.filter(x =>
+            Number(x.id ?? x.questionId ?? x.question_id) !== normalizedQuestionId
+        );
+        renderQuestions();
+ 
         await loadQuestionBank();
-        showBankMessage("سؤال حذف شد.");
+        showBankMessage("سؤال با موفقیت حذف شد.");
  
     } catch (error) {
-        showBankMessage(error.message, "error");
+        const msg = error.message || "حذف سؤال انجام نشد.";
+        showBankMessage(msg, "error");
+        alert("خطا در حذف سؤال:\n\n" + msg);
     }
 }
  
