@@ -692,6 +692,65 @@ body.page-loading{
     }
 }
  
+/* دکمه ذخیره/چاپ پاسخنامه */
+.print-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:20px;
+    padding-top:16px;
+    border-top:1px solid #e5e7eb;
+}
+.print-btn{
+    flex:1;
+    min-width:180px;
+    border:0;
+    border-radius:13px;
+    padding:14px 16px;
+    background:#0f766e;
+    color:#fff;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:bold;
+    cursor:pointer;
+}
+.print-btn:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+}
+.print-btn-secondary{
+    background:#fff;
+    color:#0f766e;
+    border:1px solid #0f766e;
+}
+.print-hint{
+    width:100%;
+    text-align:center;
+    color:#6b7280;
+    font-size:12px;
+    margin-top:4px;
+}
+ 
+/* استایل مخصوص چاپ / PDF */
+@media print{
+    body *{ visibility:hidden !important; }
+    #printArea, #printArea *{ visibility:visible !important; }
+    #printArea{
+        position:absolute;
+        left:0;
+        top:0;
+        width:100%;
+        padding:12px;
+    }
+    .no-print{ display:none !important; }
+    .header, .site-footer, .steps{ display:none !important; }
+    .card{ box-shadow:none !important; border:none !important; }
+}
+ 
+#printArea{
+    display:none;
+}
+ 
 /* فوتر و اینماد - پایین وسط */
 .site-footer{
     width:100%;
@@ -841,8 +900,15 @@ body.page-loading{
     <div id="resultSummary"></div>
     <h3 style="font-size:16px;margin-top:25px">پاسخنامه</h3>
     <div id="answerSheet" class="answer-sheet"></div>
+    <div class="print-actions no-print">
+     <button id="downloadPdfBtn" class="print-btn" type="button" onclick="downloadAnswerSheetPdf()">📄 ذخیره پاسخنامه (PDF)</button>
+     <button id="printSheetBtn" class="print-btn print-btn-secondary" type="button" onclick="printAnswerSheet()">🖨 چاپ پاسخنامه</button>
+     <div class="print-hint">فایل PDF برای ذخیره در گوشی یا چاپ آماده می‌شود</div>
+    </div>
+    <div id="printArea" aria-hidden="true"></div>
    </div>
   </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
 const API =
     "https://azmoonmath.ir";
@@ -866,6 +932,9 @@ let examStartedAt = null;
 let examFinishedAt = null;
  
 let pendingPaymentUrl = null;
+ 
+let lastResultData = null;
+let lastStudentName = null;
  
  
 /* =========================
@@ -3077,6 +3146,13 @@ function renderResult(data){
     const result =
         data || {};
  
+    lastResultData = result;
+ 
+    lastStudentName =
+        localStorage.getItem("math_exam_name") ||
+        ($("nameInput") && $("nameInput").value) ||
+        "";
+ 
  
     const rawScore =
         Number(
@@ -3761,6 +3837,307 @@ async function restoreSession(){
  
  
 /* =========================
+   ذخیره و چاپ پاسخنامه
+========================= */
+ 
+function buildPrintableAnswerSheet(){
+ 
+    const result = lastResultData || {};
+ 
+    const score =
+        Number(result.score || 0);
+ 
+    const score20 =
+        Math.round(score * 10) / 10;
+ 
+    const total =
+        Number(result.total || 0);
+ 
+    const correct =
+        Number(result.correct || 0);
+ 
+    const wrong =
+        Number(result.wrong || 0);
+ 
+    const empty =
+        Number(result.empty || 0);
+ 
+    const startedAt =
+        result.startedAt ||
+        result.started_at ||
+        examStartedAt ||
+        null;
+ 
+    const finishedAt =
+        result.finishedAt ||
+        result.finished_at ||
+        examFinishedAt ||
+        null;
+ 
+    const studentName =
+        lastStudentName ||
+        "دانش‌آموز";
+ 
+    const sheet =
+        Array.isArray(result.sheet)
+        ? result.sheet
+        : [];
+ 
+    const sheetHtml =
+        sheet.length
+        ? sheet.map((item, index) => {
+ 
+            const selected =
+                item.selectedIndex ?? null;
+ 
+            const correctAnswer =
+                item.correctIndex ?? null;
+ 
+            const itemResult =
+                item.result || "empty";
+ 
+            let status = "بدون پاسخ";
+            let borderColor = "#f59e0b";
+ 
+            if(itemResult === "correct"){
+                status = "صحیح";
+                borderColor = "#16a34a";
+            }
+            else if(itemResult === "wrong"){
+                status = "غلط";
+                borderColor = "#dc2626";
+            }
+ 
+            const selectedText =
+                selected === null || selected === undefined
+                ? "بدون پاسخ"
+                : optionText(item, selected);
+ 
+            const correctText =
+                correctAnswer === null || correctAnswer === undefined
+                ? "نامشخص"
+                : optionText(item, correctAnswer);
+ 
+            const questionNumber =
+                item.number ?? (index + 1);
+ 
+            const elapsed =
+                item.elapsedSeconds ?? null;
+ 
+            return `
+                <div style="
+                    border-right:4px solid ${borderColor};
+                    background:#f8fafc;
+                    border-radius:10px;
+                    padding:12px 14px;
+                    margin-bottom:10px;
+                    page-break-inside:avoid;
+                ">
+                    <div style="font-weight:bold;line-height:1.9;margin-bottom:6px;">
+                        سؤال ${toPersianNumber(questionNumber)}
+                        <br>
+                        ${escapeHtml(item.question || "")}
+                    </div>
+                    <div style="font-size:13px;color:#4b5563;line-height:2;">
+                        وضعیت: <strong>${status}</strong><br>
+                        پاسخ شما: ${escapeHtml(selectedText)}<br>
+                        پاسخ صحیح: ${escapeHtml(correctText)}
+                        ${elapsed !== null
+                            ? `<br>زمان پاسخ: ${toPersianNumber(elapsed)} ثانیه`
+                            : ""}
+                    </div>
+                </div>
+            `;
+ 
+        }).join("")
+        : `<div style="text-align:center;color:#6b7280;padding:20px;">پاسخنامه‌ای برای نمایش وجود ندارد.</div>`;
+ 
+    return `
+        <div style="
+            font-family:Tahoma,Arial,sans-serif;
+            direction:rtl;
+            text-align:right;
+            color:#1f2937;
+            padding:8px;
+        ">
+            <div style="
+                text-align:center;
+                border-bottom:2px solid #2563eb;
+                padding-bottom:14px;
+                margin-bottom:16px;
+            ">
+                <div style="font-size:20px;font-weight:bold;margin-bottom:6px;">
+                    پاسخنامه آزمون ریاضی
+                </div>
+                <div style="font-size:13px;color:#6b7280;">
+                    نام: ${escapeHtml(studentName)}
+                </div>
+            </div>
+ 
+            <div style="
+                display:flex;
+                flex-wrap:wrap;
+                gap:10px;
+                justify-content:center;
+                margin-bottom:16px;
+            ">
+                <div style="background:#eff6ff;border-radius:12px;padding:12px 18px;text-align:center;min-width:90px;">
+                    <div style="font-size:22px;font-weight:bold;color:#2563eb;">${toPersianNumber(score20)}</div>
+                    <div style="font-size:11px;color:#6b7280;">نمره از ۲۰</div>
+                </div>
+                <div style="background:#f0fdf4;border-radius:12px;padding:12px 18px;text-align:center;min-width:80px;">
+                    <div style="font-size:18px;font-weight:bold;color:#15803d;">${toPersianNumber(correct)}</div>
+                    <div style="font-size:11px;color:#6b7280;">صحیح</div>
+                </div>
+                <div style="background:#fef2f2;border-radius:12px;padding:12px 18px;text-align:center;min-width:80px;">
+                    <div style="font-size:18px;font-weight:bold;color:#b91c1c;">${toPersianNumber(wrong)}</div>
+                    <div style="font-size:11px;color:#6b7280;">غلط</div>
+                </div>
+                <div style="background:#fffbeb;border-radius:12px;padding:12px 18px;text-align:center;min-width:80px;">
+                    <div style="font-size:18px;font-weight:bold;color:#b45309;">${toPersianNumber(empty)}</div>
+                    <div style="font-size:11px;color:#6b7280;">بدون پاسخ</div>
+                </div>
+            </div>
+ 
+            <div style="
+                font-size:12px;
+                color:#6b7280;
+                text-align:center;
+                margin-bottom:16px;
+                line-height:2;
+            ">
+                تعداد کل سؤالات: ${toPersianNumber(total)}
+                <br>
+                شروع: ${escapeHtml(formatDateTime(startedAt))}
+                &nbsp;|&nbsp;
+                پایان: ${escapeHtml(formatDateTime(finishedAt))}
+            </div>
+ 
+            <div style="font-size:15px;font-weight:bold;margin-bottom:10px;">
+                جزئیات پاسخ‌ها
+            </div>
+ 
+            ${sheetHtml}
+ 
+            <div style="
+                margin-top:18px;
+                padding-top:10px;
+                border-top:1px solid #e5e7eb;
+                text-align:center;
+                font-size:11px;
+                color:#9ca3af;
+            ">
+                تولید شده توسط سامانه آزمون آنلاین ریاضی
+            </div>
+        </div>
+    `;
+}
+ 
+ 
+function printAnswerSheet(){
+ 
+    if(!lastResultData){
+        alert("پاسخنامه‌ای برای چاپ وجود ندارد.");
+        return;
+    }
+ 
+    const area = $("printArea");
+ 
+    if(!area){
+        return;
+    }
+ 
+    area.innerHTML = buildPrintableAnswerSheet();
+    area.style.display = "block";
+ 
+    window.print();
+ 
+    setTimeout(() => {
+        area.style.display = "none";
+        area.innerHTML = "";
+    }, 500);
+}
+ 
+ 
+async function downloadAnswerSheetPdf(){
+ 
+    if(!lastResultData){
+        alert("پاسخنامه‌ای برای ذخیره وجود ندارد.");
+        return;
+    }
+ 
+    const btn = $("downloadPdfBtn");
+ 
+    if(btn){
+        btn.disabled = true;
+        btn.textContent = "در حال ساخت PDF...";
+    }
+ 
+    const area = $("printArea");
+ 
+    if(!area){
+        if(btn){
+            btn.disabled = false;
+            btn.textContent = "📄 ذخیره پاسخنامه (PDF)";
+        }
+        return;
+    }
+ 
+    area.innerHTML = buildPrintableAnswerSheet();
+    area.style.display = "block";
+ 
+    const studentName =
+        (lastStudentName || "دانش‌آموز")
+            .replace(/[\\/:*?"<>|]/g, "-")
+            .trim() || "دانش‌آموز";
+ 
+    const fileName =
+        `پاسخنامه-${studentName}.pdf`;
+ 
+    try{
+ 
+        if(typeof html2pdf === "undefined"){
+            // اگر کتابخانه لود نشد، از چاپ مرورگر استفاده می‌کنیم
+            window.print();
+            return;
+        }
+ 
+        const opt = {
+            margin:       [10, 10, 10, 10],
+            filename:     fileName,
+            image:        { type: "jpeg", quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, logging: false },
+            jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" },
+            pagebreak:    { mode: ["avoid-all", "css", "legacy"] }
+        };
+ 
+        await html2pdf()
+            .set(opt)
+            .from(area)
+            .save();
+ 
+    }
+    catch(error){
+ 
+        console.error("PDF error:", error);
+        alert("ساخت PDF با خطا مواجه شد. می‌توانید از دکمه چاپ استفاده کنید.");
+ 
+    }
+    finally{
+ 
+        area.style.display = "none";
+        area.innerHTML = "";
+ 
+        if(btn){
+            btn.disabled = false;
+            btn.textContent = "📄 ذخیره پاسخنامه (PDF)";
+        }
+ 
+    }
+}
+ 
+ 
+/* =========================
    شروع صفحه
 ========================= */
  
@@ -3888,19 +4265,11 @@ initializePage().catch(error => {
 });
  
 </script>
-<footer class="site-footer">
-  <div class="enamad-logo">
-    <a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=8103286&amp;Code=aMu7FdUgTI3sClZifudXtsyK5n2kO15Y">
-      <img
-        referrerpolicy="origin"
-        src="/Image/010.png"
-        alt="نماد اعتماد الکترونیکی"
-        style="cursor:pointer"
-        code="aMu7FdUgTI3sClZifudXtsyK5n2kO15Y"
-      >
-    </a>
-  </div>
-  <p class="footer-copy">© تمامی حقوق محفوظ است</p>
-</footer>
+  <footer class="site-footer">
+   <div class="enamad-logo">
+    <a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=8103286&amp;Code=aMu7FdUgTI3sClZifudXtsyK5n2kO15Y"> <img referrerpolicy="origin" src="/Image/010.png" alt="نماد اعتماد الکترونیکی" style="cursor:pointer" code="aMu7FdUgTI3sClZifudXtsyK5n2kO15Y"> </a>
+   </div>
+   <p class="footer-copy">© تمامی حقوق محفوظ است</p>
+  </footer>
  </body>
 </html>
