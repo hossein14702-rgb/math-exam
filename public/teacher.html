@@ -1198,7 +1198,7 @@ function renderFolders() {
                         onclick="event.stopPropagation();renameFolder(${folder.id})">✏️ نام</button>
  
                     <button class="${folder.active ? "warning-btn" : "success-btn"} small-btn"
-                        onclick="event.stopPropagation();toggleFolder(${folder.id},${!folder.active})">
+                        onclick="event.stopPropagation();toggleFolder(${folder.id}, ${folder.active ? "false" : "true"})">
                         ${folder.active ? "غیرفعال" : "فعال"}
                     </button>
  
@@ -1299,11 +1299,12 @@ async function toggleFolder(folderId, active) {
         await postJson("/api/teacher/folders", {
             action: "toggle",
             examId: EXAM_ID,
-            folderId,
-            active
+            folderId: Number(folderId),
+            active: active === true || active === 1 || active === "1" || active === "true"
         });
  
         await loadQuestionBank();
+        showBankMessage(active ? "پوشه فعال شد." : "پوشه غیرفعال شد.");
  
     } catch (error) {
         showBankMessage(error.message, "error");
@@ -1658,9 +1659,6 @@ async function deleteQuestion(questionId) {
 }
  
 async function moveQuestion(questionId) {
-    // شناسه سؤال را از همه نام‌های رایج پاسخ Worker پیدا می‌کنیم
-    // تا اگر API به‌جای id از questionId یا question_id برگرداند،
-    // انتقال سؤال همچنان درست انجام شود.
     const normalizedQuestionId = Number(questionId);
     const q = questions.find(x =>
         Number(x.id ?? x.questionId ?? x.question_id) === normalizedQuestionId
@@ -1671,25 +1669,50 @@ async function moveQuestion(questionId) {
         return;
     }
  
-    let message = "پوشه مقصد را وارد کنید:\n\n";
+    if (!folders.length) {
+        if (!confirm("هیچ پوشه‌ای وجود ندارد.\n\nسؤال از پوشه خارج شود (بدون پوشه)؟")) {
+            return;
+        }
+        try {
+            await postJson("/api/teacher/questions", {
+                action: "move",
+                examId: EXAM_ID,
+                questionId: normalizedQuestionId,
+                folderId: null
+            });
+            await loadQuestionBank();
+            showBankMessage("سؤال از پوشه خارج شد.");
+        } catch (error) {
+            showBankMessage(error.message, "error");
+        }
+        return;
+    }
  
+    let message = "شماره پوشه مقصد را وارد کنید:\n\n";
+    message += "0 = بدون پوشه\n";
     folders.forEach(folder => {
-        message += `${folder.id} = ${folder.name}\n`;
+        const status = folder.active ? "" : " (غیرفعال)";
+        message += `${folder.id} = ${folder.name}${status}\n`;
     });
+    message += "\nپوشه فعلی: " + (q.folderName || "بدون پوشه");
  
-    message += "\nبرای بدون پوشه بودن، خالی بگذارید.";
- 
-    const value = prompt(message, q.folderId ? String(q.folderId) : "");
+    const value = prompt(message, q.folderId ? String(q.folderId) : "0");
  
     if (value === null) return;
  
     let folderId = null;
+    const trimmed = value.trim();
  
-    if (value.trim()) {
-        folderId = Number(value.trim());
+    if (trimmed && trimmed !== "0") {
+        folderId = Number(trimmed);
+ 
+        if (!Number.isInteger(folderId) || folderId <= 0) {
+            alert("شماره پوشه صحیح نیست.");
+            return;
+        }
  
         if (!folders.some(f => Number(f.id) === folderId)) {
-            alert("شناسه پوشه صحیح نیست.");
+            alert("پوشه‌ای با این شماره وجود ندارد.");
             return;
         }
     }
@@ -1703,7 +1726,7 @@ async function moveQuestion(questionId) {
         });
  
         await loadQuestionBank();
-        showBankMessage("سؤال منتقل شد.");
+        showBankMessage(folderId ? "سؤال به پوشه جدید منتقل شد." : "سؤال از پوشه خارج شد.");
  
     } catch (error) {
         showBankMessage(error.message, "error");
