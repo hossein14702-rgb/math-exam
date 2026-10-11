@@ -901,14 +901,12 @@ body.page-loading{
     <h3 style="font-size:16px;margin-top:25px">پاسخنامه</h3>
     <div id="answerSheet" class="answer-sheet"></div>
     <div class="print-actions no-print">
-     <button id="downloadPdfBtn" class="print-btn" type="button" onclick="downloadAnswerSheetPdf()">📄 ذخیره پاسخنامه (PDF)</button>
-     <button id="printSheetBtn" class="print-btn print-btn-secondary" type="button" onclick="printAnswerSheet()">🖨 چاپ پاسخنامه</button>
-     <div class="print-hint">فایل PDF برای ذخیره در گوشی یا چاپ آماده می‌شود</div>
+     <button id="printSheetBtn" class="print-btn" type="button" onclick="printAnswerSheet()">🖨 چاپ پاسخنامه</button>
+     <div class="print-hint">با این دکمه می‌توانید پاسخنامه را چاپ یا به‌صورت PDF ذخیره کنید</div>
     </div>
     <div id="printArea" aria-hidden="true"></div>
    </div>
   </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
 const API =
     "https://azmoonmath.ir";
@@ -4059,82 +4057,6 @@ function printAnswerSheet(){
 }
  
  
-async function downloadAnswerSheetPdf(){
- 
-    if(!lastResultData){
-        alert("پاسخنامه‌ای برای ذخیره وجود ندارد.");
-        return;
-    }
- 
-    const btn = $("downloadPdfBtn");
- 
-    if(btn){
-        btn.disabled = true;
-        btn.textContent = "در حال ساخت PDF...";
-    }
- 
-    const area = $("printArea");
- 
-    if(!area){
-        if(btn){
-            btn.disabled = false;
-            btn.textContent = "📄 ذخیره پاسخنامه (PDF)";
-        }
-        return;
-    }
- 
-    area.innerHTML = buildPrintableAnswerSheet();
-    area.style.display = "block";
- 
-    const studentName =
-        (lastStudentName || "دانش‌آموز")
-            .replace(/[\\/:*?"<>|]/g, "-")
-            .trim() || "دانش‌آموز";
- 
-    const fileName =
-        `پاسخنامه-${studentName}.pdf`;
- 
-    try{
- 
-        if(typeof html2pdf === "undefined"){
-            // اگر کتابخانه لود نشد، از چاپ مرورگر استفاده می‌کنیم
-            window.print();
-            return;
-        }
- 
-        const opt = {
-            margin:       [10, 10, 10, 10],
-            filename:     fileName,
-            image:        { type: "jpeg", quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
-            jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" },
-            pagebreak:    { mode: ["avoid-all", "css", "legacy"] }
-        };
- 
-        await html2pdf()
-            .set(opt)
-            .from(area)
-            .save();
- 
-    }
-    catch(error){
- 
-        console.error("PDF error:", error);
-        alert("ساخت PDF با خطا مواجه شد. می‌توانید از دکمه چاپ استفاده کنید.");
- 
-    }
-    finally{
- 
-        area.style.display = "none";
-        area.innerHTML = "";
- 
-        if(btn){
-            btn.disabled = false;
-            btn.textContent = "📄 ذخیره پاسخنامه (PDF)";
-        }
- 
-    }
-}
  
  
 /* =========================
