@@ -1280,7 +1280,6 @@ export default {
                   SELECT id
                   FROM question_folders
                   WHERE id = ?
-                    AND active = 1
                 `)
                 .bind(folderId)
                 .first();
@@ -1290,9 +1289,9 @@ export default {
                 {
                   ok: false,
                   error:
-                    "پوشه انتخاب‌شده معتبر یا فعال نیست",
+                    "پوشه انتخاب‌شده پیدا نشد",
                 },
-                400,
+                404,
                 cors
               );
             }
@@ -1534,6 +1533,43 @@ export default {
           const questionId =
             Number(body.questionId);
  
+          if (
+            !Number.isInteger(questionId) ||
+            questionId <= 0
+          ) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "questionId نامعتبر است",
+              },
+              400,
+              cors
+            );
+          }
+ 
+          const exists =
+            await env.DB
+              .prepare(`
+                SELECT id
+                FROM questions
+                WHERE id = ?
+              `)
+              .bind(questionId)
+              .first();
+ 
+          if (!exists) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "سؤال پیدا نشد",
+              },
+              404,
+              cors
+            );
+          }
+ 
           let folderId = null;
  
           if (
@@ -1545,13 +1581,13 @@ export default {
             folderId =
               Number(body.folderId);
  
+            // فقط وجود پوشه را چک می‌کنیم (فعال یا غیرفعال بودن مانع انتقال نیست)
             const folder =
               await env.DB
                 .prepare(`
                   SELECT id
                   FROM question_folders
                   WHERE id = ?
-                    AND active = 1
                 `)
                 .bind(folderId)
                 .first();
@@ -1561,9 +1597,9 @@ export default {
                 {
                   ok: false,
                   error:
-                    "پوشه معتبر نیست",
+                    "پوشه پیدا نشد",
                 },
-                400,
+                404,
                 cors
               );
             }
