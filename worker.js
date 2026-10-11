@@ -1652,27 +1652,88 @@ export default {
             );
           }
  
-          await env.DB
-            .prepare(`
-              DELETE FROM exam_manual_questions
-              WHERE question_id = ?
-            `)
-            .bind(questionId)
-            .run();
+          const exists =
+            await env.DB
+              .prepare(`
+                SELECT id
+                FROM questions
+                WHERE id = ?
+              `)
+              .bind(questionId)
+              .first();
  
-          await env.DB
-            .prepare(`
-              DELETE FROM questions
-              WHERE id = ?
-            `)
-            .bind(questionId)
-            .run();
+          if (!exists) {
+            return json(
+              {
+                ok: false,
+                error:
+                  "سؤال پیدا نشد یا قبلاً حذف شده است",
+              },
+              404,
+              cors
+            );
+          }
+ 
+          try {
+ 
+            // وابستگی‌های مستقیم را اول حذف می‌کنیم
+            await env.DB
+              .prepare(`
+                DELETE FROM exam_manual_questions
+                WHERE question_id = ?
+              `)
+              .bind(questionId)
+              .run();
+ 
+            const result =
+              await env.DB
+                .prepare(`
+                  DELETE FROM questions
+                  WHERE id = ?
+                `)
+                .bind(questionId)
+                .run();
+ 
+            const changes =
+              Number(result?.meta?.changes || 0);
+ 
+            if (changes === 0) {
+              return json(
+                {
+                  ok: false,
+                  error:
+                    "سؤال حذف نشد. ممکن است قبلاً حذف شده باشد.",
+                },
+                400,
+                cors
+              );
+            }
+ 
+          } catch (deleteError) {
+ 
+            console.error(
+              "Delete question error:",
+              deleteError
+            );
+ 
+            return json(
+              {
+                ok: false,
+                error:
+                  deleteError?.message ||
+                  "حذف سؤال به دلیل وابستگی داده‌ها ممکن نیست",
+              },
+              500,
+              cors
+            );
+          }
  
           return json(
             {
               ok: true,
               message:
                 "سؤال حذف شد",
+              questionId,
             },
             200,
             cors
