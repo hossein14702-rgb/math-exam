@@ -365,12 +365,13 @@ tr:hover td{background:#fafafa}
           <th>تعداد فعال</th>
           <th>تعداد انتخاب</th>
           <th>نوع انتخاب</th>
+          <th>وضعیت پوشه</th>
           <th>عملیات</th>
          </tr>
         </thead>
         <tbody id="rulesBody">
          <tr>
-          <td colspan="5">
+          <td colspan="6">
            <div class="loading">در حال دریافت قوانین...</div>
           </td>
          </tr>
@@ -1244,11 +1245,6 @@ function renderFolders() {
                     <button class="gray-btn small-btn"
                         onclick="event.stopPropagation();renameFolder(${folder.id})">✏️ نام</button>
  
-                    <button class="${folder.active ? "warning-btn" : "success-btn"} small-btn"
-                        onclick="event.stopPropagation();toggleFolder(${folder.id}, ${folder.active ? "false" : "true"})">
-                        ${folder.active ? "غیرفعال" : "فعال"}
-                    </button>
- 
                     <button class="danger-btn small-btn"
                         onclick="event.stopPropagation();deleteFolder(${folder.id})">🗑</button>
                 </div>
@@ -1342,19 +1338,26 @@ async function renameFolder(folderId) {
 }
  
 async function toggleFolder(folderId, active) {
+    const shouldActivate = active === true || active === 1 || active === "1" || active === "true";
     try {
         await postJson("/api/teacher/folders", {
             action: "toggle",
             examId: EXAM_ID,
             folderId: Number(folderId),
-            active: active === true || active === 1 || active === "1" || active === "true"
+            active: shouldActivate
         });
  
         await loadQuestionBank();
-        showBankMessage(active ? "پوشه فعال شد." : "پوشه غیرفعال شد.");
+ 
+        if (shouldActivate) {
+            showRulesMessage("پوشه فعال شد. حالا می‌توانید تعداد انتخاب را تنظیم و ذخیره کنید.", "success");
+        } else {
+            showRulesMessage("پوشه غیرفعال شد و تعداد انتخاب صفر شد. این پوشه در آزمون نمی‌آید.", "error");
+        }
  
     } catch (error) {
-        showBankMessage(error.message, "error");
+        showRulesMessage(error.message, "error");
+        alert("خطا:\n\n" + error.message);
     }
 }
  
@@ -1952,42 +1955,63 @@ function renderRules() {
     const body = document.getElementById("rulesBody");
  
     if (!folders.length) {
-        body.innerHTML = `<tr><td colspan="5"><div class="empty">ابتدا پوشه ایجاد کنید.</div></td></tr>`;
+        body.innerHTML = `<tr><td colspan="6"><div class="empty">ابتدا پوشه ایجاد کنید.</div></td></tr>`;
         return;
     }
  
     body.innerHTML = "";
  
     folders.forEach(folder => {
-        const rule = rules.find(r => Number(r.folderId) === Number(folder.id));
+        const rule = rules.find(r => Number(r.folderId ?? r.folder_id) === Number(folder.id));
  
-        const count = rule ? Number(rule.selectionCount || 0) : 0;
-        const mode = rule ? rule.selectionMode : "random";
+        const count = rule ? Number(rule.selectionCount ?? rule.selection_count || 0) : 0;
+        const mode = rule ? (rule.selectionMode || rule.selection_mode || "random") : "random";
+        const isActive = folder.active === true || Number(folder.active) === 1;
  
         const tr = document.createElement("tr");
  
         tr.innerHTML = `
-            <td>📁 ${escapeHtml(folder.name)}</td>
+            <td>
+                📁 ${escapeHtml(folder.name)}
+                <div style="margin-top:6px;">
+                    <span class="discount-status ${isActive ? "discount-active" : "discount-disabled"}">
+                        ${isActive ? "فعال" : "غیرفعال"}
+                    </span>
+                </div>
+            </td>
  
             <td>${faNumber(folder.activeQuestionCount || 0)}</td>
  
             <td>
                 <input class="rule-count-input" id="ruleCount_${folder.id}"
-                    type="number" min="0" value="${count}">
+                    type="number" min="0" value="${count}"
+                    ${isActive ? "" : "disabled"}>
             </td>
  
             <td>
-                <select id="ruleMode_${folder.id}">
+                <select id="ruleMode_${folder.id}" ${isActive ? "" : "disabled"}>
                     <option value="random" ${mode === "random" ? "selected" : ""}>تصادفی</option>
                     <option value="manual" ${mode === "manual" ? "selected" : ""}>دستی</option>
                 </select>
             </td>
  
             <td>
-                <button class="success-btn small-btn" onclick="saveFolderRule(${folder.id})">💾 ذخیره</button>
+                <button class="${isActive ? "warning-btn" : "success-btn"} small-btn"
+                    type="button"
+                    onclick="toggleFolder(${folder.id}, ${isActive ? "false" : "true"})">
+                    ${isActive ? "غیرفعال کردن" : "فعال کردن"}
+                </button>
+            </td>
+ 
+            <td>
+                <button class="success-btn small-btn" type="button"
+                    onclick="saveFolderRule(${folder.id})"
+                    ${isActive ? "" : "disabled"}>
+                    💾 ذخیره
+                </button>
  
                 ${rule
-                    ? `<button class="danger-btn small-btn" onclick="deleteFolderRule(${rule.id})">حذف قانون</button>`
+                    ? `<button class="danger-btn small-btn" type="button" onclick="deleteFolderRule(${rule.id})">حذف قانون</button>`
                     : ""}
             </td>
         `;
