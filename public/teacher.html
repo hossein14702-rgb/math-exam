@@ -1964,7 +1964,7 @@ function renderRules() {
     folders.forEach(folder => {
         const rule = rules.find(r => Number(r.folderId ?? r.folder_id) === Number(folder.id));
  
-        const count = rule ? Number(rule.selectionCount ?? rule.selection_count || 0) : 0;
+        const count = rule ? Number(rule.selectionCount ?? rule.selection_count ?? 0) : 0;
         const mode = rule ? (rule.selectionMode || rule.selection_mode || "random") : "random";
         const isActive = folder.active === true || Number(folder.active) === 1;
  
