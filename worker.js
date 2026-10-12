@@ -235,32 +235,86 @@ export default {
         const rules =
           rulesResult.results || [];
  
+        // تعداد سؤال و مدت آزمون بر اساس قوانین پوشه‌ها
+        // (همان منطقی که موقع شروع آزمون برای انتخاب سؤال استفاده می‌شود)
         let questionCount = 0;
+        let totalDurationSeconds = 0;
  
         if (rules.length) {
-          questionCount =
-            rules.reduce(
-              (sum, row) =>
-                sum +
-                Number(row.selection_count || 0),
-              0
-            );
-        } else {
-          const countResult =
-            await env.DB
-              .prepare(`
-                SELECT COUNT(*) AS count
-                FROM questions
-                WHERE exam_id = ?
-                  AND active = 1
-              `)
-              .bind(examId)
-              .first();
+          for (const rule of rules) {
+            const count = Number(rule.selection_count || 0);
+            if (count <= 0) continue;
  
-          questionCount =
-            Number(countResult?.count || 0);
+            questionCount += count;
+ 
+            if (rule.selection_mode === "manual") {
+              // همان سؤال‌هایی که در انتخاب دستی این پوشه هستند
+              const manualRows = await env.DB
+                .prepare(`
+                  SELECT q.duration_seconds
+                  FROM exam_manual_questions emq
+                  JOIN questions q
+                    ON q.id = emq.question_id
+                  WHERE emq.exam_id = ?
+                    AND q.exam_id = ?
+                    AND q.folder_id = ?
+                    AND q.active = 1
+                  ORDER BY emq.sort_order, q.id
+                  LIMIT ?
+                `)
+                .bind(examId, examId, rule.folder_id, count)
+                .all();
+ 
+              const rows = manualRows.results || [];
+              for (const row of rows) {
+                totalDurationSeconds += Number(row.duration_seconds || 30);
+              }
+              // اگر کمتر از count باشد، برای بقیه میانگین ۳۰ ثانیه فرض می‌شود
+              if (rows.length < count) {
+                totalDurationSeconds += (count - rows.length) * 30;
+              }
+            } else {
+              // تصادفی: میانگین زمان سؤال‌های فعال همان پوشه × تعداد انتخاب
+              const stats = await env.DB
+                .prepare(`
+                  SELECT
+                    COUNT(*) AS cnt,
+                    AVG(duration_seconds) AS avg_duration
+                  FROM questions
+                  WHERE exam_id = ?
+                    AND folder_id = ?
+                    AND active = 1
+                `)
+                .bind(examId, rule.folder_id)
+                .first();
+ 
+              const avg =
+                Number(stats?.avg_duration) > 0
+                  ? Number(stats.avg_duration)
+                  : 30;
+ 
+              totalDurationSeconds += Math.round(avg * count);
+            }
+          }
+        } else {
+          // بدون قانون: همه سؤال‌های فعال
+          const allActive = await env.DB
+            .prepare(`
+              SELECT
+                COUNT(*) AS cnt,
+                COALESCE(SUM(duration_seconds), 0) AS total_duration
+              FROM questions
+              WHERE exam_id = ?
+                AND active = 1
+            `)
+            .bind(examId)
+            .first();
+ 
+          questionCount = Number(allActive?.cnt || 0);
+          totalDurationSeconds = Number(allActive?.total_duration || 0);
         }
  
+        // برای سازگاری، لیست سؤال‌ها را هم برمی‌گردانیم (نه لزوماً همان‌هایی که در آزمون می‌آیند)
         const result =
           await env.DB
             .prepare(`
@@ -314,14 +368,22 @@ export default {
               discountEndAt:
                 pricing.discountEndAt,
  
+              // مدت کل = جمع زمان سؤال‌های انتخاب‌شده بر اساس قوانین
               duration_seconds:
-                exam.duration_seconds,
+                totalDurationSeconds,
+ 
+              durationSeconds:
+                totalDurationSeconds,
  
               active:
                 exam.active,
             },
  
             questionCount,
+ 
+            // برای شفافیت در فرانت
+            estimatedDurationSeconds:
+              totalDurationSeconds,
  
             questions:
               (result.results || []).map(
