@@ -213,6 +213,9 @@ export default {
         const pricing =
           getEffectivePrice(exam);
  
+        // قوانین را بدون فیلتر active می‌خوانیم تا اگر پوشه
+        // اشتباهاً غیرفعال بود، باز هم تعداد انتخابی دیده شود.
+        // فقط پوشه‌های فعال در جمع نهایی لحاظ می‌شوند.
         const rulesResult =
           await env.DB
             .prepare(`
@@ -221,34 +224,50 @@ export default {
                 efr.folder_id,
                 efr.selection_count,
                 efr.selection_mode,
-                f.name AS folder_name
+                f.name AS folder_name,
+                f.active AS folder_active
               FROM exam_folder_rules efr
-              JOIN question_folders f
+              LEFT JOIN question_folders f
                 ON f.id = efr.folder_id
               WHERE efr.exam_id = ?
-                AND f.active = 1
               ORDER BY efr.id
             `)
             .bind(examId)
             .all();
  
-        const rules =
+        const allRules =
           rulesResult.results || [];
  
-        // تعداد سؤال و مدت آزمون بر اساس قوانین پوشه‌ها
-        // (همان منطقی که موقع شروع آزمون برای انتخاب سؤال استفاده می‌شود)
+        // فقط قوانین پوشه‌های فعال با تعداد > 0
+        const rules =
+          allRules.filter(row => {
+            const count = Number(row.selection_count || 0);
+            const folderActive =
+              row.folder_active === null ||
+              row.folder_active === undefined
+                ? 1
+                : Number(row.folder_active);
+            return count > 0 && folderActive === 1;
+          });
+ 
+        // تعداد سؤال و مدت آزمون = جمع selection_count قوانین
+        // نه تعداد کل سؤال‌های فعال بانک
         let questionCount = 0;
         let totalDurationSeconds = 0;
+        const rulesSummary = [];
  
-        if (rules.length) {
+        if (allRules.length > 0) {
+          // حتی اگر بعضی پوشه‌ها غیرفعال باشند،
+          // مبنای تعداد «قوانین» است نه کل بانک سؤال
           for (const rule of rules) {
             const count = Number(rule.selection_count || 0);
             if (count <= 0) continue;
  
             questionCount += count;
  
+            let ruleDuration = 0;
+ 
             if (rule.selection_mode === "manual") {
-              // همان سؤال‌هایی که در انتخاب دستی این پوشه هستند
               const manualRows = await env.DB
                 .prepare(`
                   SELECT q.duration_seconds
@@ -267,14 +286,12 @@ export default {
  
               const rows = manualRows.results || [];
               for (const row of rows) {
-                totalDurationSeconds += Number(row.duration_seconds || 30);
+                ruleDuration += Number(row.duration_seconds || 30);
               }
-              // اگر کمتر از count باشد، برای بقیه میانگین ۳۰ ثانیه فرض می‌شود
               if (rows.length < count) {
-                totalDurationSeconds += (count - rows.length) * 30;
+                ruleDuration += (count - rows.length) * 30;
               }
             } else {
-              // تصادفی: میانگین زمان سؤال‌های فعال همان پوشه × تعداد انتخاب
               const stats = await env.DB
                 .prepare(`
                   SELECT
@@ -293,11 +310,21 @@ export default {
                   ? Number(stats.avg_duration)
                   : 30;
  
-              totalDurationSeconds += Math.round(avg * count);
+              ruleDuration = Math.round(avg * count);
             }
+ 
+            totalDurationSeconds += ruleDuration;
+ 
+            rulesSummary.push({
+              folderId: rule.folder_id,
+              folderName: rule.folder_name || null,
+              selectionCount: count,
+              selectionMode: rule.selection_mode || "random",
+              estimatedDurationSeconds: ruleDuration,
+            });
           }
         } else {
-          // بدون قانون: همه سؤال‌های فعال
+          // فقط وقتی هیچ قانونی تعریف نشده، از کل سؤال‌های فعال استفاده می‌شود
           const allActive = await env.DB
             .prepare(`
               SELECT
@@ -381,9 +408,20 @@ export default {
  
             questionCount,
  
+            // منبع تعداد: rules = جمع قوانین انتخابی | all_active = بدون قانون
+            questionCountSource:
+              allRules.length > 0 ? "rules" : "all_active",
+ 
+            rules:
+              rulesSummary,
+ 
             // برای شفافیت در فرانت
             estimatedDurationSeconds:
               totalDurationSeconds,
+ 
+            // تعداد کل سؤال‌های فعال بانک (فقط برای اطلاع؛ مبنای آزمون نیست)
+            activeQuestionBankCount:
+              (result.results || []).length,
  
             questions:
               (result.results || []).map(
@@ -4909,27 +4947,38 @@ async function selectQuestionsForExam(
   examId
 ) {
  
+  // قوانین انتخابی معلم — اگر وجود داشته باشند،
+  // فقط بر اساس همین قوانین سؤال چیده می‌شود (نه همه سؤال‌های فعال)
   const rulesResult =
     await env.DB
       .prepare(`
         SELECT
           efr.folder_id,
           efr.selection_count,
-          efr.selection_mode
+          efr.selection_mode,
+          f.active AS folder_active
         FROM exam_folder_rules efr
-        JOIN question_folders f
+        LEFT JOIN question_folders f
           ON f.id = efr.folder_id
         WHERE efr.exam_id = ?
-          AND f.active = 1
         ORDER BY efr.id
       `)
       .bind(examId)
       .all();
  
   const rules =
-    rulesResult.results || [];
+    (rulesResult.results || []).filter(row => {
+      const count = Number(row.selection_count || 0);
+      const folderActive =
+        row.folder_active === null ||
+        row.folder_active === undefined
+          ? 1
+          : Number(row.folder_active);
+      return count > 0 && folderActive === 1;
+    });
  
-  if (!rules.length) {
+  // فقط وقتی هیچ قانونی تعریف نشده، همه سؤال‌های فعال می‌آیند
+  if (!(rulesResult.results || []).length) {
  
     const result =
       await env.DB
@@ -4944,6 +4993,11 @@ async function selectQuestionsForExam(
         .all();
  
     return result.results || [];
+  }
+ 
+  // قانون تعریف شده ولی همه پوشه‌ها غیرفعال یا تعداد صفر
+  if (!rules.length) {
+    return [];
   }
  
   const selected = [];
