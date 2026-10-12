@@ -1587,16 +1587,20 @@ function renderExamInfo(){
         isDiscountCurrentlyActive(exam);
  
  
+    // اولویت با questionCount سرور (جمع قوانین پوشه‌ها)
+    // نه تعداد کل سؤال‌های بانک
     const questionCount =
         Number(
             examData.questionCount ??
+            examData.estimatedQuestionCount ??
             examQuestionsCount ??
-            questions.length
+            0
         );
  
  
     const durationSeconds =
         Number(
+            examData.estimatedDurationSeconds ??
             exam.duration_seconds ??
             exam.durationSeconds ??
             0
@@ -1604,19 +1608,32 @@ function renderExamInfo(){
  
  
     let durationText =
-        "زمان‌بندی‌شده";
+        "بر اساس زمان هر سؤال";
  
  
     if(durationSeconds > 0){
  
         const minutes =
-            Math.floor(
-                durationSeconds / 60
-            );
+            Math.floor(durationSeconds / 60);
  
-        durationText =
-            toPersianNumber(minutes) +
-            " دقیقه";
+        const seconds =
+            durationSeconds % 60;
+ 
+        if(minutes > 0 && seconds > 0){
+            durationText =
+                toPersianNumber(minutes) +
+                " دقیقه و " +
+                toPersianNumber(seconds) +
+                " ثانیه";
+        } else if(minutes > 0){
+            durationText =
+                toPersianNumber(minutes) +
+                " دقیقه";
+        } else {
+            durationText =
+                toPersianNumber(seconds) +
+                " ثانیه";
+        }
  
     }
  
