@@ -356,6 +356,7 @@ tr:hover td{background:#fafafa}
      <div class="rules-box">
       <h3>🎯 تنظیم سؤال‌های آزمون</h3>
       <div class="section-description">مشخص کنید از هر پوشه چند سؤال وارد آزمون شود و انتخاب سؤال تصادفی باشد یا دستی.</div>
+      <div id="rulesMessage" class="message-box"></div>
       <div class="rules-table-wrap">
        <table class="rules-table">
         <thead>
@@ -1996,11 +1997,25 @@ function renderRules() {
 }
  
 async function saveFolderRule(folderId) {
-    const count = Number(document.getElementById(`ruleCount_${folderId}`).value);
-    const mode = document.getElementById(`ruleMode_${folderId}`).value;
+    const countEl = document.getElementById(`ruleCount_${folderId}`);
+    const modeEl = document.getElementById(`ruleMode_${folderId}`);
  
-    if (!Number.isInteger(count) || count < 0) {
-        showBankMessage("تعداد سؤال صحیح نیست.", "error");
+    if (!countEl || !modeEl) {
+        alert("فیلدهای قانون پیدا نشد. صفحه را رفرش کنید.");
+        return;
+    }
+ 
+    const raw = countEl.value;
+    const count = Math.round(Number(
+        typeof cleanNumberInput === "function"
+            ? cleanNumberInput(raw)
+            : String(raw).replace(/[^0-9]/g, "")
+    ));
+    const mode = modeEl.value || "random";
+ 
+    if (!Number.isFinite(count) || count < 0 || !Number.isInteger(count)) {
+        showRulesMessage("تعداد سؤال صحیح نیست.", "error");
+        alert("تعداد سؤال صحیح نیست. مقدار وارد شده: " + raw);
         return;
     }
  
@@ -2015,34 +2030,72 @@ async function saveFolderRule(folderId) {
         }
     }
  
-    const existing = rules.find(r => Number(r.folderId) === Number(folderId));
+    const existing = rules.find(r =>
+        Number(r.folderId ?? r.folder_id) === Number(folderId)
+    );
+ 
+    const btn = document.querySelector(`button[onclick="saveFolderRule(${folderId})"]`);
+    const oldBtnText = btn ? btn.textContent : "";
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "…";
+    }
  
     try {
-        if (existing) {
-            await postJson("/api/teacher/exam-rules", {
-                action: "update",
-                examId: EXAM_ID,
-                ruleId: existing.id,
-                folderId,
-                selectionCount: count,
-                selectionMode: mode
-            });
-        } else {
-            await postJson("/api/teacher/exam-rules", {
-                action: "create",
-                examId: EXAM_ID,
-                folderId,
-                selectionCount: count,
-                selectionMode: mode
-            });
+        showRulesMessage("در حال ذخیره...", "success");
+ 
+        const payload = {
+            action: existing ? "update" : "create",
+            examId: EXAM_ID,
+            folderId: Number(folderId),
+            selectionCount: count,
+            selectionMode: mode
+        };
+ 
+        if (existing && (existing.id || existing.ruleId)) {
+            payload.ruleId = Number(existing.id ?? existing.ruleId);
         }
  
-        await loadRules();
-        showBankMessage("قانون انتخاب سؤال ذخیره شد.");
+        const data = await postJson("/api/teacher/exam-rules", payload);
+ 
+        try {
+            await loadRules();
+        } catch (reloadErr) {
+            console.error("reload rules:", reloadErr);
+        }
+ 
+        // مقدار ذخیره‌شده را در همان فیلد نگه داریم
+        const countEl2 = document.getElementById(`ruleCount_${folderId}`);
+        if (countEl2) countEl2.value = String(count);
+ 
+        const msg = (data && data.message) || "قانون ذخیره شد.";
+        showRulesMessage(msg + " (تعداد: " + count + ")", "success");
+        showBankMessage(msg, "success");
+        alert("✓ قانون ذخیره شد\n\nپوشه: " + (folder ? folder.name : folderId) + "\nتعداد انتخاب: " + count);
  
     } catch (error) {
-        showBankMessage(error.message, "error");
+        const msg = error.message || "ذخیره قانون انجام نشد.";
+        showRulesMessage(msg, "error");
+        showBankMessage(msg, "error");
+        alert("خطا در ذخیره قانون:\n\n" + msg);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = oldBtnText || "💾 ذخیره";
+        }
     }
+}
+ 
+function showRulesMessage(message, type = "success") {
+    const box = document.getElementById("rulesMessage");
+    if (!box) {
+        showBankMessage(message, type);
+        return;
+    }
+    box.textContent = message;
+    box.className = "message-box " + (type === "success" ? "message-success" : "message-error");
+    box.style.display = "block";
+    setTimeout(() => { box.style.display = "none"; }, 5000);
 }
  
 async function deleteFolderRule(ruleId) {
