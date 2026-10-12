@@ -238,9 +238,9 @@ export default {
         const allRules =
           rulesResult.results || [];
  
-        // قوانین با تعداد انتخاب > 0
-        // پوشه غیرفعال را برای «نمایش تعداد» حذف نمی‌کنیم
-        // (فقط موقع شروع آزمون از پوشه غیرفعال سؤال برنمی‌داریم)
+        // قانون اعمال می‌شود فقط اگر:
+        // 1) پوشه فعال باشد
+        // 2) تعداد انتخاب > 0 باشد
         const rules =
           allRules.filter(row => {
             const count = Number(
@@ -248,7 +248,12 @@ export default {
               row.selectionCount ??
               0
             );
-            return Number.isFinite(count) && count > 0;
+            const folderActive =
+              row.folder_active === null ||
+              row.folder_active === undefined
+                ? 0
+                : Number(row.folder_active);
+            return Number.isFinite(count) && count > 0 && folderActive === 1;
           });
  
         // تعداد سؤال و مدت آزمون = جمع selection_count قوانین
@@ -1051,13 +1056,27 @@ export default {
             .bind(active, folderId)
             .run();
  
+          // وقتی پوشه غیرفعال می‌شود، تعداد انتخاب قانون هم صفر شود
+          if (active === 0) {
+            await env.DB
+              .prepare(`
+                UPDATE exam_folder_rules
+                SET selection_count = 0
+                WHERE folder_id = ?
+              `)
+              .bind(folderId)
+              .run();
+          }
+ 
           return json(
             {
               ok: true,
               message:
                 active
                   ? "پوشه فعال شد"
-                  : "پوشه غیرفعال شد",
+                  : "پوشه غیرفعال شد و تعداد انتخاب صفر شد",
+              active,
+              folderId,
             },
             200,
             cors
@@ -3364,18 +3383,33 @@ export default {
           }
         }
  
-        const questions =
-          await selectQuestionsForExam(
-            env,
-            order.exam_id
+        let questions;
+ 
+        try {
+          questions =
+            await selectQuestionsForExam(
+              env,
+              order.exam_id
+            );
+        } catch (selectError) {
+          return json(
+            {
+              ok: false,
+              error:
+                selectError?.message ||
+                "انتخاب سؤال‌های آزمون انجام نشد",
+            },
+            400,
+            cors
           );
+        }
  
         if (!questions.length) {
           return json(
             {
               ok: false,
               error:
-                "برای این آزمون سوالی وجود ندارد",
+                "برای این آزمون سوالی وجود ندارد. قوانین پوشه و فعال بودن سؤال‌ها را در پنل معلم بررسی کنید.",
             },
             400,
             cors
@@ -5017,6 +5051,10 @@ async function selectQuestionsForExam(
       .bind(examId)
       .all();
  
+  // قانون اعمال می‌شود فقط اگر:
+  // 1) پوشه فعال باشد (folder_active = 1)
+  // 2) تعداد انتخاب > 0 باشد
+  // سپس فقط سؤال‌های فعال همان پوشه (دستی یا تصادفی)
   const rules =
     (rulesResult.results || []).filter(row => {
       const count = Number(
@@ -5024,21 +5062,15 @@ async function selectQuestionsForExam(
         row.selectionCount ??
         0
       );
-      if (!Number.isFinite(count) || count <= 0) {
-        return false;
-      }
-      // پوشه حذف‌شده یا صریحاً غیرفعال نباشد
-      if (
-        row.folder_active !== null &&
-        row.folder_active !== undefined &&
-        Number(row.folder_active) === 0
-      ) {
-        return false;
-      }
-      return true;
+      const folderActive =
+        row.folder_active === null ||
+        row.folder_active === undefined
+          ? 0
+          : Number(row.folder_active);
+      return Number.isFinite(count) && count > 0 && folderActive === 1;
     });
  
-  // فقط وقتی هیچ قانونی تعریف نشده، همه سؤال‌های فعال می‌آیند
+  // اگر هیچ قانونی در دیتابیس نیست → همه سؤال‌های فعال
   if (!(rulesResult.results || []).length) {
  
     const result =
@@ -5056,9 +5088,11 @@ async function selectQuestionsForExam(
     return result.results || [];
   }
  
-  // قانون تعریف شده ولی همه پوشه‌ها غیرفعال یا تعداد صفر
+  // قانون هست ولی هیچ پوشه فعالی با تعداد > 0 نیست
   if (!rules.length) {
-    return [];
+    throw new Error(
+      "هیچ پوشه فعالی با قانون انتخاب معتبر وجود ندارد. ابتدا پوشه‌ها را فعال کنید و تعداد انتخاب را بیشتر از صفر ذخیره کنید."
+    );
   }
  
   const selected = [];
