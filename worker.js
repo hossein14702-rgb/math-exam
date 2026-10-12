@@ -238,16 +238,17 @@ export default {
         const allRules =
           rulesResult.results || [];
  
-        // فقط قوانین پوشه‌های فعال با تعداد > 0
+        // قوانین با تعداد انتخاب > 0
+        // پوشه غیرفعال را برای «نمایش تعداد» حذف نمی‌کنیم
+        // (فقط موقع شروع آزمون از پوشه غیرفعال سؤال برنمی‌داریم)
         const rules =
           allRules.filter(row => {
-            const count = Number(row.selection_count || 0);
-            const folderActive =
-              row.folder_active === null ||
-              row.folder_active === undefined
-                ? 1
-                : Number(row.folder_active);
-            return count > 0 && folderActive === 1;
+            const count = Number(
+              row.selection_count ??
+              row.selectionCount ??
+              0
+            );
+            return Number.isFinite(count) && count > 0;
           });
  
         // تعداد سؤال و مدت آزمون = جمع selection_count قوانین
@@ -260,8 +261,12 @@ export default {
           // حتی اگر بعضی پوشه‌ها غیرفعال باشند،
           // مبنای تعداد «قوانین» است نه کل بانک سؤال
           for (const rule of rules) {
-            const count = Number(rule.selection_count || 0);
-            if (count <= 0) continue;
+            const count = Number(
+              rule.selection_count ??
+              rule.selectionCount ??
+              0
+            );
+            if (!Number.isFinite(count) || count <= 0) continue;
  
             questionCount += count;
  
@@ -414,6 +419,20 @@ export default {
  
             rules:
               rulesSummary,
+ 
+            // خام قوانین برای عیب‌یابی (selection_count واقعی دیتابیس)
+            rawRules:
+              allRules.map(row => ({
+                id: row.id,
+                folderId: row.folder_id,
+                folderName: row.folder_name || null,
+                folderActive: row.folder_active,
+                selectionCount: Number(
+                  row.selection_count ?? 0
+                ),
+                selectionMode:
+                  row.selection_mode || "random",
+              })),
  
             // برای شفافیت در فرانت
             estimatedDurationSeconds:
@@ -2049,57 +2068,9 @@ export default {
             );
           }
  
-          if (action === "update") {
- 
-            const ruleId =
-              Number(body.ruleId);
- 
-            if (
-              !Number.isInteger(ruleId) ||
-              ruleId <= 0
-            ) {
-              return json(
-                {
-                  ok: false,
-                  error:
-                    "ruleId نامعتبر است",
-                },
-                400,
-                cors
-              );
-            }
- 
-            await env.DB
-              .prepare(`
-                UPDATE exam_folder_rules
-                SET
-                  folder_id = ?,
-                  selection_count = ?,
-                  selection_mode = ?
-                WHERE id = ?
-                  AND exam_id = ?
-              `)
-              .bind(
-                folderId,
-                selectionCount,
-                selectionMode,
-                ruleId,
-                examId
-              )
-              .run();
- 
-            return json(
-              {
-                ok: true,
-                message:
-                  "قانون آزمون ویرایش شد",
-              },
-              200,
-              cors
-            );
-          }
- 
-          const duplicate =
+          // ذخیره یکپارچه: اگر قانون این پوشه وجود دارد UPDATE
+          // وگرنه INSERT — دیگر خطای «قبلاً ثبت شده» نمی‌دهد
+          const existingRule =
             await env.DB
               .prepare(`
                 SELECT id
@@ -2108,22 +2079,99 @@ export default {
                   AND folder_id = ?
                 LIMIT 1
               `)
-              .bind(
-                examId,
-                folderId
-              )
+              .bind(examId, folderId)
               .first();
  
-          if (duplicate) {
+          let ruleId =
+            existingRule
+              ? Number(existingRule.id)
+              : Number(body.ruleId || 0);
+ 
+          if (existingRule) {
+ 
+            await env.DB
+              .prepare(`
+                UPDATE exam_folder_rules
+                SET
+                  selection_count = ?,
+                  selection_mode = ?
+                WHERE id = ?
+                  AND exam_id = ?
+              `)
+              .bind(
+                selectionCount,
+                selectionMode,
+                existingRule.id,
+                examId
+              )
+              .run();
+ 
             return json(
               {
-                ok: false,
-                error:
-                  "این پوشه قبلاً برای آزمون ثبت شده است",
+                ok: true,
+                message:
+                  "قانون آزمون ذخیره شد",
+                ruleId: Number(existingRule.id),
+                selectionCount,
+                selectionMode,
+                folderId,
               },
-              400,
+              200,
               cors
             );
+          }
+ 
+          // اگر update با ruleId آمده ولی رکورد با folder پیدا نشد
+          if (
+            action === "update" &&
+            Number.isInteger(ruleId) &&
+            ruleId > 0
+          ) {
+            const byId =
+              await env.DB
+                .prepare(`
+                  SELECT id
+                  FROM exam_folder_rules
+                  WHERE id = ?
+                    AND exam_id = ?
+                `)
+                .bind(ruleId, examId)
+                .first();
+ 
+            if (byId) {
+              await env.DB
+                .prepare(`
+                  UPDATE exam_folder_rules
+                  SET
+                    folder_id = ?,
+                    selection_count = ?,
+                    selection_mode = ?
+                  WHERE id = ?
+                    AND exam_id = ?
+                `)
+                .bind(
+                  folderId,
+                  selectionCount,
+                  selectionMode,
+                  ruleId,
+                  examId
+                )
+                .run();
+ 
+              return json(
+                {
+                  ok: true,
+                  message:
+                    "قانون آزمون ذخیره شد",
+                  ruleId,
+                  selectionCount,
+                  selectionMode,
+                  folderId,
+                },
+                200,
+                cors
+              );
+            }
           }
  
           const result =
@@ -2149,9 +2197,12 @@ export default {
             {
               ok: true,
               message:
-                "قانون انتخاب سؤال اضافه شد",
+                "قانون انتخاب سؤال ذخیره شد",
               ruleId:
                 result.meta.last_row_id,
+              selectionCount,
+              selectionMode,
+              folderId,
             },
             200,
             cors
@@ -4968,13 +5019,23 @@ async function selectQuestionsForExam(
  
   const rules =
     (rulesResult.results || []).filter(row => {
-      const count = Number(row.selection_count || 0);
-      const folderActive =
-        row.folder_active === null ||
-        row.folder_active === undefined
-          ? 1
-          : Number(row.folder_active);
-      return count > 0 && folderActive === 1;
+      const count = Number(
+        row.selection_count ??
+        row.selectionCount ??
+        0
+      );
+      if (!Number.isFinite(count) || count <= 0) {
+        return false;
+      }
+      // پوشه حذف‌شده یا صریحاً غیرفعال نباشد
+      if (
+        row.folder_active !== null &&
+        row.folder_active !== undefined &&
+        Number(row.folder_active) === 0
+      ) {
+        return false;
+      }
+      return true;
     });
  
   // فقط وقتی هیچ قانونی تعریف نشده، همه سؤال‌های فعال می‌آیند
