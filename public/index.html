@@ -1587,12 +1587,10 @@ function renderExamInfo(){
         isDiscountCurrentlyActive(exam);
  
  
-    // اولویت با questionCount سرور (جمع قوانین پوشه‌ها)
-    // نه تعداد کل سؤال‌های بانک
+    // فقط جمع قوانین انتخابی از سرور — نه تعداد کل سؤال‌های فعال
     const questionCount =
         Number(
             examData.questionCount ??
-            examData.estimatedQuestionCount ??
             examQuestionsCount ??
             0
         );
@@ -1838,14 +1836,11 @@ async function loadExam(){
             data;
  
  
+        // فقط questionCount سرور (جمع قوانین انتخابی)
+        // هرگز از data.questions.length استفاده نکن
         examQuestionsCount =
             Number(
-                data.questionCount ||
-                (
-                    Array.isArray(data.questions)
-                    ? data.questions.length
-                    : 0
-                )
+                data.questionCount ?? 0
             );
  
  
