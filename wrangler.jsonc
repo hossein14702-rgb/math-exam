@@ -10,16 +10,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "math_exam_db",
-      "database_id": "6dd636bf-5020-44f9-8f46-cfe1ec924805"
+      "database_name": "math_exam_staging",
+      "database_id": "39f716cd-cdb1-45fc-8263-ff344924415c"
     }
-  ],
-  "previews": {
-    "d1_databases": [
-      {
-        "binding": "DB",
-        "database_id": "39f716cd-cdb1-45fc-8263-ff344924415c"
-      }
-    ]
-  }
+  ]
 }
