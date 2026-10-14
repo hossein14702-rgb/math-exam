@@ -4815,6 +4815,8 @@ const ALLOWED_ORIGINS = [
   "https://azmoonmath.ir",
   "https://www.azmoonmath.ir",
   "https://azmon.hosseinkhorasani1.workers.dev",
+  "https://staging.azmoonmath.ir",
+  "https://azmon-staging.hosseinkhorasani1.workers.dev",
 ];
  
 function getCorsHeaders(origin) {
