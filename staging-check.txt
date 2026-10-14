@@ -1,0 +1,1 @@
+test automatic deployment for azmo-staging
