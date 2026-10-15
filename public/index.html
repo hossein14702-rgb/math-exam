@@ -1791,12 +1791,12 @@ async function loadExam(){
     try{
  
         const response = await fetch(
-    "/api/exam?id=1",
-    {
-        method: "GET",
-        cache: "no-store"
-    }
-);
+            `${API}/api/exam?id=1`,
+            {
+                method: "GET",
+                cache: "no-store"
+            }
+        );
  
         if(!response.ok){
  
