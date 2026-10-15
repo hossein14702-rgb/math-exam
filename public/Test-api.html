@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>آزمایش API</title>
+</head>
+<body>
+  <h3>آزمایش دریافت اطلاعات آزمون</h3>
+  <pre id="result">در حال آزمایش...</pre>
+
+  <script>
+    async function testAPI() {
+      const output = document.getElementById("result");
+
+      try {
+        const response = await fetch(
+          "/api/exam?id=1",
+          { cache: "no-store" }
+        );
+
+        const text = await response.text();
+
+        output.textContent =
+          "HTTP Status: " + response.status +
+          "\nپاسخ سرور:\n" + text;
+
+      } catch (error) {
+        output.textContent =
+          "نام خطا: " + error.name +
+          "\nپیام خطا: " + error.message;
+      }
+    }
+
+    testAPI();
+  </script>
+</body>
+</html>
