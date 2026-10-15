@@ -1791,13 +1791,12 @@ async function loadExam(){
     try{
  
         const response = await fetch(
-    "https://staging.azmoonmath.ir/api/exam?id=1",
+    "/api/exam?id=1",
     {
         method: "GET",
         cache: "no-store"
     }
 );
- 
  
         if(!response.ok){
  
