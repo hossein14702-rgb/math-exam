@@ -2919,7 +2919,34 @@ async function startExam(){
  
 }
  
- 
+ function retryQuestionImage(img) {
+    const originalSrc = img.dataset.originalSrc;
+
+    if (!originalSrc) return;
+
+    const attempts = Number(img.dataset.retryCount || 0);
+
+    if (attempts >= 3) {
+        img.onerror = null;
+        return;
+    }
+
+    img.dataset.retryCount = String(attempts + 1);
+
+    const delays = [1000, 2000, 3000];
+
+    setTimeout(() => {
+        if (!img.isConnected) return;
+
+        const separator = originalSrc.includes("?") ? "&" : "?";
+
+        img.src =
+            originalSrc +
+            separator +
+            "_retry=" +
+            Date.now();
+    }, delays[attempts]);
+   }
 /* =========================
    نمایش سؤال
 ========================= */
