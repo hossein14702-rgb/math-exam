@@ -2127,55 +2127,62 @@ async function preloadQuestionImages(retryFailedOnly = false) {
         }
 
         async function loadOneImage(src) {
-            try {
-                const response = await fetch(src, {
-                    mode: "cors",
-                    cache: "force-cache"
-                });
+    const maxAttempts = 4;
 
-                if (!response.ok) {
-                    throw new Error(
-                        `خطای دریافت تصویر: ${response.status}`
-                    );
-                }
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            const response = await fetch(src, {
+                mode: "cors",
+                cache: "force-cache"
+            });
 
-                const blob = await response.blob();
-
-                if (!blob.size) {
-                    throw new Error("فایل تصویر خالی است.");
-                }
-
-                const oldUrl = questionImageBlobUrls.get(src);
-
-                if (oldUrl) {
-                    URL.revokeObjectURL(oldUrl);
-                }
-
-                questionImageBlobUrls.set(
-                    src,
-                    URL.createObjectURL(blob)
+            if (!response.ok) {
+                throw new Error(
+                    `خطای دریافت تصویر: ${response.status}`
                 );
+            }
 
-                imagePreloadFailedUrls.delete(src);
+            const blob = await response.blob();
 
-            } catch (error) {
-                console.error(
-                    "IMAGE PRELOAD ERROR:",
-                    src,
-                    error
+            if (!blob.size) {
+                throw new Error("فایل تصویر خالی است.");
+            }
+
+            const oldUrl = questionImageBlobUrls.get(src);
+
+            if (oldUrl) {
+                URL.revokeObjectURL(oldUrl);
+            }
+
+            questionImageBlobUrls.set(
+                src,
+                URL.createObjectURL(blob)
+            );
+
+            imagePreloadFailedUrls.delete(src);
+
+            // تصویر دریافت شد؛ دیگر تلاش نکن.
+            return;
+
+        } catch (error) {
+            console.error(
+                `تلاش ${attempt} از ${maxAttempts} برای دریافت تصویر ناموفق بود:`,
+                src,
+                error
+            );
+
+            if (attempt < maxAttempts) {
+                // فاصلهٔ تلاش‌ها: ۱، ۲ و ۳ ثانیه
+                await new Promise(resolve =>
+                    setTimeout(resolve, attempt * 1000)
                 );
-
-                imagePreloadFailedUrls.add(src);
-
-            } finally {
-                completed++;
-
-                if (status) {
-                    status.textContent =
-                        `در حال بارگذاری تصاویر: ${toPersianNumber(completed)} از ${toPersianNumber(urls.length)}`;
-                }
             }
         }
+    }
+
+    // هر چهار تلاش ناموفق بود.
+    imagePreloadFailedUrls.add(src);
+}
 
         async function worker() {
             while (nextIndex < urls.length) {
