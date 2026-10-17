@@ -2040,7 +2040,183 @@ async function loadExam(){
     }
  
 }
- 
+ // ========================================
+// مدیریت بارگذاری تصاویر سؤال‌ها
+// ========================================
+
+const imagePreloadFailedUrls = new Set();
+
+function getAllQuestionImageUrls() {
+    const questions = Array.isArray(examData?.questions)
+        ? examData.questions
+        : [];
+
+    return [
+        ...new Set(
+            questions.flatMap(question =>
+                Array.isArray(question.images)
+                    ? question.images.filter(
+                        src =>
+                            typeof src === "string" &&
+                            src.trim() !== ""
+                    )
+                    : []
+            )
+        )
+    ];
+}
+
+async function preloadQuestionImages(retryFailedOnly = false) {
+    if (imagePreloadRunning) {
+        return imagePreloadPromise;
+    }
+
+    const status = $("imagePreloadStatus");
+    const retryButton = $("retryImagesButton");
+    const beginButton = $("beginExamButton");
+
+    const allUrls = getAllQuestionImageUrls();
+
+    const urls = retryFailedOnly
+        ? [...imagePreloadFailedUrls]
+        : allUrls.filter(
+            src => !questionImageBlobUrls.has(src)
+        );
+
+    if (beginButton) {
+        beginButton.disabled = true;
+    }
+
+    if (urls.length === 0) {
+        imagePreloadFailed = imagePreloadFailedUrls.size;
+
+        if (status) {
+            status.textContent = imagePreloadFailed
+                ? `بارگذاری ${toPersianNumber(imagePreloadFailed)} تصویر ناموفق است.`
+                : "تصاویر آماده هستند؛ می‌توانید آزمون را شروع کنید.";
+        }
+
+        if (retryButton) {
+            retryButton.classList.toggle(
+                "hidden",
+                imagePreloadFailed === 0
+            );
+        }
+
+        if (beginButton) {
+            beginButton.disabled = imagePreloadFailed > 0;
+        }
+
+        return;
+    }
+
+    imagePreloadRunning = true;
+
+    if (retryButton) {
+        retryButton.classList.add("hidden");
+    }
+
+    imagePreloadPromise = (async () => {
+        let completed = 0;
+        let nextIndex = 0;
+
+        if (status) {
+            status.textContent =
+                `در حال بارگذاری تصاویر: ${toPersianNumber(0)} از ${toPersianNumber(urls.length)}`;
+        }
+
+        async function loadOneImage(src) {
+            try {
+                const response = await fetch(src, {
+                    mode: "cors",
+                    cache: "force-cache"
+                });
+
+                if (!response.ok) {
+                    throw new Error(
+                        `خطای دریافت تصویر: ${response.status}`
+                    );
+                }
+
+                const blob = await response.blob();
+
+                if (!blob.size) {
+                    throw new Error("فایل تصویر خالی است.");
+                }
+
+                const oldUrl = questionImageBlobUrls.get(src);
+
+                if (oldUrl) {
+                    URL.revokeObjectURL(oldUrl);
+                }
+
+                questionImageBlobUrls.set(
+                    src,
+                    URL.createObjectURL(blob)
+                );
+
+                imagePreloadFailedUrls.delete(src);
+
+            } catch (error) {
+                console.error(
+                    "IMAGE PRELOAD ERROR:",
+                    src,
+                    error
+                );
+
+                imagePreloadFailedUrls.add(src);
+
+            } finally {
+                completed++;
+
+                if (status) {
+                    status.textContent =
+                        `در حال بارگذاری تصاویر: ${toPersianNumber(completed)} از ${toPersianNumber(urls.length)}`;
+                }
+            }
+        }
+
+        async function worker() {
+            while (nextIndex < urls.length) {
+                const index = nextIndex++;
+                await loadOneImage(urls[index]);
+            }
+        }
+
+        await Promise.all([
+            worker(),
+            worker(),
+            worker()
+        ]);
+
+        imagePreloadFailed = imagePreloadFailedUrls.size;
+
+        if (status) {
+            status.textContent = imagePreloadFailed
+                ? `بارگذاری ${toPersianNumber(imagePreloadFailed)} تصویر ناموفق بود؛ برای تلاش مجدد دکمهٔ زیر را بزنید.`
+                : "بارگذاری تصاویر با موفقیت انجام شد؛ تصاویر آماده هستند.";
+        }
+
+        if (retryButton) {
+            retryButton.classList.toggle(
+                "hidden",
+                imagePreloadFailed === 0
+            );
+        }
+
+        if (beginButton) {
+            beginButton.disabled = imagePreloadFailed > 0;
+        }
+
+    })();
+
+    try {
+        await imagePreloadPromise;
+    } finally {
+        imagePreloadRunning = false;
+        imagePreloadPromise = null;
+    }
+   }
  
 /* =========================
    ساخت سفارش
