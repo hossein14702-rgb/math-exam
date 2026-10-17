@@ -2166,10 +2166,17 @@ async function preloadQuestionImages(retryFailedOnly = false) {
 
         } catch (error) {
             console.error(
-                `تلاش ${attempt} از ${maxAttempts} برای دریافت تصویر ناموفق بود:`,
-                src,
-                error
-            );
+    `تلاش ${attempt} از ${maxAttempts} برای دریافت تصویر ناموفق بود:`,
+    src,
+    error
+);
+
+if (status) {
+    status.textContent =
+        "خطای تصویر: " +
+        (error?.message || String(error)) +
+        " | آدرس: " + src;
+}
 
             if (attempt < maxAttempts) {
                 // فاصلهٔ تلاش‌ها: ۱، ۲ و ۳ ثانیه
