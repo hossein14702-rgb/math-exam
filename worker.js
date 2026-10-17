@@ -449,7 +449,8 @@ export default {
                 option_d,
                 duration_seconds,
                 folder_id,
-                active
+                active,
+                images_json
               FROM questions
               WHERE exam_id = ?
                 AND active = 1
