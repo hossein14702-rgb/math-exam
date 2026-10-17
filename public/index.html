@@ -2133,7 +2133,7 @@ async function preloadQuestionImages(retryFailedOnly = false) {
         try {
             const response = await fetch(src, {
                 mode: "cors",
-                cache: "force-cache"
+                cache: "no-store"
             });
 
             if (!response.ok) {
