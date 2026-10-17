@@ -2897,9 +2897,7 @@ async function startExam(){
     finally{
  
         $("beginExamButton").disabled =
-            false;
- 
- 
+    imagePreloadRunning || imagePreloadFailed > 0;
         $("beginExamButton").textContent =
             "شروع آزمون";
  
