@@ -3032,7 +3032,7 @@ function showQuestion(
                 <div class="question-images" id="questionImages">
                     ${question.images.map((src, imgIndex) => `
                         <img
-                            src="${escapeHtml(src)}"
+                            src="${escapeHtml(questionImageBlobUrls.get(src) || src)}"
                             alt="تصویر سؤال ${imgIndex + 1}"
                             data-index="${imgIndex}"
                             onclick="openImageLightbox(${imgIndex})"
