@@ -166,7 +166,7 @@ export default {
         const uploadSecret = String(
           env.IMAGE_UPLOAD_SECRET || ""
         );
-
+ 
         if (!uploadSecret) {
           return json(
             {
@@ -177,10 +177,10 @@ export default {
             cors
           );
         }
-
+ 
         const contentType =
           request.headers.get("Content-Type") || "";
-
+ 
         if (
           !contentType
             .toLowerCase()
@@ -195,7 +195,7 @@ export default {
             cors
           );
         }
-
+ 
         try {
           const upstream = await fetch(
             "https://image.azmoonmath.ir/upload",
@@ -208,7 +208,7 @@ export default {
               body: request.body,
             }
           );
-
+ 
           return new Response(
             await upstream.text(),
             {
@@ -227,7 +227,7 @@ export default {
             "Image upload proxy failed:",
             error
           );
-
+ 
           return json(
             {
               ok: false,
@@ -238,8 +238,8 @@ export default {
           );
         }
       }
-
-
+ 
+ 
       // =========================================================
       // GET /api/exam
       // =========================================================
@@ -1488,7 +1488,7 @@ export default {
           }
  
           let imageUrls = [];
-
+ 
           if (
             body.images === undefined &&
             action === "update"
@@ -1502,7 +1502,7 @@ export default {
               `)
               .bind(questionId, examId)
               .first();
-
+ 
             imageUrls = parseQuestionImages(
               existingImageRow?.images_json
             );
@@ -1513,7 +1513,7 @@ export default {
                   ? []
                   : body.images
               );
-
+ 
             if (!imageResult.ok) {
               return json(
                 {
@@ -1524,13 +1524,13 @@ export default {
                 cors
               );
             }
-
+ 
             imageUrls = imageResult.images;
           }
-
+ 
           const imagesJson =
             JSON.stringify(imageUrls);
-
+ 
           let folderId = null;
  
           if (
@@ -3198,7 +3198,7 @@ export default {
           );
         }
          let verifyResponse;
- 
+         
         try {
  
           const vpsResponse =
@@ -5365,7 +5365,7 @@ function compactOptions(
 // =============================================================
 // اعتبارسنجی آدرس تصاویر سؤال
 // =============================================================
-
+ 
 function normalizeQuestionImageUrls(value) {
   if (!Array.isArray(value)) {
     return {
@@ -5373,21 +5373,21 @@ function normalizeQuestionImageUrls(value) {
       error: "فهرست تصاویر نامعتبر است",
     };
   }
-
+ 
   if (value.length > 5) {
     return {
       ok: false,
       error: "حداکثر ۵ تصویر برای هر سؤال مجاز است",
     };
   }
-
+ 
   const images = [];
-
+ 
   for (const item of value) {
     const raw = String(item || "").trim();
-
+ 
     let parsed;
-
+ 
     try {
       parsed = new URL(raw);
     } catch {
@@ -5396,10 +5396,10 @@ function normalizeQuestionImageUrls(value) {
         error: "آدرس یکی از تصاویر نامعتبر است",
       };
     }
-
+ 
     const validPath =
       /^\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp|gif)$/i;
-
+ 
     if (
       parsed.protocol !== "https:" ||
       parsed.hostname !== "image.azmoonmath.ir" ||
@@ -5416,22 +5416,22 @@ function normalizeQuestionImageUrls(value) {
           "فقط تصاویر معتبر سرویس رسمی تصاویر مجاز هستند",
       };
     }
-
+ 
     if (!images.includes(parsed.href)) {
       images.push(parsed.href);
     }
   }
-
+ 
   return {
     ok: true,
     images,
   };
 }
-
-
+ 
+ 
 function parseQuestionImages(value) {
   let parsed = value;
-
+ 
   if (typeof parsed === "string") {
     try {
       parsed = JSON.parse(parsed || "[]");
@@ -5439,15 +5439,15 @@ function parseQuestionImages(value) {
       parsed = [];
     }
   }
-
+ 
   const result = normalizeQuestionImageUrls(
     Array.isArray(parsed) ? parsed : []
   );
-
+ 
   return result.ok ? result.images : [];
 }
-
-
+ 
+ 
 // =============================================================
 // نرمال‌سازی سؤال برای Snapshot
 // =============================================================
@@ -5502,10 +5502,10 @@ function normalizeQuestionForSnapshot(q) {
  
     folder_id:
       q.folder_id ?? null,
-
+ 
     active:
       q.active,
-
+ 
     images: parseQuestionImages(q.images_json),
   };
 }
@@ -5565,7 +5565,7 @@ function publicQuestion(q) {
  
     duration_seconds:
       duration,
-
+ 
     images: normalized.images || [],
   };
 }
@@ -5626,7 +5626,7 @@ function publicSnapshotQuestion(q) {
  
     duration_seconds:
       duration,
-
+ 
     images: parseQuestionImages(q.images_json_snapshot),
   };
 }
@@ -5695,10 +5695,10 @@ function teacherQuestion(q) {
  
     folderName:
       q.folder_name || null,
-
+ 
     images:
       parseQuestionImages(q.images_json),
-
+ 
     active:
       Number(q.active || 0) === 1,
   };
@@ -5965,7 +5965,7 @@ async function buildResult(
  
         question:
           row.question_text_snapshot,
-
+ 
         images: parseQuestionImages(row.images_json_snapshot),
  
         options:
@@ -6132,6 +6132,9 @@ async function buildLegacyResult(
  
         question:
           normalized.question_text,
+ 
+        images:
+          normalized.images || [],
  
         options: [
           normalized.option_a,
@@ -6380,4 +6383,4 @@ function normalizePhone(
  
   return phone;
 }
-
+ 
