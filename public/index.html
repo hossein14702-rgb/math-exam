@@ -1083,7 +1083,12 @@ let submitting = false;
  
 let examQuestionsCount = 0;
 let examData = null;
- 
+ // مدیریت حافظهٔ تصاویر سؤال‌ها
+const questionImageBlobUrls = new Map();
+
+let imagePreloadPromise = null;
+let imagePreloadRunning = false;
+let imagePreloadFailed = 0;
 let examStartedAt = null;
 let examFinishedAt = null;
  
