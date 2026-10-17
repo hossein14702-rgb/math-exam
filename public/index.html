@@ -785,6 +785,152 @@ body.page-loading{
     cursor:pointer;
 }
  
+ 
+/* تصاویر سؤال - نمایش افقی */
+.question-images{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    justify-content:center;
+    align-items:flex-start;
+    margin:18px 0 8px;
+    padding:4px 0;
+}
+ 
+.question-images img{
+    display:block;
+    max-width:100%;
+    width:auto;
+    height:auto;
+    max-height:200px;
+    object-fit:contain;
+    border-radius:10px;
+    border:1px solid #e5e7eb;
+    background:#f8fafc;
+    cursor:zoom-in;
+    transition:box-shadow .15s, transform .15s;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+ 
+.question-images img:hover{
+    box-shadow:0 4px 16px rgba(37,99,235,.18);
+    transform:translateY(-1px);
+}
+ 
+/* وقتی فقط یک تصویر است کمی بزرگ‌تر */
+.question-images img:only-child{
+    max-height:260px;
+}
+ 
+/* Lightbox / مودال بزرگ‌نمایی */
+.image-lightbox{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    background:rgba(15,23,42,.88);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    opacity:0;
+    visibility:hidden;
+    transition:opacity .2s, visibility .2s;
+}
+ 
+.image-lightbox.active{
+    opacity:1;
+    visibility:visible;
+}
+ 
+.image-lightbox-inner{
+    position:relative;
+    max-width:92vw;
+    max-height:88vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+}
+ 
+.image-lightbox-inner img{
+    max-width:92vw;
+    max-height:78vh;
+    width:auto;
+    height:auto;
+    object-fit:contain;
+    border-radius:12px;
+    box-shadow:0 12px 40px rgba(0,0,0,.35);
+    background:#fff;
+}
+ 
+.image-lightbox-close{
+    position:absolute;
+    top:-42px;
+    left:0;
+    width:36px;
+    height:36px;
+    border:0;
+    border-radius:50%;
+    background:#fff;
+    color:#1f2937;
+    font-size:20px;
+    font-weight:bold;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
+    line-height:1;
+}
+ 
+.image-lightbox-nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    margin-top:4px;
+}
+ 
+.image-lightbox-nav button{
+    width:44px;
+    height:44px;
+    border:0;
+    border-radius:50%;
+    background:#fff;
+    color:#1f2937;
+    font-size:20px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
+ 
+.image-lightbox-nav button:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+}
+ 
+.image-lightbox-counter{
+    color:#e5e7eb;
+    font-size:13px;
+    min-width:70px;
+    text-align:center;
+}
+ 
+@media(max-width:600px){
+    .question-images img{
+        max-height:160px;
+    }
+    .question-images img:only-child{
+        max-height:200px;
+    }
+    .image-lightbox-inner img{
+        max-height:70vh;
+    }
+}
+ 
+ 
 </style>
  </head>
  <body class="page-loading">
@@ -2682,6 +2828,23 @@ function showQuestion(
  
         </div>
  
+        ${
+            Array.isArray(question.images) &&
+            question.images.length > 0
+            ? `
+                <div class="question-images" id="questionImages">
+                    ${question.images.map((src, imgIndex) => `
+                        <img
+                            src="${escapeHtml(src)}"
+                            alt="تصویر سؤال ${imgIndex + 1}"
+                            data-index="${imgIndex}"
+                            onclick="openImageLightbox(${imgIndex})"
+                        >
+                    `).join("")}
+                </div>
+            `
+            : ""
+        }
  
         <div class="options">
  
@@ -4070,6 +4233,72 @@ function printAnswerSheet(){
  
  
  
+ 
+/* =========================
+   Lightbox تصاویر سؤال
+========================= */
+ 
+let lightboxImages = [];
+let lightboxIndex = 0;
+ 
+function openImageLightbox(index){
+    const container = document.getElementById("questionImages");
+    if(!container) return;
+ 
+    const imgs = Array.from(container.querySelectorAll("img"));
+    if(!imgs.length) return;
+ 
+    lightboxImages = imgs.map(img => img.src);
+    lightboxIndex = Math.max(0, Math.min(Number(index) || 0, lightboxImages.length - 1));
+ 
+    updateLightbox();
+    const lb = document.getElementById("imageLightbox");
+    if(lb) lb.classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+ 
+function closeImageLightbox(event){
+    // فقط وقتی روی پس‌زمینه یا دکمه بستن کلیک شده باشد
+    if(event && event.target){
+        const t = event.target;
+        if(t.id !== "imageLightbox" && !t.classList.contains("image-lightbox-close")){
+            return;
+        }
+    }
+    const lb = document.getElementById("imageLightbox");
+    if(lb) lb.classList.remove("active");
+    document.body.style.overflow = "";
+}
+ 
+function navigateLightbox(direction){
+    if(!lightboxImages.length) return;
+    lightboxIndex = (lightboxIndex + direction + lightboxImages.length) % lightboxImages.length;
+    updateLightbox();
+}
+ 
+function updateLightbox(){
+    const img = document.getElementById("lightboxImage");
+    const counter = document.getElementById("lightboxCounter");
+    const prevBtn = document.getElementById("lightboxPrev");
+    const nextBtn = document.getElementById("lightboxNext");
+ 
+    if(img) img.src = lightboxImages[lightboxIndex] || "";
+    if(counter){
+        counter.textContent = toPersianNumber(lightboxIndex + 1) + " / " + toPersianNumber(lightboxImages.length);
+    }
+    // دکمه‌ها همیشه فعال (چرخشی)
+    if(prevBtn) prevBtn.disabled = lightboxImages.length <= 1;
+    if(nextBtn) nextBtn.disabled = lightboxImages.length <= 1;
+}
+ 
+// بستن با کلید Escape
+document.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){
+        closeImageLightbox();
+    }
+});
+ 
+ 
 /* =========================
    شروع صفحه
 ========================= */
@@ -4204,5 +4433,17 @@ initializePage().catch(error => {
    </div>
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
+  <!-- Lightbox بزرگ‌نمایی تصاویر سؤال -->
+  <div id="imageLightbox" class="image-lightbox" onclick="closeImageLightbox(event)">
+   <div class="image-lightbox-inner" onclick="event.stopPropagation()">
+    <button type="button" class="image-lightbox-close" onclick="closeImageLightbox()" aria-label="بستن">×</button>
+    <img id="lightboxImage" src="" alt="تصویر بزرگ">
+    <div class="image-lightbox-nav">
+     <button type="button" id="lightboxPrev" onclick="navigateLightbox(-1)" aria-label="قبلی">›</button>
+     <span class="image-lightbox-counter" id="lightboxCounter"></span>
+     <button type="button" id="lightboxNext" onclick="navigateLightbox(1)" aria-label="بعدی">‹</button>
+    </div>
+   </div>
+  </div>
  </body>
 </html>
