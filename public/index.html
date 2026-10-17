@@ -2562,7 +2562,11 @@ $("beginExamButton")
         startExam
     );
  
- 
+ // تلاش مجدد فقط برای تصاویر ناموفق
+$("retryImagesButton").addEventListener(
+    "click",
+    () => preloadQuestionImages(true)
+);
 async function startExam(){
  
     clearError("rulesError");
