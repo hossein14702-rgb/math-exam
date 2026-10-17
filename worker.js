@@ -156,6 +156,91 @@ export default {
  
  
       // =========================================================
+      // POST /api/teacher/images/upload
+      // بارگذاری امن تصاویر سؤال
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/images/upload"
+      ) {
+        const uploadSecret = String(
+          env.IMAGE_UPLOAD_SECRET || ""
+        );
+ 
+        if (!uploadSecret) {
+          return json(
+            {
+              ok: false,
+              error: "سرویس بارگذاری تصویر تنظیم نشده است",
+            },
+            503,
+            cors
+          );
+        }
+ 
+        const contentType =
+          request.headers.get("Content-Type") || "";
+ 
+        if (
+          !contentType
+            .toLowerCase()
+            .startsWith("multipart/form-data;")
+        ) {
+          return json(
+            {
+              ok: false,
+              error: "فرمت ارسال فایل نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+ 
+        try {
+          const upstream = await fetch(
+            "https://image.azmoonmath.ir/upload",
+            {
+              method: "POST",
+              headers: {
+                "x-image-secret": uploadSecret,
+                "Content-Type": contentType,
+              },
+              body: request.body,
+            }
+          );
+ 
+          return new Response(
+            await upstream.text(),
+            {
+              status: upstream.status,
+              headers: {
+                ...cors,
+                "Content-Type":
+                  upstream.headers.get("Content-Type") ||
+                  "application/json; charset=UTF-8",
+                "Cache-Control": "no-store",
+              },
+            }
+          );
+        } catch (error) {
+          console.error(
+            "Image upload proxy failed:",
+            error
+          );
+ 
+          return json(
+            {
+              ok: false,
+              error: "ارتباط با سرویس تصاویر برقرار نشد",
+            },
+            502,
+            cors
+          );
+        }
+      }
+ 
+ 
+      // =========================================================
       // GET /api/exam
       // =========================================================
       if (
@@ -1202,6 +1287,7 @@ export default {
             q.duration_seconds,
             q.folder_id,
             q.active,
+            q.images_json,
             f.name AS folder_name
           FROM questions q
           LEFT JOIN question_folders f
@@ -1401,6 +1487,50 @@ export default {
             );
           }
  
+          let imageUrls = [];
+ 
+          if (
+            body.images === undefined &&
+            action === "update"
+          ) {
+            const existingImageRow = await env.DB
+              .prepare(`
+                SELECT images_json
+                FROM questions
+                WHERE id = ?
+                  AND exam_id = ?
+              `)
+              .bind(questionId, examId)
+              .first();
+ 
+            imageUrls = parseQuestionImages(
+              existingImageRow?.images_json
+            );
+          } else {
+            const imageResult =
+              normalizeQuestionImageUrls(
+                body.images === undefined
+                  ? []
+                  : body.images
+              );
+ 
+            if (!imageResult.ok) {
+              return json(
+                {
+                  ok: false,
+                  error: imageResult.error,
+                },
+                400,
+                cors
+              );
+            }
+ 
+            imageUrls = imageResult.images;
+          }
+ 
+          const imagesJson =
+            JSON.stringify(imageUrls);
+ 
           let folderId = null;
  
           if (
@@ -1462,9 +1592,10 @@ export default {
                     correct_index,
                     duration_seconds,
                     folder_id,
-                    active
+                    active,
+                    images_json
                   )
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
                 `)
                 .bind(
                   examId,
@@ -1475,7 +1606,8 @@ export default {
                   optionD,
                   correctIndex,
                   durationSeconds,
-                  folderId
+                  folderId,
+                  imagesJson
                 )
                 .run();
  
@@ -1560,7 +1692,8 @@ export default {
                   option_d = ?,
                   correct_index = ?,
                   duration_seconds = ?,
-                  folder_id = ?
+                  folder_id = ?,
+                  images_json = ?
                 WHERE id = ?
                   AND exam_id = ?
               `)
@@ -1573,6 +1706,7 @@ export default {
                 correctIndex,
                 durationSeconds,
                 folderId,
+                imagesJson,
                 questionId,
                 examId
               )
@@ -3468,9 +3602,10 @@ export default {
                   option_d_snapshot,
                   correct_index_snapshot,
                   duration_seconds_snapshot,
+                  images_json_snapshot,
                   started_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               `)
               .bind(
                 attemptId,
@@ -3483,6 +3618,7 @@ export default {
                 q.option_d,
                 q.correct_index,
                 q.duration_seconds,
+                JSON.stringify(q.images || []),
                 i === 0
                   ? startedAt
                   : null
@@ -5228,6 +5364,92 @@ function compactOptions(
  
  
 // =============================================================
+// اعتبارسنجی آدرس تصاویر سؤال
+// =============================================================
+ 
+function normalizeQuestionImageUrls(value) {
+  if (!Array.isArray(value)) {
+    return {
+      ok: false,
+      error: "فهرست تصاویر نامعتبر است",
+    };
+  }
+ 
+  if (value.length > 5) {
+    return {
+      ok: false,
+      error: "حداکثر ۵ تصویر برای هر سؤال مجاز است",
+    };
+  }
+ 
+  const images = [];
+ 
+  for (const item of value) {
+    const raw = String(item || "").trim();
+ 
+    let parsed;
+ 
+    try {
+      parsed = new URL(raw);
+    } catch {
+      return {
+        ok: false,
+        error: "آدرس یکی از تصاویر نامعتبر است",
+      };
+    }
+ 
+    const validPath =
+      /^\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp|gif)$/i;
+ 
+    if (
+      parsed.protocol !== "https:" ||
+      parsed.hostname !== "image.azmoonmath.ir" ||
+      parsed.port ||
+      parsed.username ||
+      parsed.password ||
+      !validPath.test(parsed.pathname) ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      return {
+        ok: false,
+        error:
+          "فقط تصاویر معتبر سرویس رسمی تصاویر مجاز هستند",
+      };
+    }
+ 
+    if (!images.includes(parsed.href)) {
+      images.push(parsed.href);
+    }
+  }
+ 
+  return {
+    ok: true,
+    images,
+  };
+}
+ 
+ 
+function parseQuestionImages(value) {
+  let parsed = value;
+ 
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed || "[]");
+    } catch {
+      parsed = [];
+    }
+  }
+ 
+  const result = normalizeQuestionImageUrls(
+    Array.isArray(parsed) ? parsed : []
+  );
+ 
+  return result.ok ? result.images : [];
+}
+ 
+ 
+// =============================================================
 // نرمال‌سازی سؤال برای Snapshot
 // =============================================================
 function normalizeQuestionForSnapshot(q) {
@@ -5281,6 +5503,9 @@ function normalizeQuestionForSnapshot(q) {
  
     folder_id:
       q.folder_id ?? null,
+ 
+    images:
+      parseQuestionImages(q.images_json),
  
     active:
       q.active,
@@ -5468,6 +5693,9 @@ function teacherQuestion(q) {
  
     folderName:
       q.folder_name || null,
+ 
+    images:
+      parseQuestionImages(q.images_json),
  
     active:
       Number(q.active || 0) === 1,
