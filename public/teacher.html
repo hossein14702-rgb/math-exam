@@ -461,28 +461,9 @@ tr:hover td{background:#fafafa}
       </div>
       <!-- مدیریت تصاویر سؤال -->
       <div class="form-group modal-form-full">
-        <label>تصاویر سؤال (حداکثر ۵ تصویر)</label>
-
-        <input
-          type="file"
-          id="questionImagesInput"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          multiple
-        >
-
-        <small>
-          تصاویر PNG، JPG، WEBP و GIF قابل انتخاب هستند.
-          حجم هر تصویر حداکثر ۱۰ مگابایت است.
-        </small>
-
-        <div id="questionImagesMessage"
-             class="message-box"
-             style="display:none">
-        </div>
-
-        <div id="questionImagesPreview"
-             style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px">
-        </div>
+       <label>تصاویر سؤال (حداکثر ۵ تصویر)</label> <input type="file" id="questionImagesInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple> <small> تصاویر PNG، JPG، WEBP و GIF قابل انتخاب هستند. حجم هر تصویر حداکثر ۱۰ مگابایت است. </small>
+       <div id="questionImagesMessage" class="message-box" style="display:none"></div>
+       <div id="questionImagesPreview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px"></div>
       </div>
       <div class="form-group modal-form-full">
        <label>گزینه‌ها</label>
@@ -1526,15 +1507,15 @@ function debouncedLoadQuestions() {
  
 function openQuestionModal(questionId = null) {
     editingQuestionId = questionId;
-
+ 
     // پاک‌سازی وضعیت تصاویر هنگام باز شدن فرم
     questionImageFiles = [];
     questionImageUrls = [];
-
+ 
     document.getElementById("questionImagesInput").value = "";
-
+ 
     document.getElementById("questionImagesMessage").style.display = "none";
-
+ 
     document.getElementById("questionImagesPreview").innerHTML = "";
  
     document.getElementById("questionModalMessage").style.display = "none";
@@ -1548,13 +1529,13 @@ function openQuestionModal(questionId = null) {
         }
  
         document.getElementById("questionModalTitle").textContent = "✏️ ویرایش سؤال";
-
+ 
         questionImageUrls = Array.isArray(q.images)
             ? [...q.images]
             : [];
-
+ 
         renderQuestionImagesPreview();
-
+ 
         document.getElementById("questionText").value = q.questionText || q.question || "";
  
         const optionCount = (q.options || []).length;
@@ -1645,113 +1626,113 @@ function showQuestionModalMessage(message, type = "error") {
 // ======================================================
 // مدیریت تصاویر سؤال
 // ======================================================
-
+ 
 function showQuestionImagesMessage(message, isError = false) {
     const box = document.getElementById("questionImagesMessage");
-
+ 
     box.textContent = message;
     box.className = "message-box " +
         (isError ? "message-error" : "message-success");
-
+ 
     box.style.display = "block";
 }
-
+ 
 function renderQuestionImagesPreview() {
     const box = document.getElementById("questionImagesPreview");
-
+ 
     box.innerHTML = "";
-
+ 
     questionImageUrls.forEach((url, index) => {
         const item = document.createElement("div");
-
+ 
         item.style.cssText =
             "width:140px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center";
-
+ 
         const img = document.createElement("img");
         img.src = url;
         img.alt = "تصویر سؤال";
         img.loading = "lazy";
         img.style.cssText =
             "width:100%;height:100px;object-fit:contain";
-
+ 
         const removeButton = document.createElement("button");
         removeButton.type = "button";
         removeButton.textContent = "حذف از سؤال";
         removeButton.className = "danger-btn small-btn";
         removeButton.style.marginTop = "6px";
-
+ 
         removeButton.addEventListener("click", () => {
             questionImageUrls.splice(index, 1);
             renderQuestionImagesPreview();
         });
-
+ 
         item.appendChild(img);
         item.appendChild(removeButton);
         box.appendChild(item);
     });
-
+ 
     questionImageFiles.forEach((file, index) => {
         const item = document.createElement("div");
-
+ 
         item.style.cssText =
             "width:140px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center";
-
+ 
         const img = document.createElement("img");
         img.alt = file.name;
         img.style.cssText =
             "width:100%;height:100px;object-fit:contain";
-
+ 
         const localUrl = URL.createObjectURL(file);
         img.src = localUrl;
-
+ 
         img.onload = () => URL.revokeObjectURL(localUrl);
-
+ 
         const name = document.createElement("small");
         name.textContent = file.name;
         name.style.cssText =
             "display:block;overflow-wrap:anywhere;margin:5px 0";
-
+ 
         const removeButton = document.createElement("button");
         removeButton.type = "button";
         removeButton.textContent = "لغو انتخاب";
         removeButton.className = "danger-btn small-btn";
-
+ 
         removeButton.addEventListener("click", () => {
             questionImageFiles.splice(index, 1);
             renderQuestionImagesPreview();
         });
-
+ 
         item.appendChild(img);
         item.appendChild(name);
         item.appendChild(removeButton);
         box.appendChild(item);
     });
 }
-
+ 
 document.getElementById("questionImagesInput")
     .addEventListener("change", event => {
         const selectedFiles = Array.from(event.target.files || []);
-
+ 
         const currentCount =
             questionImageUrls.length + questionImageFiles.length;
-
+ 
         if (currentCount + selectedFiles.length > 5) {
             showQuestionImagesMessage(
                 "در مجموع حداکثر ۵ تصویر برای هر سؤال مجاز است.",
                 true
             );
-
+ 
             event.target.value = "";
             return;
         }
-
+ 
         const allowedTypes = [
             "image/jpeg",
             "image/png",
             "image/webp",
             "image/gif"
         ];
-
+ 
         for (const file of selectedFiles) {
             if (!allowedTypes.includes(file.type)) {
                 showQuestionImagesMessage(
@@ -1761,7 +1742,7 @@ document.getElementById("questionImagesInput")
                 event.target.value = "";
                 return;
             }
-
+ 
             if (file.size > 10 * 1024 * 1024) {
                 showQuestionImagesMessage(
                     "حجم هر تصویر نباید بیشتر از ۱۰ مگابایت باشد.",
@@ -1771,31 +1752,31 @@ document.getElementById("questionImagesInput")
                 return;
             }
         }
-
+ 
         questionImageFiles.push(...selectedFiles);
-
+ 
         event.target.value = "";
-
+ 
         document.getElementById("questionImagesMessage").style.display = "none";
-
+ 
         renderQuestionImagesPreview();
     });
-
+ 
 // ======================================================
 // بارگذاری تصاویر انتخاب‌شده روی سرور
 // ======================================================
-
+ 
 async function uploadQuestionImageFiles() {
     if (!questionImageFiles.length) {
         return [];
     }
-
+ 
     const formData = new FormData();
-
+ 
     questionImageFiles.forEach(file => {
         formData.append("images", file, file.name);
     });
-
+ 
     const result = await apiRequest(
         "/api/teacher/images/upload",
         {
@@ -1803,7 +1784,7 @@ async function uploadQuestionImageFiles() {
             body: formData
         }
     );
-
+ 
     // پشتیبانی از ساختارهای متداول پاسخ سرویس
     const uploadedItems =
         result.files ||
@@ -1811,25 +1792,25 @@ async function uploadQuestionImageFiles() {
         result.urls ||
         result.data?.files ||
         result.data?.images;
-
+ 
     if (!Array.isArray(uploadedItems)) {
         throw new Error(
             "فهرست تصاویر بارگذاری‌شده از سرور دریافت نشد."
         );
     }
-
+ 
     const uploadedUrls = uploadedItems.map(item => {
         if (typeof item === "string") {
             return item;
         }
-
+ 
         return item.url || item.publicUrl || item.location || "";
     });
-
+ 
     const validUrls = uploadedUrls.filter(url => {
         try {
             const parsed = new URL(url);
-
+ 
             return (
                 parsed.protocol === "https:" &&
                 parsed.hostname === "image.azmoonmath.ir" &&
@@ -1843,16 +1824,16 @@ async function uploadQuestionImageFiles() {
             return false;
         }
     });
-
+ 
     if (validUrls.length !== questionImageFiles.length) {
         throw new Error(
             "تعداد یا آدرس تصاویر دریافتی با فایل‌های انتخاب‌شده مطابقت ندارد."
         );
     }
-
+ 
     return validUrls;
 }
-
+ 
 async function saveQuestion() {
     const text = document.getElementById("questionText").value.trim();
     const optionCount = Number(document.getElementById("optionCount").value);
@@ -1918,20 +1899,20 @@ async function saveQuestion() {
             showQuestionImagesMessage(
                 "در حال بارگذاری تصاویر..."
             );
-
+ 
             const uploadedUrls =
                 await uploadQuestionImageFiles();
-
+ 
             questionImageUrls.push(...uploadedUrls);
-
+ 
             questionImageFiles = [];
-
+ 
             renderQuestionImagesPreview();
         }
-
+ 
         // آدرس تصاویر همراه اطلاعات سؤال ذخیره می‌شود.
         body.images = [...questionImageUrls];
-
+ 
         await postJson("/api/teacher/questions", body);
  
         closeQuestionModal();
@@ -2672,6 +2653,55 @@ function renderAttempt(data) {
             resultClass = "result-wrong";
         }
  
+        // آماده‌سازی تصاویر سؤال برای نمایش در پنل معلم
+        const questionImages = Array.isArray(question.images)
+            ? question.images
+            : [];
+ 
+        const questionImagesHtml = questionImages
+            .map(imageUrl => {
+                if (
+                    typeof imageUrl !== "string"
+                ) {
+                    return "";
+                }
+ 
+                try {
+                    const parsedUrl = new URL(imageUrl);
+ 
+                    if (
+                        parsedUrl.protocol !== "https:" ||
+                        parsedUrl.hostname !== "image.azmoonmath.ir" ||
+                        !/^\/files\/[0-9a-f-]+\.(jpg|png|webp|gif)$/i.test(
+                            parsedUrl.pathname
+                        ) ||
+                        parsedUrl.search ||
+                        parsedUrl.hash
+                    ) {
+                        return "";
+                    }
+ 
+                    return `
+                        <div style="margin:8px 0;text-align:center">
+                            <img
+                                src="${escapeHtml(imageUrl)}"
+                                alt="تصویر سؤال"
+                                loading="lazy"
+                                style="
+                                    max-width:220px;
+                                    width:100%;
+                                    height:auto;
+                                    border-radius:8px;
+                                "
+                            >
+                        </div>
+                    `;
+                } catch {
+                    return "";
+                }
+            })
+            .join("");
+ 
         const opts = question.options || [];
  
         const selectedAnswer =
@@ -2687,7 +2717,10 @@ function renderAttempt(data) {
         html += `
             <tr class="${rowClass}">
                 <td>${faNumber(question.number)}</td>
-                <td class="answer-box">${escapeHtml(question.question || "—")}</td>
+                <td class="answer-box">
+                    ${escapeHtml(question.question || "—")}
+                    ${questionImagesHtml}
+                </td>
                 <td class="answer-box">${escapeHtml(selectedAnswer)}</td>
                 <td class="answer-box">${escapeHtml(correctAnswer)}</td>
                 <td class="${resultClass}">${resultText}</td>
