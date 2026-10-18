@@ -2516,10 +2516,6 @@ function getQueryParams(){
  
         authority:
             params.get("Authority")
-     ,
-testPaidOrder:
-    params.get("testPaidOrder")
- 
     };
  
 }
@@ -2598,17 +2594,7 @@ function handlePaymentReturn(query){
         );
  
     }
- // فقط برای آزمایش نسخه staging
-if (
-    query.testPaidOrder ===
-    "92840ae2-be17-4427-b521-f8240d1dc44f"
-) {
-    orderId = query.testPaidOrder;
-    attemptId = null;
-    // ذخیره در localStorage + نمایش صفحه قوانین
-    ...
-}
- 
+
     if(
         query.payment ||
         query.returnedOrderId
