@@ -791,11 +791,11 @@ function renderJalaliPicker(type) {
  
     let html = `
         <div class="jalali-picker-header">
-            <button type="button" title="سال قبل" onclick="changeJalaliYear('${type}',-1)">‹‹</button>
-            <button type="button" title="ماه قبل" onclick="changeJalaliMonth('${type}',-1)">‹</button>
+            <button type="button" title="سال قبل" onclick="event.stopPropagation();changeJalaliYear('${type}',-1)">‹‹</button>
+            <button type="button" title="ماه قبل" onclick="event.stopPropagation();changeJalaliMonth('${type}',-1)">‹</button>
             <div class="jalali-month-title">${jalaliMonths[state.month - 1]} ${faNumber(state.year)}</div>
-            <button type="button" title="ماه بعد" onclick="changeJalaliMonth('${type}',1)">›</button>
-            <button type="button" title="سال بعد" onclick="changeJalaliYear('${type}',1)">››</button>
+            <button type="button" title="ماه بعد" onclick="event.stopPropagation();changeJalaliMonth('${type}',1)">›</button>
+            <button type="button" title="سال بعد" onclick="event.stopPropagation();changeJalaliYear('${type}',1)">››</button>
         </div>
         <div class="jalali-weekdays">
     `;
@@ -821,7 +821,7 @@ function renderJalaliPicker(type) {
  
         html += `
             <button type="button" class="${classes}"
-                onclick="selectJalaliDate('${type}',${state.year},${state.month},${day})">
+                onclick="event.stopPropagation();selectJalaliDate('${type}',${state.year},${state.month},${day})">
                 ${faNumber(day)}
             </button>
         `;
@@ -830,12 +830,15 @@ function renderJalaliPicker(type) {
     html += `
         </div>
         <div class="jalali-picker-footer">
-            <button type="button" onclick="clearJalaliDate('${type}')">پاک کردن</button>
-            <button type="button" class="today-btn" onclick="selectTodayJalali('${type}')">امروز</button>
+            <button type="button" onclick="event.stopPropagation();clearJalaliDate('${type}')">پاک کردن</button>
+            <button type="button" class="today-btn" onclick="event.stopPropagation();selectTodayJalali('${type}')">امروز</button>
         </div>
     `;
  
     picker.innerHTML = html;
+ 
+    // جلوگیری از بسته شدن تقویم هنگام کلیک داخل آن
+    picker.onclick = function(e) { e.stopPropagation(); };
 }
  
 function changeJalaliMonth(type, amount) {
@@ -2543,7 +2546,7 @@ document.getElementById("discountEnd").addEventListener("click", event => {
 });
  
 document.addEventListener("click", event => {
-    if (!event.target.closest(".jalali-date-wrapper")) {
+    if (!event.target.closest(".jalali-date-wrapper") && !event.target.closest(".jalali-picker")) {
         closeAllDatePickers();
     }
 });
