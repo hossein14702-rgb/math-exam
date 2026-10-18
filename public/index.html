@@ -2552,19 +2552,23 @@ async function applyBlobSrcsToQuestionImages() {
                     img.onload = finish;
  
                     img.onerror = function () {
-                        // اگر blob شکست خورد، یک‌بار URL اصلی را امتحان کن
-                        if (
-                            finalSrc &&
-                            finalSrc.startsWith("blob:") &&
-                            original &&
-                            img.dataset.fallbackTried !== "1"
-                        ) {
-                            img.dataset.fallbackTried = "1";
-                            finalSrc = original;
-                            img.src = original;
-                            return;
-                        }
-                        finish();
+    // اگر blob شکست خورد، ابتدا URL اصلی را امتحان کن
+    if (
+        finalSrc &&
+        finalSrc.startsWith("blob:") &&
+        original &&
+        img.dataset.fallbackTried !== "1"
+    ) {
+        img.dataset.fallbackTried = "1";
+        finalSrc = original;
+        img.src = original;
+        return;
+    }
+
+    // تلاش مجدد برای بارگذاری تصویر
+    finish();
+    retryQuestionImage(img);
+};
                     };
  
                     // اول خالی، بعد ست — جلوگیری از race در سؤال اول
