@@ -72,9 +72,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .time-input{text-align:center;direction:ltr}
 .jalali-picker{display:none;position:absolute;top:calc(100% + 7px);right:0;width:330px;max-width:95vw;background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);border:1px solid #e5e7eb;z-index:2000;padding:12px}
 .jalali-picker.show{display:block}
-.jalali-picker-header{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:10px}
-.jalali-picker-header button{background:#f1f5f9;color:#111827;padding:7px 12px}
-.jalali-month-title{flex:1;text-align:center;font-weight:bold;font-size:14px}
+.jalali-picker-header{display:flex;align-items:center;justify-content:space-between;gap:3px;margin-bottom:10px}
+.jalali-picker-header button{background:#f1f5f9;color:#111827;padding:6px 8px;font-size:13px;min-width:32px}
+.jalali-month-title{flex:1;text-align:center;font-weight:bold;font-size:13px;white-space:nowrap}
 .jalali-weekdays,.jalali-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .jalali-weekdays div{text-align:center;font-size:11px;color:#64748b;padding:6px 0;font-weight:bold}
 .jalali-day{border:0;background:#fff;padding:8px 2px;border-radius:8px;font-size:12px;cursor:pointer}
@@ -791,9 +791,11 @@ function renderJalaliPicker(type) {
  
     let html = `
         <div class="jalali-picker-header">
-            <button type="button" onclick="changeJalaliMonth('${type}',-1)">‹</button>
+            <button type="button" title="سال قبل" onclick="changeJalaliYear('${type}',-1)">‹‹</button>
+            <button type="button" title="ماه قبل" onclick="changeJalaliMonth('${type}',-1)">‹</button>
             <div class="jalali-month-title">${jalaliMonths[state.month - 1]} ${faNumber(state.year)}</div>
-            <button type="button" onclick="changeJalaliMonth('${type}',1)">›</button>
+            <button type="button" title="ماه بعد" onclick="changeJalaliMonth('${type}',1)">›</button>
+            <button type="button" title="سال بعد" onclick="changeJalaliYear('${type}',1)">››</button>
         </div>
         <div class="jalali-weekdays">
     `;
@@ -843,6 +845,21 @@ function changeJalaliMonth(type, amount) {
  
     if (state.month > 12) { state.month = 1; state.year++; }
     if (state.month < 1) { state.month = 12; state.year--; }
+ 
+    const maxDay = jalaliMonthDays(state.year, state.month);
+    if (state.day > maxDay) state.day = maxDay;
+ 
+    renderJalaliPicker(type);
+}
+ 
+function changeJalaliYear(type, amount) {
+    const state = datePickerState[type];
+ 
+    state.year += amount;
+ 
+    // جلوگیری از سال‌های خیلی قدیمی یا خیلی آینده
+    if (state.year < 1300) state.year = 1300;
+    if (state.year > 1500) state.year = 1500;
  
     const maxDay = jalaliMonthDays(state.year, state.month);
     if (state.day > maxDay) state.day = maxDay;
