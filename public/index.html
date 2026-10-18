@@ -2126,9 +2126,15 @@ async function preloadQuestionImages(retryFailedOnly = false) {
  
     const urls = retryFailedOnly
         ? [...imagePreloadFailedUrls]
-        : allUrls.filter(
-            src => !questionImageBlobUrls.has(src)
-        );
+        : allUrls.filter(src => {
+            const key = String(src).trim();
+            if (questionImageBlobUrls.has(key)) return false;
+            try {
+                const u = new URL(key);
+                if (questionImageBlobUrls.has(u.origin + u.pathname)) return false;
+            } catch (_) {}
+            return true;
+        });
  
     // هیچ تصویری در بانک نیست → پرداخت آزاد
     if (totalAll === 0) {
@@ -2219,7 +2225,7 @@ async function preloadQuestionImages(retryFailedOnly = false) {
                         URL.revokeObjectURL(oldUrl);
                     }
  
-                    questionImageBlobUrls.set(
+                    rememberImageBlob(
                         src,
                         URL.createObjectURL(blob)
                     );
@@ -2385,7 +2391,17 @@ async function ensureImagesReady(imageUrls) {
         return;
     }
  
-    const missing = list.filter(src => !questionImageBlobUrls.has(src));
+    const missing = list.filter(src => {
+        const key = String(src).trim();
+        if (questionImageBlobUrls.has(key)) return false;
+        const stable = key;
+        try {
+            const u = new URL(key);
+            if (questionImageBlobUrls.has(u.origin + u.pathname)) return false;
+            if (questionImageBlobUrls.has(u.href)) return false;
+        } catch (_) {}
+        return true;
+    });
     if (!missing.length) {
         return;
     }
@@ -2411,7 +2427,7 @@ async function ensureImagesReady(imageUrls) {
                     if (oldUrl) {
                         URL.revokeObjectURL(oldUrl);
                     }
-                    questionImageBlobUrls.set(src, URL.createObjectURL(blob));
+                    rememberImageBlob(src, URL.createObjectURL(blob));
                     imagePreloadFailedUrls.delete(src);
                     return;
                 } catch (error) {
@@ -2426,15 +2442,45 @@ async function ensureImagesReady(imageUrls) {
     );
 }
  
+function normalizeImageKey(src) {
+    const key = String(src || "").trim();
+    if (!key) return "";
+    try {
+        const u = new URL(key);
+        // کلید پایدار بدون query/hash
+        return u.origin + u.pathname;
+    } catch (_) {
+        return key;
+    }
+}
+ 
+function rememberImageBlob(src, blobUrl) {
+    const key = String(src || "").trim();
+    if (!key || !blobUrl) return;
+    questionImageBlobUrls.set(key, blobUrl);
+    const stable = normalizeImageKey(key);
+    if (stable) {
+        questionImageBlobUrls.set(stable, blobUrl);
+    }
+    try {
+        questionImageBlobUrls.set(new URL(key).href, blobUrl);
+    } catch (_) {}
+}
+ 
 function resolveQuestionImageSrc(src) {
     if (!src) return "";
     const key = String(src).trim();
     if (questionImageBlobUrls.has(key)) {
         return questionImageBlobUrls.get(key);
     }
-    // تطبیق کلید در صورت تفاوت جزئی (مثلاً query اضافه)
+    const stable = normalizeImageKey(key);
+    if (stable && questionImageBlobUrls.has(stable)) {
+        return questionImageBlobUrls.get(stable);
+    }
     for (const [k, blob] of questionImageBlobUrls.entries()) {
-        if (k === key) return blob;
+        if (k === key || normalizeImageKey(k) === stable) {
+            return blob;
+        }
         try {
             const a = new URL(k);
             const b = new URL(key);
@@ -2446,21 +2492,87 @@ function resolveQuestionImageSrc(src) {
     return key;
 }
  
-/** بعد از رندر DOM، src تصاویر را از blob به‌روز کن تا سؤال اول خالی نماند */
-function applyBlobSrcsToQuestionImages() {
+/** استخراج لیست URL تصویر از آبجکت سؤال (سازگار با شکل‌های مختلف API) */
+function getQuestionImages(question) {
+    if (!question) return [];
+    let imgs = question.images;
+ 
+    if (typeof imgs === "string") {
+        try {
+            imgs = JSON.parse(imgs || "[]");
+        } catch (_) {
+            imgs = [];
+        }
+    }
+ 
+    if (!Array.isArray(imgs)) {
+        imgs = [];
+    }
+ 
+    return imgs
+        .map(item => {
+            if (typeof item === "string") return item.trim();
+            if (item && typeof item.url === "string") return item.url.trim();
+            if (item && typeof item.src === "string") return item.src.trim();
+            return "";
+        })
+        .filter(Boolean);
+}
+ 
+/**
+ * بعد از درج DOM، src را از blob ست می‌کند و تا لود واقعی (یا timeout) صبر می‌کند.
+ * این کار باگ سؤال اول را که src در innerHTML گاهی اعمال نمی‌شد برطرف می‌کند.
+ */
+async function applyBlobSrcsToQuestionImages() {
     const container = document.getElementById("questionImages");
     if (!container) return;
-    container.querySelectorAll("img[data-original-src]").forEach(img => {
-        const original = img.dataset.originalSrc;
-        const blobSrc = resolveQuestionImageSrc(original);
-        if (blobSrc && blobSrc !== img.getAttribute("src")) {
-            img.src = blobSrc;
-        }
-        // اگر هنوز remote است و onerror دارد، یک‌بار تلاش مجدد نرم
-        if (blobSrc && blobSrc.startsWith("blob:")) {
-            img.onerror = null;
-        }
-    });
+ 
+    const imgs = Array.from(
+        container.querySelectorAll("img[data-original-src]")
+    );
+ 
+    if (!imgs.length) return;
+ 
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+ 
+    await Promise.all(
+        imgs.map(
+            img =>
+                new Promise(resolve => {
+                    const original = img.dataset.originalSrc || "";
+                    let finalSrc = resolveQuestionImageSrc(original);
+ 
+                    const finish = () => {
+                        clearTimeout(timer);
+                        resolve();
+                    };
+ 
+                    const timer = setTimeout(finish, 4000);
+ 
+                    img.onload = finish;
+ 
+                    img.onerror = function () {
+                        // اگر blob شکست خورد، یک‌بار URL اصلی را امتحان کن
+                        if (
+                            finalSrc &&
+                            finalSrc.startsWith("blob:") &&
+                            original &&
+                            img.dataset.fallbackTried !== "1"
+                        ) {
+                            img.dataset.fallbackTried = "1";
+                            finalSrc = original;
+                            img.src = original;
+                            return;
+                        }
+                        finish();
+                    };
+ 
+                    // اول خالی، بعد ست — جلوگیری از race در سؤال اول
+                    img.removeAttribute("src");
+                    img.src = finalSrc || original;
+                })
+        )
+    );
 }
  
 /* =========================
@@ -3212,13 +3324,19 @@ async function startExam(){
  
     img.dataset.retryCount = String(attempts + 1);
  
-    const delays = [1000, 2000, 3000];
+    const delays = [500, 1000, 2000];
  
     setTimeout(() => {
         if (!img.isConnected) return;
  
-        const separator = originalSrc.includes("?") ? "&" : "?";
+        // اول blob ذخیره‌شده، بعد URL اصلی
+        const blobSrc = resolveQuestionImageSrc(originalSrc);
+        if (blobSrc && blobSrc.startsWith("blob:") && attempts === 0) {
+            img.src = blobSrc;
+            return;
+        }
  
+        const separator = originalSrc.includes("?") ? "&" : "?";
         img.src =
             originalSrc +
             separator +
@@ -3249,7 +3367,7 @@ async function showQuestion(
     }
  
     // قبل از رندر، تصاویر این سؤال را در blob آماده کن (رفع باگ سؤال اول)
-    const qImages = Array.isArray(question.images) ? question.images : [];
+    const qImages = getQuestionImages(question);
     if (qImages.length) {
         try {
             await ensureImagesReady(qImages);
@@ -3257,6 +3375,8 @@ async function showQuestion(
             console.warn("showQuestion ensureImagesReady:", e);
         }
     }
+    // برای رندر از همان لیست نرمال‌شده استفاده می‌کنیم
+    question = { ...question, images: qImages };
  
  
     const questionIndex =
@@ -3360,11 +3480,9 @@ async function showQuestion(
                 <div class="question-images" id="questionImages">
                     ${question.images.map((src, imgIndex) => `
                         <img
-    src="${escapeHtml(resolveQuestionImageSrc(src))}"
     alt="تصویر سؤال ${imgIndex + 1}"
     data-index="${imgIndex}"
     data-original-src="${escapeHtml(src)}"
-    onerror="retryQuestionImage(this)"
     onclick="openImageLightbox(${imgIndex})"
                         >
                     `).join("")}
@@ -3405,7 +3523,8 @@ async function showQuestion(
     `;
  
  
-    applyBlobSrcsToQuestionImages();
+    // صبر کن تا src از blob ست شود و تصویر واقعاً لود شود (مخصوصاً سؤال اول)
+    await applyBlobSrcsToQuestionImages();
  
     startTimer(
         questionStartedAt,
