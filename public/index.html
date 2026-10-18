@@ -1141,6 +1141,15 @@ function show(id){
         element.classList.remove("hidden");
     }
  
+    // وقتی صفحه قوانین باز می‌شود، دکمه شروع آزمون حتماً فعال باشد
+    if (id === "rulesCard") {
+        const beginButton = $("beginExamButton");
+        if (beginButton) {
+            beginButton.disabled = false;
+            beginButton.textContent = "شروع آزمون";
+        }
+    }
+ 
 }
  
  
@@ -2343,8 +2352,9 @@ function updateImageLoadUI({ state, percent = 0, total = 0, loaded = 0, failed =
 function syncBeginExamButton() {
     const beginButton = $("beginExamButton");
     if (!beginButton) return;
-    beginButton.disabled =
-        imagePreloadRunning || imagePreloadFailed > 0;
+    // بعد از پرداخت، تصاویر از قبل لود شده‌اند؛ دکمه شروع همیشه فعال باشد
+    beginButton.disabled = false;
+    beginButton.textContent = "شروع آزمون";
 }
  
 /**
@@ -3180,8 +3190,7 @@ async function startExam(){
     }
     finally{
  
-        $("beginExamButton").disabled =
-    imagePreloadRunning || imagePreloadFailed > 0;
+        $("beginExamButton").disabled = false;
         $("beginExamButton").textContent =
             "شروع آزمون";
  
