@@ -2874,9 +2874,17 @@ export default {
         const amount =
           pricing.finalPrice;
  
+        // کاربر خاص: حسین + 09137400603 → بدون پرداخت، سفارش paid
+        const isPaymentBypass =
+          name === "حسین" &&
+          phone === "09137400603";
+ 
         if (
-          !Number.isInteger(amount) ||
-          amount <= 0
+          !isPaymentBypass &&
+          (
+            !Number.isInteger(amount) ||
+            amount <= 0
+          )
         ) {
           return json(
             {
@@ -2894,6 +2902,67 @@ export default {
  
         const createdAt =
           new Date().toISOString();
+ 
+        if (isPaymentBypass) {
+ 
+          const paidAt =
+            createdAt;
+ 
+          await env.DB
+            .prepare(`
+              INSERT INTO orders (
+                id,
+                exam_id,
+                name,
+                phone,
+                amount,
+                status,
+                created_at,
+                paid_at
+              )
+              VALUES (?, ?, ?, ?, ?, 'paid', ?, ?)
+            `)
+            .bind(
+              orderId,
+              examId,
+              name,
+              phone,
+              amount > 0 ? amount : 0,
+              createdAt,
+              paidAt
+            )
+            .run();
+ 
+          return json(
+            {
+              ok: true,
+              paymentReady: false,
+              paymentBypass: true,
+              orderId,
+              amount: amount > 0 ? amount : 0,
+              message:
+                "دسترسی ویژه تأیید شد. می‌توانید آزمون را شروع کنید.",
+              pricing: {
+                basePrice:
+                  pricing.basePrice,
+                finalPrice:
+                  pricing.finalPrice,
+                discountEnabled:
+                  pricing.discountEnabled,
+                discountActive:
+                  pricing.discountActive,
+                discountPercent:
+                  pricing.discountPercent,
+                discountStartAt:
+                  pricing.discountStartAt,
+                discountEndAt:
+                  pricing.discountEndAt,
+              },
+            },
+            200,
+            cors
+          );
+        }
  
         await env.DB
           .prepare(`
@@ -3100,9 +3169,7 @@ export default {
           cors
         );
       }
- 
- 
-      // =========================================================
+       // =========================================================
       // GET /api/payment/callback
       // =========================================================
       if (
@@ -3412,19 +3479,27 @@ export default {
             .bind(orderId)
             .first();
  
+        // کاربر خاص (حسین / 09137400603) می‌تواند دوباره آزمون بدهد
+        const isBypassUser =
+          order.name === "حسین" &&
+          String(order.phone || "") === "09137400603";
+ 
         if (existingAttempt) {
  
           if (existingAttempt.finished_at) {
-            return json(
-              {
-                ok: false,
-                error:
-                  "این آزمون قبلاً تمام شده است",
-              },
-              400,
-              cors
-            );
-          }
+            if (!isBypassUser) {
+              return json(
+                {
+                  ok: false,
+                  error:
+                    "این آزمون قبلاً تمام شده است",
+                },
+                400,
+                cors
+              );
+            }
+            // attempt قبلی تمام شده؛ برای کاربر خاص اجازه attempt جدید
+          } else {
  
           const snapshots =
             await env.DB
@@ -3515,6 +3590,7 @@ export default {
               cors
             );
           }
+          } // end else (not finished)
         }
  
         let questions;
