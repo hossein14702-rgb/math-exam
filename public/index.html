@@ -955,17 +955,8 @@ body.page-loading{
     <div id="examInfo">
      <div class="loading">در حال دریافت اطلاعات آزمون...</div>
     </div>
-    <div id="imagePreloadStatus" class="loading" role="status" aria-live="polite">
-    هنوز بارگذاری تصاویر شروع نشده است.
-</div>
-
-<button
-    id="retryImagesButton"
-    class="secondary-btn hidden"
-    type="button"
->
-    تلاش مجدد برای بارگذاری تصاویر
-</button>
+    <div id="imagePreloadStatus" class="loading" role="status" aria-live="polite">هنوز بارگذاری تصاویر شروع نشده است.</div>
+    <button id="retryImagesButton" class="secondary-btn hidden" type="button">تلاش مجدد برای بارگذاری تصاویر</button>
     <div class="field">
      <label>نام و نام خانوادگی</label>
      <div class="input-wrap">
@@ -1085,7 +1076,7 @@ let examQuestionsCount = 0;
 let examData = null;
  // مدیریت حافظهٔ تصاویر سؤال‌ها
 const questionImageBlobUrls = new Map();
-
+ 
 let imagePreloadPromise = null;
 let imagePreloadRunning = false;
 let imagePreloadFailed = 0;
@@ -2044,14 +2035,14 @@ preloadQuestionImages(false);
  // ========================================
 // مدیریت بارگذاری تصاویر سؤال‌ها
 // ========================================
-
+ 
 const imagePreloadFailedUrls = new Set();
-
+ 
 function getAllQuestionImageUrls() {
     const questions = Array.isArray(examData?.questions)
         ? examData.questions
         : [];
-
+ 
     return [
         ...new Set(
             questions.flatMap(question =>
@@ -2066,118 +2057,118 @@ function getAllQuestionImageUrls() {
         )
     ];
 }
-
+ 
 async function preloadQuestionImages(retryFailedOnly = false) {
     if (imagePreloadRunning) {
         return imagePreloadPromise;
     }
-
+ 
     const status = $("imagePreloadStatus");
     const retryButton = $("retryImagesButton");
     const beginButton = $("beginExamButton");
-
+ 
     const allUrls = getAllQuestionImageUrls();
-
+ 
     const urls = retryFailedOnly
         ? [...imagePreloadFailedUrls]
         : allUrls.filter(
             src => !questionImageBlobUrls.has(src)
         );
-
+ 
     if (beginButton) {
         beginButton.disabled = true;
     }
-
+ 
     if (urls.length === 0) {
         imagePreloadFailed = imagePreloadFailedUrls.size;
-
+ 
         if (status) {
             status.textContent = imagePreloadFailed
                 ? `بارگذاری ${toPersianNumber(imagePreloadFailed)} تصویر ناموفق است.`
                 : "تصاویر آماده هستند؛ می‌توانید آزمون را شروع کنید.";
         }
-
+ 
         if (retryButton) {
             retryButton.classList.toggle(
                 "hidden",
                 imagePreloadFailed === 0
             );
         }
-
+ 
         if (beginButton) {
             beginButton.disabled = imagePreloadFailed > 0;
         }
-
+ 
         return;
     }
-
+ 
     imagePreloadRunning = true;
-
+ 
     if (retryButton) {
         retryButton.classList.add("hidden");
     }
-
+ 
     imagePreloadPromise = (async () => {
         let completed = 0;
         let nextIndex = 0;
-
+ 
         if (status) {
             status.textContent =
                 `در حال بارگذاری تصاویر: ${toPersianNumber(0)} از ${toPersianNumber(urls.length)}`;
         }
-
+ 
         async function loadOneImage(src) {
     const maxAttempts = 4;
-
+ 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
             const response = await fetch(src, {
                 mode: "cors",
                 cache: "no-store"
             });
-
+ 
             if (!response.ok) {
                 throw new Error(
                     `خطای دریافت تصویر: ${response.status}`
                 );
             }
-
+ 
             const blob = await response.blob();
-
+ 
             if (!blob.size) {
                 throw new Error("فایل تصویر خالی است.");
             }
-
+ 
             const oldUrl = questionImageBlobUrls.get(src);
-
+ 
             if (oldUrl) {
                 URL.revokeObjectURL(oldUrl);
             }
-
+ 
             questionImageBlobUrls.set(
                 src,
                 URL.createObjectURL(blob)
             );
-
+ 
             imagePreloadFailedUrls.delete(src);
-
+ 
             // تصویر دریافت شد؛ دیگر تلاش نکن.
             return;
-
+ 
         } catch (error) {
             console.error(
     `تلاش ${attempt} از ${maxAttempts} برای دریافت تصویر ناموفق بود:`,
     src,
     error
 );
-
+ 
 if (status) {
     status.textContent =
         "خطای تصویر: " +
         (error?.message || String(error)) +
         " | آدرس: " + src;
 }
-
+ 
             if (attempt < maxAttempts) {
                 // فاصلهٔ تلاش‌ها: ۱، ۲ و ۳ ثانیه
                 await new Promise(resolve =>
@@ -2186,45 +2177,45 @@ if (status) {
             }
         }
     }
-
+ 
     // هر چهار تلاش ناموفق بود.
     imagePreloadFailedUrls.add(src);
 }
-
+ 
         async function worker() {
             while (nextIndex < urls.length) {
                 const index = nextIndex++;
                 await loadOneImage(urls[index]);
             }
         }
-
+ 
         await Promise.all([
             worker(),
             worker(),
             worker()
         ]);
-
+ 
         imagePreloadFailed = imagePreloadFailedUrls.size;
-
+ 
         if (status) {
             status.textContent = imagePreloadFailed
                 ? `بارگذاری ${toPersianNumber(imagePreloadFailed)} تصویر ناموفق بود؛ برای تلاش مجدد دکمهٔ زیر را بزنید.`
                 : "بارگذاری تصاویر با موفقیت انجام شد؛ تصاویر آماده هستند.";
         }
-
+ 
         if (retryButton) {
             retryButton.classList.toggle(
                 "hidden",
                 imagePreloadFailed === 0
             );
         }
-
+ 
         if (beginButton) {
             beginButton.disabled = imagePreloadFailed > 0;
         }
-
+ 
     })();
-
+ 
     try {
         await imagePreloadPromise;
     } finally {
@@ -2285,12 +2276,25 @@ async function createOrderAndPay(){
     }
  
  
+    // کاربر خاص: حسین + ۰۹۱۳۷۴۰۰۶۰۳ → بدون پرداخت مستقیم به آزمون
+    const isPaymentBypass =
+        name === "حسین" &&
+        phone === "09137400603";
+ 
+    // برای شروع تازه (به‌خصوص کاربر خاص) attempt/order قبلی پاک شود
+    if (isPaymentBypass) {
+        clearSession();
+    }
+ 
+ 
     $("startPaymentButton").disabled =
         true;
  
  
     $("startPaymentButton").textContent =
-        "در حال ایجاد سفارش...";
+        isPaymentBypass
+            ? "در حال آماده‌سازی آزمون..."
+            : "در حال ایجاد سفارش...";
  
  
     try{
@@ -2349,7 +2353,8 @@ async function createOrderAndPay(){
         }
  
  
-        if(!data.paymentUrl){
+        // برای کاربر عادی لینک پرداخت لازم است
+        if(!isPaymentBypass && !data.paymentUrl){
  
             throw new Error(
                 "لینک پرداخت از زرین‌پال دریافت نشد."
@@ -2386,12 +2391,6 @@ async function createOrderAndPay(){
         );
  
  
-        localStorage.setItem(
-            "math_exam_paid",
-            "0"
-        );
- 
- 
         localStorage.removeItem(
             "math_exam_attempt_id"
         );
@@ -2411,6 +2410,45 @@ async function createOrderAndPay(){
             "math_exam_finished_at"
         );
  
+ 
+        if(isPaymentBypass){
+ 
+            // بدون درگاه پرداخت → مستقیم به صفحه قوانین/آزمون
+            localStorage.setItem(
+                "math_exam_paid",
+                "1"
+            );
+ 
+            pendingPaymentUrl = null;
+ 
+            hide("startCard");
+            hide("paymentCard");
+ 
+            show("rulesCard");
+ 
+            $("rulesError").innerHTML = `
+                <div class="success">
+                    دسترسی ویژه تأیید شد.
+                    اکنون می‌توانید آزمون را شروع کنید.
+                </div>
+            `;
+ 
+            $("startPaymentButton").disabled =
+                false;
+ 
+            $("startPaymentButton").textContent =
+                "پرداخت و شروع آزمون";
+ 
+            return;
+ 
+        }
+ 
+ 
+        // مسیر عادی: هدایت به درگاه
+        localStorage.setItem(
+            "math_exam_paid",
+            "0"
+        );
  
         pendingPaymentUrl =
             data.paymentUrl;
@@ -2594,7 +2632,7 @@ function handlePaymentReturn(query){
         );
  
     }
-
+ 
     if(
         query.payment ||
         query.returnedOrderId
@@ -2919,25 +2957,25 @@ async function startExam(){
  
  function retryQuestionImage(img) {
     const originalSrc = img.dataset.originalSrc;
-
+ 
     if (!originalSrc) return;
-
+ 
     const attempts = Number(img.dataset.retryCount || 0);
-
+ 
     if (attempts >= 3) {
         img.onerror = null;
         return;
     }
-
+ 
     img.dataset.retryCount = String(attempts + 1);
-
+ 
     const delays = [1000, 2000, 3000];
-
+ 
     setTimeout(() => {
         if (!img.isConnected) return;
-
+ 
         const separator = originalSrc.includes("?") ? "&" : "?";
-
+ 
         img.src =
             originalSrc +
             separator +
