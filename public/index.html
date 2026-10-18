@@ -445,6 +445,39 @@ body.page-loading{
     transition:width .2s;
 }
  
+.image-load-progress-wrap{
+    margin-top:18px;
+    margin-bottom:0;
+}
+ 
+.image-load-progress-wrap.hidden{
+    display:none !important;
+}
+ 
+.image-load-bar{
+    height:10px;
+    background:#e5e7eb;
+    border-radius:20px;
+    overflow:hidden;
+}
+ 
+.image-load-bar .progress-fill{
+    background:linear-gradient(90deg,#2563eb,#3b82f6);
+}
+ 
+#startPaymentButton.is-loading{
+    opacity:.85;
+    cursor:wait;
+}
+ 
+#startPaymentButton.is-retry{
+    background:#c2410c;
+}
+ 
+#startPaymentButton.is-retry:hover{
+    background:#9a3412;
+}
+ 
 .question-box{
     margin-top:22px;
 }
@@ -955,8 +988,6 @@ body.page-loading{
     <div id="examInfo">
      <div class="loading">در حال دریافت اطلاعات آزمون...</div>
     </div>
-    <div id="imagePreloadStatus" class="loading" role="status" aria-live="polite">هنوز بارگذاری تصاویر شروع نشده است.</div>
-    <button id="retryImagesButton" class="secondary-btn hidden" type="button">تلاش مجدد برای بارگذاری تصاویر</button>
     <div class="field">
      <label>نام و نام خانوادگی</label>
      <div class="input-wrap">
@@ -971,7 +1002,12 @@ body.page-loading{
      <span class="hint"> شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود. </span>
     </div>
     <div id="startError"></div>
-    <button id="startPaymentButton" class="primary-btn">پرداخت و شروع آزمون</button>
+    <div id="imageLoadProgressWrap" class="image-load-progress-wrap">
+     <div class="progress-bar image-load-bar">
+      <div class="progress-fill" id="imageLoadProgressFill" style="width:0%"></div>
+     </div>
+    </div>
+    <button id="startPaymentButton" class="primary-btn" type="button" disabled>در حال بارگذاری سؤالات...</button>
    </div>
    <!-- پرداخت -->
    <div class="card hidden" id="paymentCard">
@@ -1942,6 +1978,8 @@ async function loadExam(){
             در حال دریافت اطلاعات آزمون...
         </div>`;
  
+    updateImageLoadUI({ state: "loading", percent: 0, total: 0 });
+ 
     try{
  
         const response = await fetch(
@@ -1997,8 +2035,8 @@ async function loadExam(){
  
  
         renderExamInfo();
- // شروع خودکار بارگذاری تصاویر بانک سؤال
-preloadQuestionImages(false);
+        // شروع بارگذاری تصاویر بانک سؤال (منتظر می‌مانیم تا برای سؤال اول آماده باشد)
+        await preloadQuestionImages(false);
     }
     catch(error){
  
@@ -2026,8 +2064,19 @@ preloadQuestionImages(false);
         `;
  
  
-        $("startPaymentButton").disabled =
-            true;
+        updateImageLoadUI({
+            state: "retry",
+            percent: 0,
+            total: 0,
+            failed: 1
+        });
+        // دکمه را برای تلاش مجدد فعال نگه می‌داریم ولی create-order بدون examData کار نمی‌کند
+        const btn = $("startPaymentButton");
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.remove("is-retry");
+            btn.textContent = "خطا در دریافت اطلاعات آزمون";
+        }
  
     }
  
@@ -2063,11 +2112,8 @@ async function preloadQuestionImages(retryFailedOnly = false) {
         return imagePreloadPromise;
     }
  
-    const status = $("imagePreloadStatus");
-    const retryButton = $("retryImagesButton");
-    const beginButton = $("beginExamButton");
- 
     const allUrls = getAllQuestionImageUrls();
+    const totalAll = allUrls.length;
  
     const urls = retryFailedOnly
         ? [...imagePreloadFailedUrls]
@@ -2075,117 +2121,127 @@ async function preloadQuestionImages(retryFailedOnly = false) {
             src => !questionImageBlobUrls.has(src)
         );
  
-    if (beginButton) {
-        beginButton.disabled = true;
+    // هیچ تصویری در بانک نیست → پرداخت آزاد
+    if (totalAll === 0) {
+        imagePreloadFailed = 0;
+        updateImageLoadUI({
+            state: "ready",
+            percent: 100,
+            total: 0
+        });
+        syncBeginExamButton();
+        return;
     }
  
+    // همه از قبل آماده‌اند
     if (urls.length === 0) {
         imagePreloadFailed = imagePreloadFailedUrls.size;
+        const loaded = allUrls.filter(src => questionImageBlobUrls.has(src)).length;
+        const percent = Math.round((loaded / totalAll) * 100);
  
-        if (status) {
-            status.textContent = imagePreloadFailed
-                ? `بارگذاری ${toPersianNumber(imagePreloadFailed)} تصویر ناموفق است.`
-                : "تصاویر آماده هستند؛ می‌توانید آزمون را شروع کنید.";
+        if (imagePreloadFailed > 0) {
+            updateImageLoadUI({
+                state: "retry",
+                percent,
+                total: totalAll,
+                failed: imagePreloadFailed
+            });
+        } else {
+            updateImageLoadUI({
+                state: "ready",
+                percent: 100,
+                total: totalAll
+            });
         }
- 
-        if (retryButton) {
-            retryButton.classList.toggle(
-                "hidden",
-                imagePreloadFailed === 0
-            );
-        }
- 
-        if (beginButton) {
-            beginButton.disabled = imagePreloadFailed > 0;
-        }
- 
+        syncBeginExamButton();
         return;
     }
  
     imagePreloadRunning = true;
  
-    if (retryButton) {
-        retryButton.classList.add("hidden");
-    }
- 
     imagePreloadPromise = (async () => {
-        let completed = 0;
         let nextIndex = 0;
+        let batchDone = 0;
+        const batchTotal = urls.length;
  
-        if (status) {
-            status.textContent =
-                `در حال بارگذاری تصاویر: ${toPersianNumber(0)} از ${toPersianNumber(urls.length)}`;
+        function refreshProgress() {
+            const loaded = allUrls.filter(src =>
+                questionImageBlobUrls.has(src)
+            ).length;
+            const percent = Math.min(
+                100,
+                Math.round((loaded / totalAll) * 100)
+            );
+            updateImageLoadUI({
+                state: "loading",
+                percent,
+                total: totalAll,
+                loaded
+            });
         }
+ 
+        refreshProgress();
  
         async function loadOneImage(src) {
-    const maxAttempts = 4;
+            const maxAttempts = 4;
  
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-            const response = await fetch(src, {
-                mode: "cors",
-                cache: "no-store"
-            });
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                try {
+                    const response = await fetch(src, {
+                        mode: "cors",
+                        cache: "no-store"
+                    });
  
-            if (!response.ok) {
-                throw new Error(
-                    `خطای دریافت تصویر: ${response.status}`
-                );
+                    if (!response.ok) {
+                        throw new Error(
+                            `خطای دریافت تصویر: ${response.status}`
+                        );
+                    }
+ 
+                    const blob = await response.blob();
+ 
+                    if (!blob.size) {
+                        throw new Error("فایل تصویر خالی است.");
+                    }
+ 
+                    const oldUrl = questionImageBlobUrls.get(src);
+ 
+                    if (oldUrl) {
+                        URL.revokeObjectURL(oldUrl);
+                    }
+ 
+                    questionImageBlobUrls.set(
+                        src,
+                        URL.createObjectURL(blob)
+                    );
+ 
+                    imagePreloadFailedUrls.delete(src);
+                    return;
+ 
+                } catch (error) {
+                    console.error(
+                        `تلاش ${attempt} از ${maxAttempts} برای دریافت تصویر ناموفق بود:`,
+                        src,
+                        error
+                    );
+ 
+                    if (attempt < maxAttempts) {
+                        await new Promise(resolve =>
+                            setTimeout(resolve, attempt * 1000)
+                        );
+                    }
+                }
             }
  
-            const blob = await response.blob();
- 
-            if (!blob.size) {
-                throw new Error("فایل تصویر خالی است.");
-            }
- 
-            const oldUrl = questionImageBlobUrls.get(src);
- 
-            if (oldUrl) {
-                URL.revokeObjectURL(oldUrl);
-            }
- 
-            questionImageBlobUrls.set(
-                src,
-                URL.createObjectURL(blob)
-            );
- 
-            imagePreloadFailedUrls.delete(src);
- 
-            // تصویر دریافت شد؛ دیگر تلاش نکن.
-            return;
- 
-        } catch (error) {
-            console.error(
-    `تلاش ${attempt} از ${maxAttempts} برای دریافت تصویر ناموفق بود:`,
-    src,
-    error
-);
- 
-if (status) {
-    status.textContent =
-        "خطای تصویر: " +
-        (error?.message || String(error)) +
-        " | آدرس: " + src;
-}
- 
-            if (attempt < maxAttempts) {
-                // فاصلهٔ تلاش‌ها: ۱، ۲ و ۳ ثانیه
-                await new Promise(resolve =>
-                    setTimeout(resolve, attempt * 1000)
-                );
-            }
+            imagePreloadFailedUrls.add(src);
         }
-    }
- 
-    // هر چهار تلاش ناموفق بود.
-    imagePreloadFailedUrls.add(src);
-}
  
         async function worker() {
             while (nextIndex < urls.length) {
                 const index = nextIndex++;
                 await loadOneImage(urls[index]);
+                batchDone++;
+                refreshProgress();
             }
         }
  
@@ -2197,23 +2253,30 @@ if (status) {
  
         imagePreloadFailed = imagePreloadFailedUrls.size;
  
-        if (status) {
-            status.textContent = imagePreloadFailed
-                ? `بارگذاری ${toPersianNumber(imagePreloadFailed)} تصویر ناموفق بود؛ برای تلاش مجدد دکمهٔ زیر را بزنید.`
-                : "بارگذاری تصاویر با موفقیت انجام شد؛ تصاویر آماده هستند.";
+        const loaded = allUrls.filter(src =>
+            questionImageBlobUrls.has(src)
+        ).length;
+        const percent = Math.min(
+            100,
+            Math.round((loaded / totalAll) * 100)
+        );
+ 
+        if (imagePreloadFailed > 0) {
+            updateImageLoadUI({
+                state: "retry",
+                percent,
+                total: totalAll,
+                failed: imagePreloadFailed
+            });
+        } else {
+            updateImageLoadUI({
+                state: "ready",
+                percent: 100,
+                total: totalAll
+            });
         }
  
-        if (retryButton) {
-            retryButton.classList.toggle(
-                "hidden",
-                imagePreloadFailed === 0
-            );
-        }
- 
-        if (beginButton) {
-            beginButton.disabled = imagePreloadFailed > 0;
-        }
- 
+        syncBeginExamButton();
     })();
  
     try {
@@ -2222,7 +2285,173 @@ if (status) {
         imagePreloadRunning = false;
         imagePreloadPromise = null;
     }
-   }
+}
+ 
+/** وضعیت دکمه پرداخت + نوار پیشرفت تصاویر */
+let imageLoadUiState = "loading"; // loading | ready | retry
+ 
+function updateImageLoadUI({ state, percent = 0, total = 0, loaded = 0, failed = 0 }) {
+    imageLoadUiState = state;
+ 
+    const btn = $("startPaymentButton");
+    const fill = $("imageLoadProgressFill");
+    const wrap = $("imageLoadProgressWrap");
+ 
+    const safePercent = Math.max(0, Math.min(100, Number(percent) || 0));
+ 
+    if (fill) {
+        fill.style.width = safePercent + "%";
+    }
+ 
+    if (!btn) {
+        return;
+    }
+ 
+    btn.classList.remove("is-loading", "is-retry");
+ 
+    if (state === "loading") {
+        if (wrap) wrap.classList.remove("hidden");
+        btn.disabled = true;
+        btn.classList.add("is-loading");
+        btn.textContent =
+            "در حال بارگذاری سؤالات " +
+            toPersianNumber(safePercent) +
+            "٪";
+        return;
+    }
+ 
+    if (state === "retry") {
+        if (wrap) wrap.classList.remove("hidden");
+        btn.disabled = false;
+        btn.classList.add("is-retry");
+        btn.textContent =
+            "تلاش مجدد (" +
+            toPersianNumber(safePercent) +
+            "٪)";
+        return;
+    }
+ 
+    // ready
+    if (wrap) {
+        // نوار را بعد از موفقیت مخفی کن
+        wrap.classList.add("hidden");
+    }
+    btn.disabled = false;
+    btn.textContent = "پرداخت و شروع آزمون";
+}
+ 
+function syncBeginExamButton() {
+    const beginButton = $("beginExamButton");
+    if (!beginButton) return;
+    beginButton.disabled =
+        imagePreloadRunning || imagePreloadFailed > 0;
+}
+ 
+/**
+ * قبل از نمایش هر سؤال، مطمئن شو تصاویر مربوطه در حافظهٔ محلی (blob) هستند.
+ * اگر preload هنوز تمام نشده یا بعضی URLها جا مانده‌اند، همان‌جا لود می‌کند.
+ */
+async function ensureImagesReady(imageUrls) {
+    const list = Array.isArray(imageUrls)
+        ? imageUrls.filter(src => typeof src === "string" && src.trim() !== "")
+        : [];
+ 
+    // اول صبر کن preload سراسری تمام شود (اگر در حال اجراست)
+    if (imagePreloadRunning && imagePreloadPromise) {
+        try {
+            await imagePreloadPromise;
+        } catch (e) {
+            console.warn("ensureImagesReady preload wait:", e);
+        }
+    }
+ 
+    // اگر لیست خاصی داده نشده، کل بانک را اطمینان بده
+    if (!list.length) {
+        if (!imagePreloadRunning) {
+            await preloadQuestionImages(false);
+        } else if (imagePreloadPromise) {
+            await imagePreloadPromise;
+        }
+        return;
+    }
+ 
+    const missing = list.filter(src => !questionImageBlobUrls.has(src));
+    if (!missing.length) {
+        return;
+    }
+ 
+    // لود فوری تصاویر جا مانده (برای سؤال فعلی)
+    await Promise.all(
+        missing.map(async (src) => {
+            const maxAttempts = 4;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                try {
+                    const response = await fetch(src, {
+                        mode: "cors",
+                        cache: "no-store"
+                    });
+                    if (!response.ok) {
+                        throw new Error("HTTP " + response.status);
+                    }
+                    const blob = await response.blob();
+                    if (!blob.size) {
+                        throw new Error("empty blob");
+                    }
+                    const oldUrl = questionImageBlobUrls.get(src);
+                    if (oldUrl) {
+                        URL.revokeObjectURL(oldUrl);
+                    }
+                    questionImageBlobUrls.set(src, URL.createObjectURL(blob));
+                    imagePreloadFailedUrls.delete(src);
+                    return;
+                } catch (error) {
+                    console.error("ensureImagesReady load failed", src, attempt, error);
+                    if (attempt < maxAttempts) {
+                        await new Promise(r => setTimeout(r, attempt * 1000));
+                    }
+                }
+            }
+            imagePreloadFailedUrls.add(src);
+        })
+    );
+}
+ 
+function resolveQuestionImageSrc(src) {
+    if (!src) return "";
+    const key = String(src).trim();
+    if (questionImageBlobUrls.has(key)) {
+        return questionImageBlobUrls.get(key);
+    }
+    // تطبیق کلید در صورت تفاوت جزئی (مثلاً query اضافه)
+    for (const [k, blob] of questionImageBlobUrls.entries()) {
+        if (k === key) return blob;
+        try {
+            const a = new URL(k);
+            const b = new URL(key);
+            if (a.origin === b.origin && a.pathname === b.pathname) {
+                return blob;
+            }
+        } catch (_) {}
+    }
+    return key;
+}
+ 
+/** بعد از رندر DOM، src تصاویر را از blob به‌روز کن تا سؤال اول خالی نماند */
+function applyBlobSrcsToQuestionImages() {
+    const container = document.getElementById("questionImages");
+    if (!container) return;
+    container.querySelectorAll("img[data-original-src]").forEach(img => {
+        const original = img.dataset.originalSrc;
+        const blobSrc = resolveQuestionImageSrc(original);
+        if (blobSrc && blobSrc !== img.getAttribute("src")) {
+            img.src = blobSrc;
+        }
+        // اگر هنوز remote است و onerror دارد، یک‌بار تلاش مجدد نرم
+        if (blobSrc && blobSrc.startsWith("blob:")) {
+            img.onerror = null;
+        }
+    });
+}
  
 /* =========================
    ساخت سفارش
@@ -2231,7 +2460,16 @@ if (status) {
 $("startPaymentButton")
     .addEventListener(
         "click",
-        createOrderAndPay
+        function(){
+            if (imageLoadUiState === "loading" || imagePreloadRunning) {
+                return;
+            }
+            if (imageLoadUiState === "retry") {
+                preloadQuestionImages(true);
+                return;
+            }
+            createOrderAndPay();
+        }
     );
  
  
@@ -2794,11 +3032,7 @@ $("beginExamButton")
         startExam
     );
  
- // تلاش مجدد فقط برای تصاویر ناموفق
-$("retryImagesButton").addEventListener(
-    "click",
-    () => preloadQuestionImages(true)
-);
+ 
 async function startExam(){
  
     clearError("rulesError");
@@ -2928,7 +3162,7 @@ async function startExam(){
         renderQuestionSteps();
  
  
-        showQuestion(
+        await showQuestion(
             data.question,
             data.currentQuestion,
             data.questionStartedAt
@@ -2987,7 +3221,7 @@ async function startExam(){
    نمایش سؤال
 ========================= */
  
-function showQuestion(
+async function showQuestion(
     question,
     index,
     questionStartedAt
@@ -3003,6 +3237,16 @@ function showQuestion(
  
         return;
  
+    }
+ 
+    // قبل از رندر، تصاویر این سؤال را در blob آماده کن (رفع باگ سؤال اول)
+    const qImages = Array.isArray(question.images) ? question.images : [];
+    if (qImages.length) {
+        try {
+            await ensureImagesReady(qImages);
+        } catch (e) {
+            console.warn("showQuestion ensureImagesReady:", e);
+        }
     }
  
  
@@ -3107,7 +3351,7 @@ function showQuestion(
                 <div class="question-images" id="questionImages">
                     ${question.images.map((src, imgIndex) => `
                         <img
-    src="${escapeHtml(questionImageBlobUrls.get(src) || src)}"
+    src="${escapeHtml(resolveQuestionImageSrc(src))}"
     alt="تصویر سؤال ${imgIndex + 1}"
     data-index="${imgIndex}"
     data-original-src="${escapeHtml(src)}"
@@ -3151,6 +3395,8 @@ function showQuestion(
  
     `;
  
+ 
+    applyBlobSrcsToQuestionImages();
  
     startTimer(
         questionStartedAt,
@@ -3447,7 +3693,7 @@ async function submitAnswer(
         }
  
  
-        showQuestion(
+        await showQuestion(
             data.question,
             data.currentQuestion,
             data.questionStartedAt
@@ -4193,7 +4439,7 @@ async function restoreSession(){
             renderQuestionSteps();
  
  
-            showQuestion(
+            await showQuestion(
                 data.question,
                 data.currentQuestion,
                 data.questionStartedAt
