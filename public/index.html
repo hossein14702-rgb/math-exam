@@ -2044,8 +2044,7 @@ async function loadExam(){
  
  
         renderExamInfo();
-        // شروع بارگذاری تصاویر بانک سؤال (منتظر می‌مانیم تا برای سؤال اول آماده باشد)
-        await preloadQuestionImages(false);
+        
     }
     catch(error){
  
@@ -2363,83 +2362,74 @@ function syncBeginExamButton() {
     beginButton.textContent = "شروع آزمون";
 }
  
-/**
- * قبل از نمایش هر سؤال، مطمئن شو تصاویر مربوطه در حافظهٔ محلی (blob) هستند.
- * اگر preload هنوز تمام نشده یا بعضی URLها جا مانده‌اند، همان‌جا لود می‌کند.
- */
 async function ensureImagesReady(imageUrls) {
     const list = Array.isArray(imageUrls)
-        ? imageUrls.filter(src => typeof src === "string" && src.trim() !== "")
+        ? imageUrls.filter(src =>
+            typeof src === "string" && src.trim() !== ""
+        )
         : [];
- 
-    // اول صبر کن preload سراسری تمام شود (اگر در حال اجراست)
-    if (imagePreloadRunning && imagePreloadPromise) {
-        try {
-            await imagePreloadPromise;
-        } catch (e) {
-            console.warn("ensureImagesReady preload wait:", e);
-        }
-    }
- 
-    // اگر لیست خاصی داده نشده، کل بانک را اطمینان بده
-    if (!list.length) {
-        if (!imagePreloadRunning) {
-            await preloadQuestionImages(false);
-        } else if (imagePreloadPromise) {
-            await imagePreloadPromise;
-        }
-        return;
-    }
- 
-    const missing = list.filter(src => {
+
+    if (!list.length) return;
+
+    await Promise.all(list.map(async (src) => {
         const key = String(src).trim();
-        if (questionImageBlobUrls.has(key)) return false;
-        const stable = key;
-        try {
-            const u = new URL(key);
-            if (questionImageBlobUrls.has(u.origin + u.pathname)) return false;
-            if (questionImageBlobUrls.has(u.href)) return false;
-        } catch (_) {}
-        return true;
-    });
-    if (!missing.length) {
-        return;
-    }
- 
-    // لود فوری تصاویر جا مانده (برای سؤال فعلی)
-    await Promise.all(
-        missing.map(async (src) => {
-            const maxAttempts = 4;
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                try {
-                    const response = await fetch(src, {
-                        mode: "cors",
-                        cache: "no-store"
-                    });
-                    if (!response.ok) {
-                        throw new Error("HTTP " + response.status);
-                    }
-                    const blob = await response.blob();
-                    if (!blob.size) {
-                        throw new Error("empty blob");
-                    }
-                    const oldUrl = questionImageBlobUrls.get(src);
-                    if (oldUrl) {
-                        URL.revokeObjectURL(oldUrl);
-                    }
-                    rememberImageBlob(src, URL.createObjectURL(blob));
-                    imagePreloadFailedUrls.delete(src);
-                    return;
-                } catch (error) {
-                    console.error("ensureImagesReady load failed", src, attempt, error);
-                    if (attempt < maxAttempts) {
-                        await new Promise(r => setTimeout(r, attempt * 1000));
-                    }
+
+        if (
+            questionImageBlobUrls.has(key) ||
+            questionImageBlobUrls.has(normalizeImageKey(key))
+        ) {
+            return;
+        }
+
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            const controller = new AbortController();
+            const timeout = setTimeout(
+                () => controller.abort(),
+                7000
+            );
+
+            try {
+                const response = await fetch(key, {
+                    mode: "cors",
+                    cache: "no-store",
+                    signal: controller.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
                 }
+
+                const blob = await response.blob();
+
+                if (!blob.size) {
+                    throw new Error("تصویر خالی است");
+                }
+
+                rememberImageBlob(
+                    key,
+                    URL.createObjectURL(blob)
+                );
+
+                imagePreloadFailedUrls.delete(key);
+                return;
+
+            } catch (error) {
+                console.warn(
+                    "بارگذاری تصویر ناموفق:",
+                    key,
+                    attempt,
+                    error
+                );
+
+                if (attempt === 2) {
+                    imagePreloadFailedUrls.add(key);
+                }
+
+            } finally {
+                clearTimeout(timeout);
             }
-            imagePreloadFailedUrls.add(src);
-        })
-    );
+        }
+    }));
 }
  
 function normalizeImageKey(src) {
@@ -2519,64 +2509,41 @@ function getQuestionImages(question) {
         .filter(Boolean);
 }
  
-/**
- * بعد از درج DOM، src را از blob ست می‌کند و تا لود واقعی (یا timeout) صبر می‌کند.
- * این کار باگ سؤال اول را که src در innerHTML گاهی اعمال نمی‌شد برطرف می‌کند.
- */
 async function applyBlobSrcsToQuestionImages() {
     const container = document.getElementById("questionImages");
     if (!container) return;
- 
+
     const imgs = Array.from(
         container.querySelectorAll("img[data-original-src]")
     );
- 
-    if (!imgs.length) return;
- 
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
- 
-    await Promise.all(
-        imgs.map(
-            img =>
-                new Promise(resolve => {
-                    const original = img.dataset.originalSrc || "";
-                    let finalSrc = resolveQuestionImageSrc(original);
- 
-                    const finish = () => {
-                        clearTimeout(timer);
-                        resolve();
-                    };
- 
-                    const timer = setTimeout(finish, 4000);
- 
-                    img.onload = finish;
- 
-                    img.onerror = function () {
-    // اگر blob شکست خورد، ابتدا URL اصلی را امتحان کن
-    if (
-        finalSrc &&
-        finalSrc.startsWith("blob:") &&
-        original &&
-        img.dataset.fallbackTried !== "1"
-    ) {
-        img.dataset.fallbackTried = "1";
-        finalSrc = original;
-        img.src = original;
-        return;
-    }
 
-    // تلاش مجدد برای بارگذاری تصویر
-    finish();
-    retryQuestionImage(img);
-};
-                    };
- 
-                    // اول خالی، بعد ست — جلوگیری از race در سؤال اول
-                    img.removeAttribute("src");
-                    img.src = finalSrc || original;
-                })
-        )
-    );
+    await Promise.all(imgs.map(img => new Promise(resolve => {
+        const original = img.dataset.originalSrc || "";
+        const finalSrc = resolveQuestionImageSrc(original);
+        let finished = false;
+
+        const finish = () => {
+            if (finished) return;
+            finished = true;
+            clearTimeout(timer);
+            resolve();
+        };
+
+        const timer = setTimeout(finish, 5000);
+
+        img.onload = finish;
+
+        img.onerror = () => {
+            if (original && img.src !== original) {
+                img.src = original;
+            } else {
+                finish();
+            }
+        };
+
+        img.removeAttribute("src");
+        img.src = finalSrc || original;
+    })));
 }
  
 /* =========================
