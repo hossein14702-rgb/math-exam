@@ -3722,11 +3722,7 @@ export default {
               startedAt,
  
             question:
-              publicQuestion(
-                normalizeQuestionForSnapshot(
-                  questions[0]
-                )
-              ),
+  publicQuestion(questions[0]),
           },
           200,
           cors
