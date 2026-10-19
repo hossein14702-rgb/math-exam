@@ -2044,6 +2044,11 @@ async function loadExam(){
  
  
         renderExamInfo();
+    updateImageLoadUI({
+    state: "ready",
+    percent: 100,
+    total: 0
+}); 
         
     }
     catch(error){
