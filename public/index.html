@@ -4822,6 +4822,7 @@ function buildPrintableAnswerSheet(){
                         <br>
                         ${escapeHtml(item.question || "")}
                     </div>
+                    ${renderAnswerQuestionImages(item.images, true)}
                     <div style="font-size:13px;color:#4b5563;line-height:2;">
                         وضعیت: <strong>${status}</strong><br>
                         پاسخ شما: ${escapeHtml(selectedText)}<br>
