@@ -3694,7 +3694,7 @@ export default {
                 q.option_d,
                 q.correct_index,
                 q.duration_seconds,
-                JSON.stringify(parseQuestionImages(q.images_json)),
+                JSON.stringify(q.images || []),
                 i === 0
                   ? startedAt
                   : null
