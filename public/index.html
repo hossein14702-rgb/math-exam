@@ -3337,18 +3337,8 @@ async function showQuestion(
  
     }
  
-    // قبل از رندر، تصاویر این سؤال را در blob آماده کن (رفع باگ سؤال اول)
     const qImages = getQuestionImages(question);
-    if (qImages.length) {
-        try {
-            await ensureImagesReady(qImages);
-        } catch (e) {
-            console.warn("showQuestion ensureImagesReady:", e);
-        }
-    }
-    // برای رندر از همان لیست نرمال‌شده استفاده می‌کنیم
-    question = { ...question, images: qImages };
- 
+question = { ...question, images: qImages };
  
     const questionIndex =
         Number(index || 0);
@@ -3495,7 +3485,7 @@ async function showQuestion(
  
  
     // صبر کن تا src از blob ست شود و تصویر واقعاً لود شود (مخصوصاً سؤال اول)
-    await applyBlobSrcsToQuestionImages();
+    applyBlobSrcsToQuestionImages().catch(console.warn);
  
     startTimer(
         questionStartedAt,
