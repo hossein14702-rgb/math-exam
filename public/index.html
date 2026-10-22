@@ -822,7 +822,7 @@ body.page-loading{
      <span class="hint"> شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود. </span>
     </div>
     <div id="startError"></div>
-    <button id="startPaymentButton" class="primary-btn">پرداخت و شروع آزمون</button>
+    <button id="startPaymentButton" class="primary-btn" disabled>در حال دریافت اطلاعات آزمون...</button>
    </div>
    <!-- پرداخت -->
    <div class="card hidden" id="paymentCard">
@@ -1845,6 +1845,10 @@ async function loadExam(){
  
  
         renderExamInfo();
+ 
+        // تا دریافت اطلاعات معتبر آزمون، ثبت سفارش مجاز نیست.
+        $("startPaymentButton").disabled = false;
+        $("startPaymentButton").textContent = "پرداخت و شروع آزمون";
  
     }
     catch(error){
@@ -4094,6 +4098,30 @@ async function initializePage(){
     const paymentQuery =
         getQueryParams();
  
+    /*
+     * بهینه‌سازی بارگذاری اولیه:
+     * برای بازدیدکننده جدید، فرم نام و موبایل پیش از پاسخ API نمایش داده می‌شود.
+     * مسیر بازگشت از پرداخت، سفارش‌های قبلی و آزمون نیمه‌کاره تغییر نمی‌کنند.
+     */
+    const hasPaymentQuery = Boolean(
+        paymentQuery.payment ||
+        paymentQuery.returnedOrderId ||
+        paymentQuery.status ||
+        paymentQuery.authority
+    );
+ 
+    const hasSavedFlow = Boolean(
+        localStorage.getItem("math_exam_order_id") ||
+        localStorage.getItem("math_exam_attempt_id") ||
+        localStorage.getItem("math_exam_started") ||
+        localStorage.getItem("math_exam_paid")
+    );
+ 
+    if (!hasPaymentQuery && !hasSavedFlow) {
+        show("startCard");
+        document.body.classList.remove("page-loading");
+    }
+ 
  
     await loadExam();
  
@@ -4206,4 +4234,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
-</html>
+ </html>
