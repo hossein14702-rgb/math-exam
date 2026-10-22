@@ -4983,9 +4983,25 @@ export default {
       // =========================================================
       // Static files
       // =========================================================
-      if (env.ASSETS) {
-        return env.ASSETS.fetch(request);
-      }
+      
+if (env.ASSETS) {
+  const assetResponse = await env.ASSETS.fetch(request);
+
+  const headers = new Headers(assetResponse.headers);
+  headers.set(
+    "Cache-Control",
+    "no-store, no-cache, max-age=0, must-revalidate"
+  );
+  headers.set("Pragma", "no-cache");
+  headers.set("X-Azmoon-Diagnostic", "asset-no-store-v1");
+
+  return new Response(assetResponse.body, {
+    status: assetResponse.status,
+    statusText: assetResponse.statusText,
+    headers,
+  });
+}
+
  
       return json(
         {
