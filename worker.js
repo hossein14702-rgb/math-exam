@@ -4986,16 +4986,17 @@ export default {
       
 if (env.ASSETS) {
   const assetResponse = await env.ASSETS.fetch(request);
+  const body = await assetResponse.arrayBuffer();
 
   const headers = new Headers(assetResponse.headers);
-  headers.set(
-    "Cache-Control",
-    "no-store, no-cache, max-age=0, must-revalidate"
-  );
-  headers.set("Pragma", "no-cache");
-  headers.set("X-Azmoon-Diagnostic", "asset-no-store-v1");
 
-  return new Response(assetResponse.body, {
+  headers.set("Content-Length", String(body.byteLength));
+  headers.set("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate");
+  headers.set("X-Azmoon-Diagnostic", "asset-buffer-v2");
+
+  headers.delete("Transfer-Encoding");
+
+  return new Response(body, {
     status: assetResponse.status,
     statusText: assetResponse.statusText,
     headers,
