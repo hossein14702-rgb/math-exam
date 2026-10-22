@@ -156,169 +156,120 @@ export default {
  
  
       // =========================================================
-      // GET /api/exam
+      // GET /api/exam  (بهینه‌شده + کش + محاسبه دقیق مدت زمان)
       // =========================================================
       if (
         request.method === "GET" &&
         url.pathname === "/api/exam"
       ) {
-        const examId = Number(
-          url.searchParams.get("id") || 1
-        );
+        const examId = Number(url.searchParams.get("id") || 1);
  
-        if (
-          !Number.isInteger(examId) ||
-          examId <= 0
-        ) {
-          return json(
-            {
-              ok: false,
-              error: "examId نامعتبر است",
-            },
-            400,
-            cors
-          );
+        if (!Number.isInteger(examId) || examId <= 0) {
+          return json({ ok: false, error: "examId نامعتبر است" }, 400, cors);
         }
  
-        const exam =
-          await env.DB
-            .prepare(`
-              SELECT
-                id,
-                title,
-                price,
-                duration_seconds,
-                active,
-                discount_enabled,
-                discount_percent,
-                discount_start_at,
-                discount_end_at
-              FROM exams
-              WHERE id = ?
-            `)
-            .bind(examId)
-            .first();
+        // ---------- کش داخل Worker ----------
+        const cache = caches.default;
+        const cacheKey = new Request(url.toString(), request);
+        const cached = await cache.match(cacheKey);
+        if (cached) {
+          const headers = new Headers(cached.headers);
+          Object.entries(cors).forEach(([k, v]) => headers.set(k, v));
+          return new Response(cached.body, {
+            status: cached.status,
+            headers,
+          });
+        }
+ 
+        // ---------- گرفتن اطلاعات اصلی به صورت موازی ----------
+        const [exam, rulesResult] = await Promise.all([
+          env.DB.prepare(`
+            SELECT
+              id, title, price, duration_seconds, active,
+              discount_enabled, discount_percent,
+              discount_start_at, discount_end_at
+            FROM exams
+            WHERE id = ?
+          `).bind(examId).first(),
+ 
+          env.DB.prepare(`
+            SELECT
+              efr.id,
+              efr.folder_id,
+              efr.selection_count,
+              efr.selection_mode,
+              f.name AS folder_name,
+              f.active AS folder_active
+            FROM exam_folder_rules efr
+            LEFT JOIN question_folders f ON f.id = efr.folder_id
+            WHERE efr.exam_id = ?
+            ORDER BY efr.id
+          `).bind(examId).all()
+        ]);
  
         if (!exam) {
-          return json(
-            {
-              ok: false,
-              error: "آزمون پیدا نشد",
-            },
-            404,
-            cors
-          );
+          return json({ ok: false, error: "آزمون پیدا نشد" }, 404, cors);
         }
  
-        const pricing =
-          getEffectivePrice(exam);
+        const pricing = getEffectivePrice(exam);
+        const allRules = rulesResult.results || [];
  
-        // قوانین را بدون فیلتر active می‌خوانیم تا اگر پوشه
-        // اشتباهاً غیرفعال بود، باز هم تعداد انتخابی دیده شود.
-        // فقط پوشه‌های فعال در جمع نهایی لحاظ می‌شوند.
-        const rulesResult =
-          await env.DB
-            .prepare(`
-              SELECT
-                efr.id,
-                efr.folder_id,
-                efr.selection_count,
-                efr.selection_mode,
-                f.name AS folder_name,
-                f.active AS folder_active
-              FROM exam_folder_rules efr
-              LEFT JOIN question_folders f
-                ON f.id = efr.folder_id
-              WHERE efr.exam_id = ?
-              ORDER BY efr.id
-            `)
-            .bind(examId)
-            .all();
+        // فقط قوانین معتبر (پوشه فعال + تعداد > 0)
+        const rules = allRules.filter(row => {
+          const count = Number(row.selection_count ?? 0);
+          const folderActive = Number(row.folder_active ?? 0);
+          return Number.isFinite(count) && count > 0 && folderActive === 1;
+        });
  
-        const allRules =
-          rulesResult.results || [];
- 
-        // قانون اعمال می‌شود فقط اگر:
-        // 1) پوشه فعال باشد
-        // 2) تعداد انتخاب > 0 باشد
-        const rules =
-          allRules.filter(row => {
-            const count = Number(
-              row.selection_count ??
-              row.selectionCount ??
-              0
-            );
-            const folderActive =
-              row.folder_active === null ||
-              row.folder_active === undefined
-                ? 0
-                : Number(row.folder_active);
-            return Number.isFinite(count) && count > 0 && folderActive === 1;
-          });
- 
-        // تعداد سؤال و مدت آزمون = جمع selection_count قوانین
-        // نه تعداد کل سؤال‌های فعال بانک
         let questionCount = 0;
         let totalDurationSeconds = 0;
         const rulesSummary = [];
  
-        if (allRules.length > 0) {
-          // حتی اگر بعضی پوشه‌ها غیرفعال باشند،
-          // مبنای تعداد «قوانین» است نه کل بانک سؤال
+        if (rules.length > 0) {
           for (const rule of rules) {
-            const count = Number(
-              rule.selection_count ??
-              rule.selectionCount ??
-              0
-            );
-            if (!Number.isFinite(count) || count <= 0) continue;
+            const count = Number(rule.selection_count ?? 0);
+            if (count <= 0) continue;
  
             questionCount += count;
- 
             let ruleDuration = 0;
  
             if (rule.selection_mode === "manual") {
-              const manualRows = await env.DB
-                .prepare(`
-                  SELECT q.duration_seconds
-                  FROM exam_manual_questions emq
-                  JOIN questions q
-                    ON q.id = emq.question_id
-                  WHERE emq.exam_id = ?
-                    AND q.exam_id = ?
-                    AND q.folder_id = ?
-                    AND q.active = 1
-                  ORDER BY emq.sort_order, q.id
-                  LIMIT ?
-                `)
-                .bind(examId, examId, rule.folder_id, count)
-                .all();
+              // محاسبه دقیق مدت زمان سؤال‌های دستی
+              const manualRows = await env.DB.prepare(`
+                SELECT q.duration_seconds
+                FROM exam_manual_questions emq
+                JOIN questions q ON q.id = emq.question_id
+                WHERE emq.exam_id = ?
+                  AND q.exam_id = ?
+                  AND q.folder_id = ?
+                  AND q.active = 1
+                ORDER BY emq.sort_order, q.id
+                LIMIT ?
+              `).bind(examId, examId, rule.folder_id, count).all();
  
               const rows = manualRows.results || [];
               for (const row of rows) {
                 ruleDuration += Number(row.duration_seconds || 30);
               }
+              // اگر تعداد کم بود، بقیه را ۳۰ ثانیه در نظر بگیر
               if (rows.length < count) {
                 ruleDuration += (count - rows.length) * 30;
               }
             } else {
-              const stats = await env.DB
-                .prepare(`
-                  SELECT
-                    COUNT(*) AS cnt,
-                    AVG(duration_seconds) AS avg_duration
-                  FROM questions
-                  WHERE exam_id = ?
-                    AND folder_id = ?
-                    AND active = 1
-                `)
-                .bind(examId, rule.folder_id)
-                .first();
+              // حالت تصادفی: میانگین مدت زمان سؤال‌های فعال پوشه
+              const stats = await env.DB.prepare(`
+                SELECT
+                  COUNT(*) AS cnt,
+                  AVG(duration_seconds) AS avg_duration
+                FROM questions
+                WHERE exam_id = ?
+                  AND folder_id = ?
+                  AND active = 1
+              `).bind(examId, rule.folder_id).first();
  
-              const avg =
-                Number(stats?.avg_duration) > 0
-                  ? Number(stats.avg_duration)
-                  : 30;
+              const avg = Number(stats?.avg_duration) > 0
+                ? Number(stats.avg_duration)
+                : 30;
  
               ruleDuration = Math.round(avg * count);
             }
@@ -334,127 +285,57 @@ export default {
             });
           }
         } else {
-          // فقط وقتی هیچ قانونی تعریف نشده، از کل سؤال‌های فعال استفاده می‌شود
-          const allActive = await env.DB
-            .prepare(`
-              SELECT
-                COUNT(*) AS cnt,
-                COALESCE(SUM(duration_seconds), 0) AS total_duration
-              FROM questions
-              WHERE exam_id = ?
-                AND active = 1
-            `)
-            .bind(examId)
-            .first();
+          // هیچ قانونی تعریف نشده → از کل سؤال‌های فعال استفاده کن
+          const allActive = await env.DB.prepare(`
+            SELECT
+              COUNT(*) AS cnt,
+              COALESCE(SUM(duration_seconds), 0) AS total_duration
+            FROM questions
+            WHERE exam_id = ?
+              AND active = 1
+          `).bind(examId).first();
  
           questionCount = Number(allActive?.cnt || 0);
           totalDurationSeconds = Number(allActive?.total_duration || 0);
         }
  
-        // برای سازگاری، لیست سؤال‌ها را هم برمی‌گردانیم (نه لزوماً همان‌هایی که در آزمون می‌آیند)
-        const result =
-          await env.DB
-            .prepare(`
-              SELECT
-                id,
-                question_text,
-                option_a,
-                option_b,
-                option_c,
-                option_d,
-                duration_seconds,
-                folder_id,
-                active
-              FROM questions
-              WHERE exam_id = ?
-                AND active = 1
-              ORDER BY id
-            `)
-            .bind(examId)
-            .all();
- 
-        return json(
-          {
-            ok: true,
- 
-            exam: {
-              id: exam.id,
-              title: exam.title,
- 
-              price:
-                pricing.finalPrice,
- 
-              basePrice:
-                pricing.basePrice,
- 
-              finalPrice:
-                pricing.finalPrice,
- 
-              discountEnabled:
-                pricing.discountEnabled,
- 
-              discountActive:
-                pricing.discountActive,
- 
-              discountPercent:
-                pricing.discountPercent,
- 
-              discountStartAt:
-                pricing.discountStartAt,
- 
-              discountEndAt:
-                pricing.discountEndAt,
- 
-              // مدت کل = جمع زمان سؤال‌های انتخاب‌شده بر اساس قوانین
-              duration_seconds:
-                totalDurationSeconds,
- 
-              durationSeconds:
-                totalDurationSeconds,
- 
-              active:
-                exam.active,
-            },
- 
-            questionCount,
- 
-            // منبع تعداد: rules = جمع قوانین انتخابی | all_active = بدون قانون
-            questionCountSource:
-              allRules.length > 0 ? "rules" : "all_active",
- 
-            rules:
-              rulesSummary,
- 
-            // خام قوانین برای عیب‌یابی (selection_count واقعی دیتابیس)
-            rawRules:
-              allRules.map(row => ({
-                id: row.id,
-                folderId: row.folder_id,
-                folderName: row.folder_name || null,
-                folderActive: row.folder_active,
-                selectionCount: Number(
-                  row.selection_count ?? 0
-                ),
-                selectionMode:
-                  row.selection_mode || "random",
-              })),
- 
-            // برای شفافیت در فرانت
-            estimatedDurationSeconds:
-              totalDurationSeconds,
- 
-            // تعداد کل سؤال‌های فعال بانک (فقط برای اطلاع؛ مبنای آزمون نیست)
-            activeQuestionBankCount:
-              (result.results || []).length,
- 
-            questions:
-              (result.results || []).map(
-                q => publicQuestion(q)
-              ),
+        const responseData = {
+          ok: true,
+          exam: {
+            id: exam.id,
+            title: exam.title,
+            price: pricing.finalPrice,
+            basePrice: pricing.basePrice,
+            finalPrice: pricing.finalPrice,
+            discountEnabled: pricing.discountEnabled,
+            discountActive: pricing.discountActive,
+            discountPercent: pricing.discountPercent,
+            discountStartAt: pricing.discountStartAt,
+            discountEndAt: pricing.discountEndAt,
+            duration_seconds: totalDurationSeconds,
+            durationSeconds: totalDurationSeconds,
+            active: exam.active,
           },
-          200,
-          cors
-        );
+          questionCount,
+          questionCountSource: allRules.length > 0 ? "rules" : "all_active",
+          rules: rulesSummary,
+          estimatedDurationSeconds: totalDurationSeconds,
+        };
+ 
+        const response = json(responseData, 200, cors);
+ 
+        // ذخیره در کش به مدت ۱۰ دقیقه
+        const cacheResponse = new Response(JSON.stringify(responseData), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json; charset=UTF-8",
+            "Cache-Control": "public, max-age=600",
+            ...cors,
+          },
+        });
+        await cache.put(cacheKey, cacheResponse.clone());
+ 
+        return response;
       }
  
  
@@ -3216,8 +3097,7 @@ export default {
           await request.json();
  
         const orderId =
-          String(
-            body.orderId || ""
+          String(            body.orderId || ""
           ).trim();
  
         if (!orderId) {
@@ -6145,4 +6025,4 @@ function normalizePhone(
   }
  
   return phone;
-}
+    }
