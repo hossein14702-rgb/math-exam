@@ -910,6 +910,8 @@ body.page-loading{
   <script>
 const API =
     "https://azmoonmath.ir";
+const EXAM_API =
+    "https://api.azmoonmath.ir";
  
 const EXAM_ID = 1;
  
@@ -1792,7 +1794,7 @@ async function loadExam(){
  
         const response =
             await fetch(
-                `${API}/api/exam?id=${EXAM_ID}`,
+                `${EXAM_API}/api/exam?id=${EXAM_ID}`,
                 {
                     method:"GET",
                     cache:"no-store"
