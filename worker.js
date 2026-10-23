@@ -1,5 +1,5 @@
+const examCache = new Map();
 export default {
-  const examCache = new Map();
   async fetch(request, env) {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin") || "";
