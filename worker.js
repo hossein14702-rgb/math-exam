@@ -445,10 +445,7 @@ if (rules.length > 0) {
             activeQuestionBankCount:
               (result.results || []).length,
  
-            questions:
-              (result.results || []).map(
-                q => publicQuestion(q)
-              ),
+            
           },
           200,
           cors
