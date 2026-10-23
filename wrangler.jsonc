@@ -3,6 +3,10 @@
   "main": "./worker.js",
   "compatibility_date": "2026-10-01",
 
+  "placement": {
+    "mode": "smart"
+  },
+
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
