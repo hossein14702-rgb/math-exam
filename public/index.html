@@ -1783,80 +1783,62 @@ function renderExamInfo(){
    دریافت آزمون
 ========================= */
  
-async function requestExamData(baseUrl){
-    const response = await fetch(
-        `${baseUrl}/api/exam?id=${EXAM_ID}`,
-        {
-            method: "GET",
-            cache: "no-store",
-            headers: { "Accept": "application/json" }
-        }
-    );
- 
-    if(!response.ok){
-        throw new Error(`پاسخ سرور ${response.status} بود.`);
-    }
- 
-    const data = await response.json();
- 
-    if(!data || !data.ok){
-        throw new Error(
-            data?.error || "پاسخ دریافتی از سرور معتبر نیست."
-        );
-    }
- 
-    if(!data.exam){
-        throw new Error("اطلاعات آزمون در پاسخ سرور وجود ندارد.");
-    }
- 
-    return data;
+async function requestExamDataFrom(baseUrl, label) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const started = performance.now();
+    try {
+        const url = `${baseUrl.replace(/\/$/, "")}/api/exam?id=${EXAM_ID}&_=${Date.now()}`;
+        const response = await fetch(url, {
+            method: "GET", cache: "no-store",
+            headers: { "Accept": "application/json" }, signal: controller.signal
+        });
+        const elapsed = Math.round(performance.now() - started);
+        if (!response.ok) throw new Error(`${label}: HTTP ${response.status} (${elapsed}ms)`);
+        const contentType = response.headers.get("content-type") || "";
+        if (!/json/i.test(contentType)) throw new Error(`${label}: پاسخ JSON نیست (Content-Type=${contentType || "نامشخص"})`);
+        const data = await response.json();
+        if (!data || data.ok !== true) throw new Error(`${label}: پاسخ برنامه‌ای نامعتبر؛ ${data?.error || "ok=true نیست"}`);
+        if (!data.exam || typeof data.exam !== "object") throw new Error(`${label}: فیلد exam وجود ندارد`);
+        const count = Number(data.questionCount);
+        if (!Number.isInteger(count) || count <= 0) throw new Error(`${label}: questionCount نامعتبر است (${String(data.questionCount)})`);
+        if (data.exam.active === 0 || data.exam.active === false) throw new Error(`${label}: آزمون غیرفعال است`);
+        console.info("[AZMOON_LOAD_DIAG] success", { label, elapsedMs: elapsed, count, hasQuestionsArray: Array.isArray(data.questions), keys: Object.keys(data) });
+        return data;
+    } catch (error) {
+        const detail = error?.name === "AbortError" ? `${label}: مهلت ۸ ثانیه‌ای تمام شد` : `${label}: ${error?.message || String(error)}`;
+        console.error("[AZMOON_LOAD_DIAG] failed", detail);
+        throw new Error(detail);
+    } finally { clearTimeout(timeout); }
 }
  
 async function loadExam(){
-    $("examInfo").innerHTML =
-        `<div class="loading">در حال دریافت اطلاعات آزمون...</div>`;
-    $("startPaymentButton").disabled = true;
- 
+    const info = $("examInfo");
+    const button = $("startPaymentButton");
+    info.innerHTML = `<div class="loading">در حال دریافت اطلاعات آزمون...</div>`;
+    button.disabled = true;
+    button.textContent = "در حال دریافت اطلاعات آزمون...";
+    const failures = [];
     let data = null;
-    let primaryError = null;
- 
-    // ابتدا API ایران را امتحان می‌کنیم؛ در صورت شکست، به Worker هم‌دامنه برمی‌گردیم.
-    try{
-        data = await requestExamData(EXAM_API);
-    }catch(error){
-        primaryError = error;
-        console.warn("Iran exam API failed; trying same-origin Worker API:", error);
- 
-        try{
-            const fallbackBase = API || window.location.origin;
-            if(fallbackBase.replace(/\/$/, "") === EXAM_API.replace(/\/$/, "")){
-                throw error;
-            }
-            data = await requestExamData(fallbackBase);
-        }catch(fallbackError){
-            console.error("LOAD EXAM ERROR:", { primaryError, fallbackError });
-            $("examInfo").innerHTML = `
-                <div class="error">
-                    دریافت اطلاعات آزمون انجام نشد. اتصال به سرور آزمون را بررسی کنید و دوباره صفحه را بارگذاری کنید.
-                    <br>
-                    <small>${escapeHtml(fallbackError.message || "خطای نامشخص")}</small>
-                </div>`;
-            $("startPaymentButton").disabled = true;
-            return;
+    const endpoints = [[EXAM_API, "API ایران"], [API || window.location.origin, "API دامنه اصلی"]];
+    try {
+        for (const [baseUrl, label] of endpoints) {
+            try { data = await requestExamDataFrom(baseUrl, label); break; }
+            catch (error) { failures.push(error.message); }
         }
+        if (!data) throw new Error(failures.join(" | ") || "هیچ مسیر API پاسخ معتبر نداد.");
+        examData = data;
+        examQuestionsCount = Number(data.questionCount);
+        renderExamInfo();
+        button.disabled = false;
+        button.textContent = "پرداخت و شروع آزمون";
+    } catch (error) {
+        console.error("[AZMOON_LOAD_DIAG] all endpoints failed", { failures, error });
+        info.innerHTML = `<div class="error">دریافت اطلاعات آزمون انجام نشد؛ لطفاً دوباره تلاش کنید.<br><small>${escapeHtml(error.message || "خطای نامشخص")}</small></div>`;
+        button.disabled = true;
+        button.textContent = "دریافت اطلاعات ناموفق بود";
     }
- 
-    examData = data;
- 
-    // فقط questionCount سرور (جمع قوانین انتخابی)؛ از data.questions.length استفاده نکن.
-    examQuestionsCount = Number(data.questionCount ?? 0);
- 
-    renderExamInfo();
-    // تا دریافت اطلاعات معتبر آزمون، ثبت سفارش مجاز نیست.
-    $("startPaymentButton").disabled = false;
-    $("startPaymentButton").textContent = "پرداخت و شروع آزمون";
 }
- 
  
 /* =========================
    ساخت سفارش
