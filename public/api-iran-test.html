@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تست اتصال API ایران</title>
+  <style>
+    :root { color-scheme: light; }
+    body {
+      margin: 0; padding: 24px 14px; background: #f3f5f8;
+      color: #182230; font-family: Tahoma, Arial, sans-serif; line-height: 1.8;
+    }
+    main { max-width: 760px; margin: 0 auto; }
+    .box {
+      background: #fff; border: 1px solid #d9e0e8; border-radius: 14px;
+      padding: 18px; box-shadow: 0 4px 18px #172b4d0d;
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 8px; }
+    p { margin: 6px 0 14px; color: #526173; }
+    button {
+      border: 0; border-radius: 9px; padding: 11px 16px; cursor: pointer;
+      background: #155eef; color: white; font: inherit; font-weight: bold;
+    }
+    button:disabled { opacity: .6; cursor: wait; }
+    .status { margin: 14px 0 8px; padding: 10px 12px; border-radius: 9px; background: #f1f5f9; }
+    .status.ok { background: #e8f7ee; color: #17663a; }
+    .status.err { background: #fff0f0; color: #a12626; }
+    pre {
+      direction: ltr; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere;
+      background: #101828; color: #e6edf7; padding: 14px; border-radius: 10px;
+      max-height: 55vh; overflow: auto; font: 12px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    .meta { font-size: .9rem; color: #526173; }
+  </style>
+</head>
+<body>
+<main>
+  <section class="box">
+    <h1>تست مستقل دریافت اطلاعات آزمون از API ایران</h1>
+    <p>این صفحه فقط API را می‌خواند و پاسخ خام را در همین کادر نشان می‌دهد؛ هیچ اطلاعاتی ارسال یا ذخیره نمی‌کند.</p>
+    <button id="run">دریافت اطلاعات از API</button>
+    <div id="status" class="status" role="status">آمادهٔ تست؛ برای شروع دکمه را بزنید.</div>
+    <div id="meta" class="meta"></div>
+    <pre id="result">هنوز درخواستی اجرا نشده است.</pre>
+  </section>
+</main>
+<script>
+(() => {
+  const API_URL = "https://api.azmoonmath.ir/api/exam?id=1";
+  const button = document.getElementById("run");
+  const statusBox = document.getElementById("status");
+  const meta = document.getElementById("meta");
+  const result = document.getElementById("result");
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    statusBox.className = "status";
+    statusBox.textContent = "در حال دریافت پاسخ از API ایران…";
+    meta.textContent = "";
+    result.textContent = "";
+
+    const started = performance.now();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal
+      });
+      const raw = await response.text();
+      const elapsed = ((performance.now() - started) / 1000).toFixed(2);
+
+      meta.textContent = `HTTP ${response.status} · زمان دریافت در مرورگر: ${elapsed} ثانیه · اندازه پاسخ: ${new TextEncoder().encode(raw).length} بایت`;
+
+      let parsed;
+      try { parsed = JSON.parse(raw); }
+      catch {
+        statusBox.className = "status err";
+        statusBox.textContent = "پاسخ دریافت شد، اما JSON معتبر نیست.";
+        result.textContent = raw || "(پاسخ خالی)";
+        return;
+      }
+
+      result.textContent = JSON.stringify(parsed, null, 2);
+      if (!response.ok) {
+        statusBox.className = "status err";
+        statusBox.textContent = "درخواست با خطای HTTP پاسخ داد.";
+      } else if (parsed && parsed.ok && parsed.exam) {
+        statusBox.className = "status ok";
+        statusBox.textContent = "موفق: پاسخ API دریافت شد و اطلاعات آزمون موجود است.";
+      } else {
+        statusBox.className = "status err";
+        statusBox.textContent = "JSON دریافت شد، اما فیلدهای ok یا exam مطابق انتظار نیستند.";
+      }
+    } catch (error) {
+      const elapsed = ((performance.now() - started) / 1000).toFixed(2);
+      meta.textContent = `زمان تا خطا: ${elapsed} ثانیه`;
+      statusBox.className = "status err";
+      if (error.name === "AbortError") {
+        statusBox.textContent = "تایم‌اوت: مرورگر طی ۱۲ ثانیه پاسخ کامل دریافت نکرد.";
+        result.textContent = "بررسی کنید صفحه از یک آدرس HTTPS باز شده باشد و تنظیمات CORS در API اجازهٔ دسترسی به مبدأ این صفحه را بدهد.";
+      } else {
+        statusBox.textContent = "خطا در دریافت API از مرورگر.";
+        result.textContent = `${error.name}: ${error.message}\n\nاگر در Console خطای CORS دیده می‌شود، باید صفحه را از دامنهٔ مجاز (مثلاً staging سایت) اجرا کنید؛ باز کردن فایل به صورت file:// معمولاً تست قابل اتکایی نیست.`;
+      }
+    } finally {
+      clearTimeout(timeout);
+      button.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
