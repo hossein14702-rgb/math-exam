@@ -822,7 +822,7 @@ body.page-loading{
      <span class="hint"> شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود. </span>
     </div>
     <div id="startError"></div>
-    <button id="startPaymentButton" class="primary-btn" disabled>در حال دریافت اطلاعات آزمون...</button>
+    <button id="startPaymentButton" class="primary-btn">پرداخت و شروع آزمون</button>
    </div>
    <!-- پرداخت -->
    <div class="card hidden" id="paymentCard">
@@ -910,8 +910,6 @@ body.page-loading{
   <script>
 const API =
     "https://azmoonmath.ir";
-const EXAM_API =
-    "https://api.azmoonmath.ir";
  
 const EXAM_ID = 1;
  
@@ -1783,62 +1781,105 @@ function renderExamInfo(){
    دریافت آزمون
 ========================= */
  
-async function requestExamDataFrom(baseUrl, label) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    const started = performance.now();
-    try {
-        const url = `${baseUrl.replace(/\/$/, "")}/api/exam?id=${EXAM_ID}&_=${Date.now()}`;
-        const response = await fetch(url, {
-            method: "GET", cache: "no-store",
-            headers: { "Accept": "application/json" }, signal: controller.signal
-        });
-        const elapsed = Math.round(performance.now() - started);
-        if (!response.ok) throw new Error(`${label}: HTTP ${response.status} (${elapsed}ms)`);
-        const contentType = response.headers.get("content-type") || "";
-        if (!/json/i.test(contentType)) throw new Error(`${label}: پاسخ JSON نیست (Content-Type=${contentType || "نامشخص"})`);
-        const data = await response.json();
-        if (!data || data.ok !== true) throw new Error(`${label}: پاسخ برنامه‌ای نامعتبر؛ ${data?.error || "ok=true نیست"}`);
-        if (!data.exam || typeof data.exam !== "object") throw new Error(`${label}: فیلد exam وجود ندارد`);
-        const count = Number(data.questionCount);
-        if (!Number.isInteger(count) || count <= 0) throw new Error(`${label}: questionCount نامعتبر است (${String(data.questionCount)})`);
-        if (data.exam.active === 0 || data.exam.active === false) throw new Error(`${label}: آزمون غیرفعال است`);
-        console.info("[AZMOON_LOAD_DIAG] success", { label, elapsedMs: elapsed, count, hasQuestionsArray: Array.isArray(data.questions), keys: Object.keys(data) });
-        return data;
-    } catch (error) {
-        const detail = error?.name === "AbortError" ? `${label}: مهلت ۸ ثانیه‌ای تمام شد` : `${label}: ${error?.message || String(error)}`;
-        console.error("[AZMOON_LOAD_DIAG] failed", detail);
-        throw new Error(detail);
-    } finally { clearTimeout(timeout); }
+async function loadExam(){
+ 
+    $("examInfo").innerHTML =
+        `<div class="loading">
+            در حال دریافت اطلاعات آزمون...
+        </div>`;
+ 
+    try{
+ 
+        const response =
+            await fetch(
+                `${API}/api/exam?id=${EXAM_ID}`,
+                {
+                    method:"GET",
+                    cache:"no-store"
+                }
+            );
+ 
+ 
+        if(!response.ok){
+ 
+            throw new Error(
+                "سرور آزمون پاسخ مناسبی ارسال نکرد."
+            );
+ 
+        }
+ 
+ 
+        const data =
+            await response.json();
+ 
+ 
+        if(!data.ok){
+ 
+            throw new Error(
+                data.error ||
+                "خطا در دریافت اطلاعات آزمون."
+            );
+ 
+        }
+ 
+ 
+        if(!data.exam){
+ 
+            throw new Error(
+                "اطلاعات آزمون در پاسخ سرور وجود ندارد."
+            );
+ 
+        }
+ 
+ 
+        examData =
+            data;
+ 
+ 
+        // فقط questionCount سرور (جمع قوانین انتخابی)
+        // هرگز از data.questions.length استفاده نکن
+        examQuestionsCount =
+            Number(
+                data.questionCount ?? 0
+            );
+ 
+ 
+        renderExamInfo();
+ 
+    }
+    catch(error){
+ 
+        console.error(
+            "LOAD EXAM ERROR:",
+            error
+        );
+ 
+ 
+        $("examInfo").innerHTML = `
+ 
+            <div class="error">
+ 
+                دریافت اطلاعات آزمون انجام نشد.
+ 
+                <br>
+ 
+                ${escapeHtml(
+                    error.message ||
+                    "خطای نامشخص"
+                )}
+ 
+            </div>
+ 
+        `;
+ 
+ 
+        $("startPaymentButton").disabled =
+            true;
+ 
+    }
+ 
 }
  
-async function loadExam(){
-    const info = $("examInfo");
-    const button = $("startPaymentButton");
-    info.innerHTML = `<div class="loading">در حال دریافت اطلاعات آزمون...</div>`;
-    button.disabled = true;
-    button.textContent = "در حال دریافت اطلاعات آزمون...";
-    const failures = [];
-    let data = null;
-    const endpoints = [[EXAM_API, "API ایران"], [API || window.location.origin, "API دامنه اصلی"]];
-    try {
-        for (const [baseUrl, label] of endpoints) {
-            try { data = await requestExamDataFrom(baseUrl, label); break; }
-            catch (error) { failures.push(error.message); }
-        }
-        if (!data) throw new Error(failures.join(" | ") || "هیچ مسیر API پاسخ معتبر نداد.");
-        examData = data;
-        examQuestionsCount = Number(data.questionCount);
-        renderExamInfo();
-        button.disabled = false;
-        button.textContent = "پرداخت و شروع آزمون";
-    } catch (error) {
-        console.error("[AZMOON_LOAD_DIAG] all endpoints failed", { failures, error });
-        info.innerHTML = `<div class="error">دریافت اطلاعات آزمون انجام نشد؛ لطفاً دوباره تلاش کنید.<br><small>${escapeHtml(error.message || "خطای نامشخص")}</small></div>`;
-        button.disabled = true;
-        button.textContent = "دریافت اطلاعات ناموفق بود";
-    }
-}
  
 /* =========================
    ساخت سفارش
@@ -4053,30 +4094,6 @@ async function initializePage(){
     const paymentQuery =
         getQueryParams();
  
-    /*
-     * بهینه‌سازی بارگذاری اولیه:
-     * برای بازدیدکننده جدید، فرم نام و موبایل پیش از پاسخ API نمایش داده می‌شود.
-     * مسیر بازگشت از پرداخت، سفارش‌های قبلی و آزمون نیمه‌کاره تغییر نمی‌کنند.
-     */
-    const hasPaymentQuery = Boolean(
-        paymentQuery.payment ||
-        paymentQuery.returnedOrderId ||
-        paymentQuery.status ||
-        paymentQuery.authority
-    );
- 
-    const hasSavedFlow = Boolean(
-        localStorage.getItem("math_exam_order_id") ||
-        localStorage.getItem("math_exam_attempt_id") ||
-        localStorage.getItem("math_exam_started") ||
-        localStorage.getItem("math_exam_paid")
-    );
- 
-    if (!hasPaymentQuery && !hasSavedFlow) {
-        show("startCard");
-        document.body.classList.remove("page-loading");
-    }
- 
  
     await loadExam();
  
@@ -4189,4 +4206,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
-     </html>
+ </html>
