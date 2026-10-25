@@ -1,3 +1,4 @@
+const examCache = new Map();
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -258,99 +259,96 @@ export default {
  
         // تعداد سؤال و مدت آزمون = جمع selection_count قوانین
         // نه تعداد کل سؤال‌های فعال بانک
-        let questionCount = 0;
-        let totalDurationSeconds = 0;
-        const rulesSummary = [];
+ let questionCount = 0;
+let totalDurationSeconds = 0;
+const rulesSummary = [];
  
-        if (allRules.length > 0) {
-          // حتی اگر بعضی پوشه‌ها غیرفعال باشند،
-          // مبنای تعداد «قوانین» است نه کل بانک سؤال
-          for (const rule of rules) {
-            const count = Number(
-              rule.selection_count ??
-              rule.selectionCount ??
-              0
-            );
-            if (!Number.isFinite(count) || count <= 0) continue;
+if (rules.length > 0) {
+  const folderIds = rules.map(r => r.folder_id);
+  const placeholders = folderIds.map(() => "?").join(",");
  
-            questionCount += count;
+  const statsResult = await env.DB
+    .prepare(`
+      SELECT
+        folder_id,
+        COUNT(*) AS cnt,
+        AVG(duration_seconds) AS avg_duration
+      FROM questions
+      WHERE exam_id = ?
+        AND folder_id IN (${placeholders})
+        AND active = 1
+      GROUP BY folder_id
+    `)
+    .bind(examId, ...folderIds)
+    .all();
  
-            let ruleDuration = 0;
+  const statsMap = new Map();
+  for (const row of (statsResult.results || [])) {
+    statsMap.set(row.folder_id, {
+      avg: Number(row.avg_duration) > 0 ? Number(row.avg_duration) : 30
+    });
+  }
  
-            if (rule.selection_mode === "manual") {
-              const manualRows = await env.DB
-                .prepare(`
-                  SELECT q.duration_seconds
-                  FROM exam_manual_questions emq
-                  JOIN questions q
-                    ON q.id = emq.question_id
-                  WHERE emq.exam_id = ?
-                    AND q.exam_id = ?
-                    AND q.folder_id = ?
-                    AND q.active = 1
-                  ORDER BY emq.sort_order, q.id
-                  LIMIT ?
-                `)
-                .bind(examId, examId, rule.folder_id, count)
-                .all();
+  for (const rule of rules) {
+    const count = Number(rule.selection_count || 0);
+    if (count <= 0) continue;
  
-              const rows = manualRows.results || [];
-              for (const row of rows) {
-                ruleDuration += Number(row.duration_seconds || 30);
-              }
-              if (rows.length < count) {
-                ruleDuration += (count - rows.length) * 30;
-              }
-            } else {
-              const stats = await env.DB
-                .prepare(`
-                  SELECT
-                    COUNT(*) AS cnt,
-                    AVG(duration_seconds) AS avg_duration
-                  FROM questions
-                  WHERE exam_id = ?
-                    AND folder_id = ?
-                    AND active = 1
-                `)
-                .bind(examId, rule.folder_id)
-                .first();
+    questionCount += count;
+    let ruleDuration = 0;
  
-              const avg =
-                Number(stats?.avg_duration) > 0
-                  ? Number(stats.avg_duration)
-                  : 30;
+    if (rule.selection_mode === "manual") {
+      const manualRows = await env.DB
+        .prepare(`
+          SELECT q.duration_seconds
+          FROM exam_manual_questions emq
+          JOIN questions q ON q.id = emq.question_id
+          WHERE emq.exam_id = ?
+            AND q.exam_id = ?
+            AND q.folder_id = ?
+            AND q.active = 1
+          ORDER BY emq.sort_order, q.id
+          LIMIT ?
+        `)
+        .bind(examId, examId, rule.folder_id, count)
+        .all();
  
-              ruleDuration = Math.round(avg * count);
-            }
+      const rows = manualRows.results || [];
+      for (const row of rows) {
+        ruleDuration += Number(row.duration_seconds || 30);
+      }
+      if (rows.length < count) {
+        ruleDuration += (count - rows.length) * 30;
+      }
+    } else {
+      const stats = statsMap.get(rule.folder_id) || { avg: 30 };
+      ruleDuration = Math.round(stats.avg * count);
+    }
  
-            totalDurationSeconds += ruleDuration;
+    totalDurationSeconds += ruleDuration;
  
-            rulesSummary.push({
-              folderId: rule.folder_id,
-              folderName: rule.folder_name || null,
-              selectionCount: count,
-              selectionMode: rule.selection_mode || "random",
-              estimatedDurationSeconds: ruleDuration,
-            });
-          }
-        } else {
-          // فقط وقتی هیچ قانونی تعریف نشده، از کل سؤال‌های فعال استفاده می‌شود
-          const allActive = await env.DB
-            .prepare(`
-              SELECT
-                COUNT(*) AS cnt,
-                COALESCE(SUM(duration_seconds), 0) AS total_duration
-              FROM questions
-              WHERE exam_id = ?
-                AND active = 1
-            `)
-            .bind(examId)
-            .first();
+    rulesSummary.push({
+      folderId: rule.folder_id,
+      folderName: rule.folder_name || null,
+      selectionCount: count,
+      selectionMode: rule.selection_mode || "random",
+      estimatedDurationSeconds: ruleDuration,
+    });
+  }
+} else {
+  const allActive = await env.DB
+    .prepare(`
+      SELECT
+        COUNT(*) AS cnt,
+        COALESCE(SUM(duration_seconds), 0) AS total_duration
+      FROM questions
+      WHERE exam_id = ? AND active = 1
+    `)
+    .bind(examId)
+    .first();
  
-          questionCount = Number(allActive?.cnt || 0);
-          totalDurationSeconds = Number(allActive?.total_duration || 0);
-        }
- 
+  questionCount = Number(allActive?.cnt || 0);
+  totalDurationSeconds = Number(allActive?.total_duration || 0);
+}
         // برای سازگاری، لیست سؤال‌ها را هم برمی‌گردانیم (نه لزوماً همان‌هایی که در آزمون می‌آیند)
         const result =
           await env.DB
@@ -447,10 +445,7 @@ export default {
             activeQuestionBankCount:
               (result.results || []).length,
  
-            questions:
-              (result.results || []).map(
-                q => publicQuestion(q)
-              ),
+            
           },
           200,
           cors
@@ -6145,4 +6140,4 @@ function normalizePhone(
   }
  
   return phone;
-          }
+    }
