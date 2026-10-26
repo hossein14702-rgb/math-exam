@@ -72,9 +72,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .time-input{text-align:center;direction:ltr}
 .jalali-picker{display:none;position:absolute;top:calc(100% + 7px);right:0;width:330px;max-width:95vw;background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);border:1px solid #e5e7eb;z-index:2000;padding:12px}
 .jalali-picker.show{display:block}
-.jalali-picker-header{display:flex;align-items:center;justify-content:space-between;gap:3px;margin-bottom:10px}
-.jalali-picker-header button{background:#f1f5f9;color:#111827;padding:6px 8px;font-size:13px;min-width:32px}
-.jalali-month-title{flex:1;text-align:center;font-weight:bold;font-size:13px;white-space:nowrap}
+.jalali-picker-header{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:10px}
+.jalali-picker-header button{background:#f1f5f9;color:#111827;padding:7px 12px}
+.jalali-month-title{flex:1;text-align:center;font-weight:bold;font-size:14px}
 .jalali-weekdays,.jalali-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .jalali-weekdays div{text-align:center;font-size:11px;color:#64748b;padding:6px 0;font-weight:bold}
 .jalali-day{border:0;background:#fff;padding:8px 2px;border-radius:8px;font-size:12px;cursor:pointer}
@@ -459,6 +459,12 @@ tr:hover td{background:#fafafa}
        <label>پاسخ صحیح</label>
        <div id="correctOptions" class="correct-selector"></div>
       </div>
+      <!-- مدیریت تصاویر سؤال -->
+      <div class="form-group modal-form-full">
+       <label>تصاویر سؤال (حداکثر ۵ تصویر)</label> <input type="file" id="questionImagesInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple> <small> تصاویر PNG، JPG، WEBP و GIF قابل انتخاب هستند. حجم هر تصویر حداکثر ۱۰ مگابایت است. </small>
+       <div id="questionImagesMessage" class="message-box" style="display:none"></div>
+       <div id="questionImagesPreview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px"></div>
+      </div>
       <div class="form-group modal-form-full">
        <label>گزینه‌ها</label>
        <div id="optionsEditor" class="options-editor"></div>
@@ -493,6 +499,8 @@ let questions = [];
 let rules = [];
 let manualQuestions = [];
 let editingQuestionId = null;
+let questionImageUrls = [];
+let questionImageFiles = [];
 let selectedFolderFilter = "";
 let searchTimer = null;
  
@@ -791,11 +799,9 @@ function renderJalaliPicker(type) {
  
     let html = `
         <div class="jalali-picker-header">
-            <button type="button" title="سال قبل" onclick="event.stopPropagation();changeJalaliYear('${type}',-1)">‹‹</button>
-            <button type="button" title="ماه قبل" onclick="event.stopPropagation();changeJalaliMonth('${type}',-1)">‹</button>
+            <button type="button" onclick="changeJalaliMonth('${type}',-1)">‹</button>
             <div class="jalali-month-title">${jalaliMonths[state.month - 1]} ${faNumber(state.year)}</div>
-            <button type="button" title="ماه بعد" onclick="event.stopPropagation();changeJalaliMonth('${type}',1)">›</button>
-            <button type="button" title="سال بعد" onclick="event.stopPropagation();changeJalaliYear('${type}',1)">››</button>
+            <button type="button" onclick="changeJalaliMonth('${type}',1)">›</button>
         </div>
         <div class="jalali-weekdays">
     `;
@@ -821,7 +827,7 @@ function renderJalaliPicker(type) {
  
         html += `
             <button type="button" class="${classes}"
-                onclick="event.stopPropagation();selectJalaliDate('${type}',${state.year},${state.month},${day})">
+                onclick="selectJalaliDate('${type}',${state.year},${state.month},${day})">
                 ${faNumber(day)}
             </button>
         `;
@@ -830,15 +836,12 @@ function renderJalaliPicker(type) {
     html += `
         </div>
         <div class="jalali-picker-footer">
-            <button type="button" onclick="event.stopPropagation();clearJalaliDate('${type}')">پاک کردن</button>
-            <button type="button" class="today-btn" onclick="event.stopPropagation();selectTodayJalali('${type}')">امروز</button>
+            <button type="button" onclick="clearJalaliDate('${type}')">پاک کردن</button>
+            <button type="button" class="today-btn" onclick="selectTodayJalali('${type}')">امروز</button>
         </div>
     `;
  
     picker.innerHTML = html;
- 
-    // جلوگیری از بسته شدن تقویم هنگام کلیک داخل آن
-    picker.onclick = function(e) { e.stopPropagation(); };
 }
  
 function changeJalaliMonth(type, amount) {
@@ -848,21 +851,6 @@ function changeJalaliMonth(type, amount) {
  
     if (state.month > 12) { state.month = 1; state.year++; }
     if (state.month < 1) { state.month = 12; state.year--; }
- 
-    const maxDay = jalaliMonthDays(state.year, state.month);
-    if (state.day > maxDay) state.day = maxDay;
- 
-    renderJalaliPicker(type);
-}
- 
-function changeJalaliYear(type, amount) {
-    const state = datePickerState[type];
- 
-    state.year += amount;
- 
-    // جلوگیری از سال‌های خیلی قدیمی یا خیلی آینده
-    if (state.year < 1300) state.year = 1300;
-    if (state.year > 1500) state.year = 1500;
  
     const maxDay = jalaliMonthDays(state.year, state.month);
     if (state.day > maxDay) state.day = maxDay;
@@ -1520,6 +1508,16 @@ function debouncedLoadQuestions() {
 function openQuestionModal(questionId = null) {
     editingQuestionId = questionId;
  
+    // پاک‌سازی وضعیت تصاویر هنگام باز شدن فرم
+    questionImageFiles = [];
+    questionImageUrls = [];
+ 
+    document.getElementById("questionImagesInput").value = "";
+ 
+    document.getElementById("questionImagesMessage").style.display = "none";
+ 
+    document.getElementById("questionImagesPreview").innerHTML = "";
+ 
     document.getElementById("questionModalMessage").style.display = "none";
  
     if (questionId) {
@@ -1531,6 +1529,13 @@ function openQuestionModal(questionId = null) {
         }
  
         document.getElementById("questionModalTitle").textContent = "✏️ ویرایش سؤال";
+ 
+        questionImageUrls = Array.isArray(q.images)
+            ? [...q.images]
+            : [];
+ 
+        renderQuestionImagesPreview();
+ 
         document.getElementById("questionText").value = q.questionText || q.question || "";
  
         const optionCount = (q.options || []).length;
@@ -1618,6 +1623,217 @@ function showQuestionModalMessage(message, type = "error") {
     box.style.display = "block";
 }
  
+// ======================================================
+// مدیریت تصاویر سؤال
+// ======================================================
+ 
+function showQuestionImagesMessage(message, isError = false) {
+    const box = document.getElementById("questionImagesMessage");
+ 
+    box.textContent = message;
+    box.className = "message-box " +
+        (isError ? "message-error" : "message-success");
+ 
+    box.style.display = "block";
+}
+ 
+function renderQuestionImagesPreview() {
+    const box = document.getElementById("questionImagesPreview");
+ 
+    box.innerHTML = "";
+ 
+    questionImageUrls.forEach((url, index) => {
+        const item = document.createElement("div");
+ 
+        item.style.cssText =
+            "width:140px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center";
+ 
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "تصویر سؤال";
+        img.loading = "lazy";
+        img.style.cssText =
+            "width:100%;height:100px;object-fit:contain";
+ 
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.textContent = "حذف از سؤال";
+        removeButton.className = "danger-btn small-btn";
+        removeButton.style.marginTop = "6px";
+ 
+        removeButton.addEventListener("click", () => {
+            questionImageUrls.splice(index, 1);
+            renderQuestionImagesPreview();
+        });
+ 
+        item.appendChild(img);
+        item.appendChild(removeButton);
+        box.appendChild(item);
+    });
+ 
+    questionImageFiles.forEach((file, index) => {
+        const item = document.createElement("div");
+ 
+        item.style.cssText =
+            "width:140px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center";
+ 
+        const img = document.createElement("img");
+        img.alt = file.name;
+        img.style.cssText =
+            "width:100%;height:100px;object-fit:contain";
+ 
+        const localUrl = URL.createObjectURL(file);
+        img.src = localUrl;
+ 
+        img.onload = () => URL.revokeObjectURL(localUrl);
+ 
+        const name = document.createElement("small");
+        name.textContent = file.name;
+        name.style.cssText =
+            "display:block;overflow-wrap:anywhere;margin:5px 0";
+ 
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.textContent = "لغو انتخاب";
+        removeButton.className = "danger-btn small-btn";
+ 
+        removeButton.addEventListener("click", () => {
+            questionImageFiles.splice(index, 1);
+            renderQuestionImagesPreview();
+        });
+ 
+        item.appendChild(img);
+        item.appendChild(name);
+        item.appendChild(removeButton);
+        box.appendChild(item);
+    });
+}
+ 
+document.getElementById("questionImagesInput")
+    .addEventListener("change", event => {
+        const selectedFiles = Array.from(event.target.files || []);
+ 
+        const currentCount =
+            questionImageUrls.length + questionImageFiles.length;
+ 
+        if (currentCount + selectedFiles.length > 5) {
+            showQuestionImagesMessage(
+                "در مجموع حداکثر ۵ تصویر برای هر سؤال مجاز است.",
+                true
+            );
+ 
+            event.target.value = "";
+            return;
+        }
+ 
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/gif"
+        ];
+ 
+        for (const file of selectedFiles) {
+            if (!allowedTypes.includes(file.type)) {
+                showQuestionImagesMessage(
+                    "یکی از فایل‌ها قالب تصویری مجاز ندارد.",
+                    true
+                );
+                event.target.value = "";
+                return;
+            }
+ 
+            if (file.size > 10 * 1024 * 1024) {
+                showQuestionImagesMessage(
+                    "حجم هر تصویر نباید بیشتر از ۱۰ مگابایت باشد.",
+                    true
+                );
+                event.target.value = "";
+                return;
+            }
+        }
+ 
+        questionImageFiles.push(...selectedFiles);
+ 
+        event.target.value = "";
+ 
+        document.getElementById("questionImagesMessage").style.display = "none";
+ 
+        renderQuestionImagesPreview();
+    });
+ 
+// ======================================================
+// بارگذاری تصاویر انتخاب‌شده روی سرور
+// ======================================================
+ 
+async function uploadQuestionImageFiles() {
+    if (!questionImageFiles.length) {
+        return [];
+    }
+ 
+    const formData = new FormData();
+ 
+    questionImageFiles.forEach(file => {
+        formData.append("images", file, file.name);
+    });
+ 
+    const result = await apiRequest(
+        "/api/teacher/images/upload",
+        {
+            method: "POST",
+            body: formData
+        }
+    );
+ 
+    // پشتیبانی از ساختارهای متداول پاسخ سرویس
+    const uploadedItems =
+        result.files ||
+        result.images ||
+        result.urls ||
+        result.data?.files ||
+        result.data?.images;
+ 
+    if (!Array.isArray(uploadedItems)) {
+        throw new Error(
+            "فهرست تصاویر بارگذاری‌شده از سرور دریافت نشد."
+        );
+    }
+ 
+    const uploadedUrls = uploadedItems.map(item => {
+        if (typeof item === "string") {
+            return item;
+        }
+ 
+        return item.url || item.publicUrl || item.location || "";
+    });
+ 
+    const validUrls = uploadedUrls.filter(url => {
+        try {
+            const parsed = new URL(url);
+ 
+            return (
+                parsed.protocol === "https:" &&
+                parsed.hostname === "image.azmoonmath.ir" &&
+                /^\/files\/[0-9a-f-]+\.(jpg|png|webp|gif)$/i.test(
+                    parsed.pathname
+                ) &&
+                !parsed.search &&
+                !parsed.hash
+            );
+        } catch {
+            return false;
+        }
+    });
+ 
+    if (validUrls.length !== questionImageFiles.length) {
+        throw new Error(
+            "تعداد یا آدرس تصاویر دریافتی با فایل‌های انتخاب‌شده مطابقت ندارد."
+        );
+    }
+ 
+    return validUrls;
+}
+ 
 async function saveQuestion() {
     const text = document.getElementById("questionText").value.trim();
     const optionCount = Number(document.getElementById("optionCount").value);
@@ -1678,6 +1894,25 @@ async function saveQuestion() {
     button.textContent = "⏳ در حال ذخیره...";
  
     try {
+        // ابتدا تصاویر جدید را روی سرور بارگذاری می‌کنیم.
+        if (questionImageFiles.length > 0) {
+            showQuestionImagesMessage(
+                "در حال بارگذاری تصاویر..."
+            );
+ 
+            const uploadedUrls =
+                await uploadQuestionImageFiles();
+ 
+            questionImageUrls.push(...uploadedUrls);
+ 
+            questionImageFiles = [];
+ 
+            renderQuestionImagesPreview();
+        }
+ 
+        // آدرس تصاویر همراه اطلاعات سؤال ذخیره می‌شود.
+        body.images = [...questionImageUrls];
+ 
         await postJson("/api/teacher/questions", body);
  
         closeQuestionModal();
@@ -2418,6 +2653,55 @@ function renderAttempt(data) {
             resultClass = "result-wrong";
         }
  
+        // آماده‌سازی تصاویر سؤال برای نمایش در پنل معلم
+        const questionImages = Array.isArray(question.images)
+            ? question.images
+            : [];
+ 
+        const questionImagesHtml = questionImages
+            .map(imageUrl => {
+                if (
+                    typeof imageUrl !== "string"
+                ) {
+                    return "";
+                }
+ 
+                try {
+                    const parsedUrl = new URL(imageUrl);
+ 
+                    if (
+                        parsedUrl.protocol !== "https:" ||
+                        parsedUrl.hostname !== "image.azmoonmath.ir" ||
+                        !/^\/files\/[0-9a-f-]+\.(jpg|png|webp|gif)$/i.test(
+                            parsedUrl.pathname
+                        ) ||
+                        parsedUrl.search ||
+                        parsedUrl.hash
+                    ) {
+                        return "";
+                    }
+ 
+                    return `
+                        <div style="margin:8px 0;text-align:center">
+                            <img
+                                src="${escapeHtml(imageUrl)}"
+                                alt="تصویر سؤال"
+                                loading="lazy"
+                                style="
+                                    max-width:220px;
+                                    width:100%;
+                                    height:auto;
+                                    border-radius:8px;
+                                "
+                            >
+                        </div>
+                    `;
+                } catch {
+                    return "";
+                }
+            })
+            .join("");
+ 
         const opts = question.options || [];
  
         const selectedAnswer =
@@ -2433,7 +2717,10 @@ function renderAttempt(data) {
         html += `
             <tr class="${rowClass}">
                 <td>${faNumber(question.number)}</td>
-                <td class="answer-box">${escapeHtml(question.question || "—")}</td>
+                <td class="answer-box">
+                    ${escapeHtml(question.question || "—")}
+                    ${questionImagesHtml}
+                </td>
                 <td class="answer-box">${escapeHtml(selectedAnswer)}</td>
                 <td class="answer-box">${escapeHtml(correctAnswer)}</td>
                 <td class="${resultClass}">${resultText}</td>
@@ -2546,7 +2833,7 @@ document.getElementById("discountEnd").addEventListener("click", event => {
 });
  
 document.addEventListener("click", event => {
-    if (!event.target.closest(".jalali-date-wrapper") && !event.target.closest(".jalali-picker")) {
+    if (!event.target.closest(".jalali-date-wrapper")) {
         closeAllDatePickers();
     }
 });
@@ -2572,4 +2859,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
-</html>
+       </html>
