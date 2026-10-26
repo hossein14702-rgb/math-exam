@@ -140,7 +140,7 @@ tr:hover td{background:#fafafa}
 .stat-title{color:#666;font-size:13px;margin-bottom:8px}
 .stat-value{font-size:25px;font-weight:bold}
 .table-box{overflow-x:auto}
-.students-table{min-width:1350px}
+.students-table{min-width:1550px}
 .status{display:inline-block;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:bold}
 .status-payment-paid,.status-finished{background:#dcfce7;color:#166534}
 .status-pending,.status-not-started{background:#fef3c7;color:#92400e}
@@ -415,6 +415,7 @@ tr:hover td{background:#fafafa}
         <th>ردیف</th>
         <th>نام</th>
         <th>موبایل</th>
+        <th>شناسه سفارش</th>
         <th>مبلغ</th>
         <th>ثبت سفارش</th>
         <th>تاریخ پرداخت</th>
@@ -2503,10 +2504,20 @@ async function loadStudents() {
         students.forEach((student, index) => {
             const tr = document.createElement("tr");
  
+            const orderId = student.orderId || "";
+            const paymentStatus = String(student.paymentStatus || "").toLowerCase();
+            const canCopyExamLink =
+                Boolean(orderId) &&
+                paymentStatus === "paid" &&
+                student.status !== "finished";
+ 
             tr.innerHTML = `
                 <td>${faNumber(index + 1)}</td>
                 <td><strong>${escapeHtml(student.name || "—")}</strong></td>
                 <td dir="ltr">${escapeHtml(student.phone || "—")}</td>
+                <td dir="ltr" style="font-size:11px;max-width:180px;word-break:break-all;">
+                    ${orderId ? escapeHtml(orderId) : "—"}
+                </td>
                 <td>${faNumber(Number(student.amount || 0).toLocaleString("en-US"))}</td>
                 <td>${formatDate(student.createdAt)}</td>
                 <td>${formatDate(student.paidAt)}</td>
@@ -2525,12 +2536,20 @@ async function loadStudents() {
                 <td>
                     ${student.attemptId
                         ? `<button class="primary-btn small-btn"
-                              data-attempt-id="${escapeHtml(student.attemptId)}"
+                              data-attempt-id="${escapeHtml(String(student.attemptId))}"
                               onclick="showAttempt(this.dataset.attemptId)">مشاهده</button>`
                         : ""}
  
+                    ${canCopyExamLink
+                        ? `<button class="success-btn small-btn"
+                              type="button"
+                              data-order-id="${escapeHtml(String(orderId))}"
+                              onclick="copyExamEntryLink(this.dataset.orderId)">📋 کپی لینک ورود</button>`
+                        : ""}
+ 
                     <button class="danger-btn small-btn"
-                        data-order-id="${escapeHtml(student.orderId)}"
+                        type="button"
+                        data-order-id="${escapeHtml(String(orderId))}"
                         data-name="${escapeHtml(student.name || "")}"
                         onclick="deleteStudent(this.dataset.orderId,this.dataset.name)">حذف</button>
                 </td>
@@ -2746,6 +2765,44 @@ function closeModalByBackground(event) {
 }
  
  
+/* ===== کپی لینک ورود به آزمون برای دانش‌آموز ===== */
+ 
+const STUDENT_EXAM_PAGE = "https://azmoonmath.ir";
+ 
+function buildExamEntryLink(orderId) {
+    const id = String(orderId || "").trim();
+    if (!id) return "";
+    return STUDENT_EXAM_PAGE + "/?payment=success&orderId=" + encodeURIComponent(id);
+}
+ 
+async function copyExamEntryLink(orderId) {
+    const link = buildExamEntryLink(orderId);
+    if (!link) {
+        alert("شناسه سفارش معتبر نیست.");
+        return;
+    }
+ 
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(link);
+        } else {
+            const input = document.createElement("textarea");
+            input.value = link;
+            input.setAttribute("readonly", "");
+            input.style.position = "fixed";
+            input.style.top = "-9999px";
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand("copy");
+            document.body.removeChild(input);
+        }
+        alert("لینک ورود به آزمون کپی شد.\n\nمی‌توانید آن را برای دانش‌آموز بفرستید:\n\n" + link);
+    } catch (error) {
+        window.prompt("کپی خودکار ممکن نشد. لینک را دستی کپی کنید:", link);
+    }
+}
+ 
+ 
 /* ===== حذف دانش‌آموز ===== */
  
 async function deleteStudent(orderId, studentName) {
@@ -2859,4 +2916,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
-       </html>
+</html>
