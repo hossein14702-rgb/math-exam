@@ -1061,10 +1061,216 @@ body.page-loading{
 }
 
  
+
+/* بارگذاری برگه آزمون - فقط برای staging */
+#examPaperLoader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(244, 247, 251, 0.97);
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+#examPaperLoader.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.exam-loader-panel {
+  width: min(320px, 92vw);
+  text-align: center;
+  color: #1f2937;
+}
+
+.exam-loader-ring {
+  width: 188px;
+  height: 188px;
+  margin: 0 auto 20px;
+  border: 8px solid #dbeafe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #eff6ff;
+  animation: examLoaderSpin 1.1s linear infinite;
+}
+
+.exam-loader-paper {
+  position: relative;
+  width: 92px;
+  height: 122px;
+  padding: 12px 10px;
+  overflow: hidden;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  background: white;
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.13);
+  transform: rotate(-3deg);
+}
+
+.exam-loader-paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(147, 197, 253, 0.8)
+  );
+  transform: translateY(100%);
+  transition: transform 0.65s ease;
+}
+
+#examPaperLoader[data-stage="received"]
+.exam-loader-paper::before {
+  transform: translateY(58%);
+}
+
+#examPaperLoader[data-stage="ready"]
+.exam-loader-paper::before {
+  transform: translateY(0);
+}
+
+.exam-paper-title {
+  width: 54%;
+  height: 5px;
+  margin: 0 auto 12px;
+  border-radius: 3px;
+  background: #93c5fd;
+}
+
+.exam-paper-line {
+  height: 4px;
+  margin: 8px 0;
+  border-radius: 3px;
+  background: #e5e7eb;
+}
+
+.exam-paper-line:nth-child(3) { width: 88%; }
+.exam-paper-line:nth-child(4) { width: 74%; }
+.exam-paper-line:nth-child(5) { width: 94%; }
+
+.exam-paper-options {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.exam-paper-options i {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid #93c5fd;
+  border-radius: 50%;
+  background: white;
+}
+
+#examPaperLoader[data-stage="ready"]
+.exam-paper-options i {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.exam-loader-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.exam-loader-message {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.exam-loader-retry {
+  display: none;
+  margin: 16px auto 0;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 12px;
+  background: #2563eb;
+  color: white;
+  font: inherit;
+  font-weight: 700;
+}
+
+#examPaperLoader[data-stage="error"] .exam-loader-ring {
+  border-color: #fecaca;
+  background: #fff1f2;
+  animation: none;
+}
+
+#examPaperLoader[data-stage="error"] .exam-loader-title {
+  color: #b91c1c;
+}
+
+#examPaperLoader[data-stage="error"] .exam-loader-message {
+  color: #991b1b;
+}
+
+#examPaperLoader[data-stage="error"] .exam-loader-retry {
+  display: block;
+}
+
+@keyframes examLoaderSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 380px) {
+  .exam-loader-ring {
+    width: 164px;
+    height: 164px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exam-loader-ring {
+    animation: none;
+  }
+}
  
 </style>
  </head>
  <body class="page-loading">
+  
+<div id="examPaperLoader" data-stage="fetching"
+     role="status" aria-live="polite">
+  <div class="exam-loader-panel">
+    <div class="exam-loader-ring" aria-hidden="true">
+      <div class="exam-loader-paper">
+        <div class="exam-paper-title"></div>
+        <div class="exam-paper-line"></div>
+        <div class="exam-paper-line"></div>
+        <div class="exam-paper-line"></div>
+        <div class="exam-paper-line"></div>
+        <div class="exam-paper-options">
+          <i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+    </div>
+
+    <p class="exam-loader-title" id="examLoaderTitle">
+      در حال دریافت آزمون
+    </p>
+
+    <p class="exam-loader-message" id="examLoaderMessage">
+      اطلاعات آزمون از سرور دریافت می‌شود.
+    </p>
+
+    <button type="button" class="exam-loader-retry"
+            id="examLoaderRetry">
+      تلاش مجدد
+    </button>
+  </div>
+</div>
+
   <div class="container">
    <div class="header">
     <div class="brand">
@@ -2078,8 +2284,68 @@ function renderExamInfo(){
    دریافت آزمون
 ========================= */
  
+function setExamLoaderState(stage, message) {
+  const overlay = $("examPaperLoader");
+  const title = $("examLoaderTitle");
+  const detail = $("examLoaderMessage");
+
+  if (!overlay) return;
+
+  overlay.dataset.stage = stage;
+
+  if (title) {
+    title.textContent =
+      stage === "error" ? "دریافت آزمون ناموفق بود" :
+      stage === "ready" ? "آزمون آماده است" :
+      "در حال دریافت آزمون";
+  }
+
+  if (detail) {
+    detail.textContent = message || "";
+  }
+}
+
+function hideExamPaperLoader() {
+  const overlay = $("examPaperLoader");
+  if (overlay) overlay.classList.add("is-hidden");
+}
+
+async function retryExamPaperLoad() {
+  const retry = $("examLoaderRetry");
+
+  if (retry) {
+    retry.disabled = true;
+    retry.textContent = "در حال تلاش...";
+  }
+
+  try {
+    const ok = await loadExam();
+
+    if (ok) {
+      setExamLoaderState(
+        "ready",
+        "اطلاعات آزمون با موفقیت دریافت شد."
+      );
+      hideExamPaperLoader();
+    } else {
+      setExamLoaderState(
+        "error",
+        "اتصال اینترنت را بررسی کنید و دوباره تلاش کنید."
+      );
+    }
+  } finally {
+    if (retry) {
+      retry.disabled = false;
+      retry.textContent = "تلاش مجدد";
+    }
+  }
+}
+
 async function loadExam(){
- 
+ setExamLoaderState(
+  "fetching",
+  "در انتظار پاسخ سرور آزمون..."
+);
     $("examInfo").innerHTML =
         `<div class="loading">
             در حال دریافت اطلاعات آزمون...
@@ -2104,7 +2370,10 @@ async function loadExam(){
             );
  
         }
- 
+ setExamLoaderState(
+  "received",
+  "پاسخ سرور دریافت شد؛ در حال بررسی اطلاعات آزمون..."
+);
  
         const data =
             await response.json();
@@ -2147,7 +2416,11 @@ async function loadExam(){
     percent: 100,
     total: 0
 }); 
-        
+   setExamLoaderState(
+  "ready",
+  "اطلاعات آزمون با موفقیت دریافت شد."
+);
+return true;     
     }
     catch(error){
  
@@ -2155,7 +2428,11 @@ async function loadExam(){
             "LOAD EXAM ERROR:",
             error
         );
- 
+ setExamLoaderState(
+  "error",
+  "دریافت اطلاعات آزمون انجام نشد. اینترنت را بررسی و دوباره تلاش کنید."
+);
+return false;
  
         $("examInfo").innerHTML = `
  
@@ -5036,7 +5313,22 @@ async function initializePage(){
         getQueryParams();
  
  
-    await loadExam();
+    
+const examLoaded = await loadExam();
+
+if (examLoaded) {
+  setExamLoaderState(
+    "ready",
+    "اطلاعات آزمون با موفقیت دریافت شد."
+  );
+  hideExamPaperLoader();
+} else {
+  setExamLoaderState(
+    "error",
+    "دریافت اطلاعات آزمون انجام نشد. اینترنت را بررسی و دوباره تلاش کنید."
+  );
+}
+
  
  
     handlePaymentReturn(
@@ -5104,6 +5396,12 @@ async function initializePage(){
 /* =========================
    اجرای صفحه
 ========================= */
+
+$("examLoaderRetry")?.addEventListener(
+  "click",
+  retryExamPaperLoad
+);
+   
  
 initializePage().catch(error => {
  
