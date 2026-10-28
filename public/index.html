@@ -1097,7 +1097,7 @@ body.page-loading{
   display: grid;
   place-items: center;
   background: #eff6ff;
-  animation: examLoaderSpin 1.1s linear infinite;
+  
 }
 
 .exam-loader-paper {
@@ -1110,7 +1110,7 @@ body.page-loading{
   border-radius: 7px;
   background: white;
   box-shadow: 0 5px 14px rgba(37, 99, 235, 0.13);
-  transform: rotate(-3deg);
+  
 }
 
 .exam-loader-paper::before {
@@ -1219,9 +1219,6 @@ body.page-loading{
   display: block;
 }
 
-@keyframes examLoaderSpin {
-  to { transform: rotate(360deg); }
-}
 
 @media (max-width: 380px) {
   .exam-loader-ring {
