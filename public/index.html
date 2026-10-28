@@ -1091,15 +1091,32 @@ body.page-loading{
   width: 188px;
   height: 188px;
   margin: 0 auto 20px;
-  border: 8px solid #dbeafe;
-  border-top-color: #2563eb;
-  border-radius: 50%;
+  border: 0;
+border-radius: 50%;
+background: conic-gradient(
+  #2563eb var(--loader-progress, 0%),
+  #dbeafe var(--loader-progress, 0%)
+);
+position: relative;
   display: grid;
   place-items: center;
   background: #eff6ff;
   
 }
-
+.exam-loader-percent {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 800;
+  direction: ltr;
+  z-index: 2;
+}
 .exam-loader-paper {
   position: relative;
   width: 92px;
@@ -1240,6 +1257,9 @@ body.page-loading{
 <div id="examPaperLoader" data-stage="fetching"
      role="status" aria-live="polite">
   <div class="exam-loader-panel">
+   <div class="exam-loader-percent" id="examLoaderPercent">
+  ۰٪
+   </div>
     <div class="exam-loader-ring" aria-hidden="true">
       <div class="exam-loader-paper">
         <div class="exam-paper-title"></div>
@@ -2289,7 +2309,27 @@ function setExamLoaderState(stage, message) {
   if (!overlay) return;
 
   overlay.dataset.stage = stage;
+ 
+  const percentElement = $("examLoaderPercent");
 
+  const progressByStage = {
+    fetching: 10,
+    received: 65,
+    ready: 100,
+    error: 0
+  };
+
+  const progress = progressByStage[stage] ?? 10;
+
+  overlay.style.setProperty(
+    "--loader-progress",
+    `${progress}%`
+  );
+
+  if (percentElement) {
+    percentElement.textContent =
+      `${toPersianNumber(progress)}٪`;
+  }
   if (title) {
     title.textContent =
       stage === "error" ? "دریافت آزمون ناموفق بود" :
