@@ -1091,26 +1091,31 @@ body.page-loading{
   --loader-progress: 0%;
   position: relative;
   isolation: isolate;
-  width: 188px;
-  height: 188px;
+  width: 206px;
+  height: 206px;
   margin: 0 auto 20px;
+  padding: 0;
   border: 0;
   border-radius: 50%;
+  /* بخش آبی از بالای حلقه و در جهت ساعت‌گرد، مطابق درصد واقعی پر می‌شود. */
   background: conic-gradient(
+    from -90deg,
     #2563eb 0 var(--loader-progress),
     #dbeafe var(--loader-progress) 100%
   );
   display: grid;
   place-items: center;
+  transition: background 0.08s linear;
 }
  
 .exam-loader-ring::before {
   content: "";
   position: absolute;
-  inset: 9px;
+  inset: 8px;
   border-radius: 50%;
   background: #eff6ff;
   z-index: -1;
+  pointer-events: none;
 }
  
 .exam-loader-percent {
@@ -1118,8 +1123,8 @@ body.page-loading{
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  min-width: 64px;
-  padding: 7px 10px;
+  min-width: 58px;
+  padding: 5px 8px;
   border: 1px solid #bfdbfe;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.96);
@@ -1255,11 +1260,28 @@ body.page-loading{
   display: block;
 }
  
+/* وقتی حجم کل پاسخ قابل محاسبه نیست، فقط حرکت حلقه را نشان بده؛ درصد ساختگی نساز. */
+#examPaperLoader[data-progress-mode="indeterminate"] .exam-loader-ring {
+  background: conic-gradient(from -90deg, #2563eb 0 26%, #dbeafe 26% 100%);
+  animation: exam-loader-ring-spin 1.1s linear infinite;
+}
+@keyframes exam-loader-ring-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #examPaperLoader[data-progress-mode="indeterminate"] .exam-loader-ring {
+    animation: none;
+  }
+}
+ 
  
 @media (max-width: 380px) {
   .exam-loader-ring {
-    width: 164px;
-    height: 164px;
+    width: 174px;
+    height: 174px;
+  }
+  .exam-loader-paper {
+    transform: scale(.92);
   }
 }
  
@@ -2368,9 +2390,18 @@ function setExamLoaderState(stage, message) {
  
   // درصد فقط از بایت‌های واقعاً دریافت‌شده به‌روزرسانی می‌شود.
   // شروع دریافت همیشه صفر است؛ ۱۰۰ فقط بعد از پردازش موفق نمایش داده می‌شود.
-  if (stage === "fetching") resetExamLoaderProgress();
-  if (stage === "ready") setExamLoaderProgress(100);
-  if (stage === "error") resetExamLoaderProgress();
+  if (stage === "fetching") {
+    overlay.dataset.progressMode = "determinate";
+    resetExamLoaderProgress();
+  }
+  if (stage === "ready") {
+    overlay.dataset.progressMode = "determinate";
+    setExamLoaderProgress(100);
+  }
+  if (stage === "error") {
+    overlay.dataset.progressMode = "determinate";
+    resetExamLoaderProgress();
+  }
  
   if (title) {
     title.textContent =
@@ -2389,6 +2420,10 @@ async function readExamResponseWithProgress(response) {
   // در پاسخ فشرده، Content-Length ممکن است اندازه بایت‌های فشرده باشد؛
   // بنابراین برای جلوگیری از درصد اشتباه، فقط طولِ قابل اتکا را مبنا می‌گیریم.
   const canCalculatePercent = Number.isFinite(totalBytes) && totalBytes > 0 && !contentEncoding;
+  const loader = $("examPaperLoader");
+  if (loader) {
+    loader.dataset.progressMode = canCalculatePercent ? "determinate" : "indeterminate";
+  }
  
   if (!response.body || !response.body.getReader) {
     // در مرورگری که خواندن جریانی پشتیبانی نمی‌شود، درصد ساختگی نمایش نمی‌دهیم.
@@ -2420,7 +2455,7 @@ async function readExamResponseWithProgress(response) {
   }
  
   // اگر طول پاسخ قابل اتکا نباشد، درصد را در حین دریافت تغییر نمی‌دهیم؛
-  // درصد واقعی بدون دانستن حجم کل قابل محاسبه نیست.
+  // درصد واقعی بدون دانستن حجم کل قابل محاسبه نیست. چرخش در وضعیت ready/error متوقف می‌شود.
   return JSON.parse(new TextDecoder("utf-8").decode(allBytes));
 }
  
@@ -5580,4 +5615,4 @@ initializePage().catch(error => {
    </div>
   </div>
  </body>
- </html>
+</html>
