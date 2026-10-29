@@ -2305,6 +2305,58 @@ function renderExamInfo(){
    دریافت آزمون
 ========================= */
  
+let examLoaderDisplayedProgress = 0;
+let examLoaderTargetProgress = 0;
+let examLoaderProgressTimer = null;
+ 
+function renderExamLoaderProgress(progress) {
+  const overlay = $("examPaperLoader");
+  const percentElement = $("examLoaderPercent");
+  if (!overlay) return;
+ 
+  const safeProgress = Math.max(0, Math.min(100, Math.floor(progress)));
+  overlay.style.setProperty("--loader-progress", `${safeProgress}%`);
+ 
+  if (percentElement) {
+    percentElement.textContent = `${toPersianNumber(safeProgress)}٪`;
+  }
+}
+ 
+function setExamLoaderProgress(progress) {
+  examLoaderTargetProgress = Math.max(
+    0,
+    Math.min(100, Math.floor(progress))
+  );
+ 
+  // از صفر شروع می‌کنیم و فقط تا درصدی بالا می‌رویم که واقعاً از
+  // نسبت بایت‌های دریافت‌شده به حجم کل پاسخ به دست آمده است.
+  if (examLoaderProgressTimer !== null) return;
+ 
+  examLoaderProgressTimer = setInterval(() => {
+    if (examLoaderDisplayedProgress < examLoaderTargetProgress) {
+      examLoaderDisplayedProgress += 1;
+      renderExamLoaderProgress(examLoaderDisplayedProgress);
+    } else if (examLoaderDisplayedProgress > examLoaderTargetProgress) {
+      examLoaderDisplayedProgress -= 1;
+      renderExamLoaderProgress(examLoaderDisplayedProgress);
+    } else {
+      clearInterval(examLoaderProgressTimer);
+      examLoaderProgressTimer = null;
+    }
+  }, 25);
+}
+ 
+function resetExamLoaderProgress() {
+  if (examLoaderProgressTimer !== null) {
+    clearInterval(examLoaderProgressTimer);
+    examLoaderProgressTimer = null;
+  }
+ 
+  examLoaderDisplayedProgress = 0;
+  examLoaderTargetProgress = 0;
+  renderExamLoaderProgress(0);
+}
+ 
 function setExamLoaderState(stage, message) {
   const overlay = $("examPaperLoader");
   const title = $("examLoaderTitle");
@@ -2314,26 +2366,12 @@ function setExamLoaderState(stage, message) {
  
   overlay.dataset.stage = stage;
  
-  const percentElement = $("examLoaderPercent");
+  // درصد فقط از بایت‌های واقعاً دریافت‌شده به‌روزرسانی می‌شود.
+  // شروع دریافت همیشه صفر است؛ ۱۰۰ فقط بعد از پردازش موفق نمایش داده می‌شود.
+  if (stage === "fetching") resetExamLoaderProgress();
+  if (stage === "ready") setExamLoaderProgress(100);
+  if (stage === "error") resetExamLoaderProgress();
  
-  const progressByStage = {
-    fetching: 10,
-    received: 65,
-    ready: 100,
-    error: 0
-  };
- 
-  const progress = progressByStage[stage] ?? 10;
- 
-  overlay.style.setProperty(
-    "--loader-progress",
-    `${progress}%`
-  );
- 
-  if (percentElement) {
-    percentElement.textContent =
-      `${toPersianNumber(progress)}٪`;
-  }
   if (title) {
     title.textContent =
       stage === "error" ? "دریافت آزمون ناموفق بود" :
@@ -2341,9 +2379,49 @@ function setExamLoaderState(stage, message) {
       "در حال دریافت آزمون";
   }
  
-  if (detail) {
-    detail.textContent = message || "";
+  if (detail) detail.textContent = message || "";
+}
+ 
+async function readExamResponseWithProgress(response) {
+  const contentLengthHeader = response.headers.get("content-length");
+  const contentEncoding = response.headers.get("content-encoding");
+  const totalBytes = contentLengthHeader ? Number(contentLengthHeader) : 0;
+  // در پاسخ فشرده، Content-Length ممکن است اندازه بایت‌های فشرده باشد؛
+  // بنابراین برای جلوگیری از درصد اشتباه، فقط طولِ قابل اتکا را مبنا می‌گیریم.
+  const canCalculatePercent = Number.isFinite(totalBytes) && totalBytes > 0 && !contentEncoding;
+ 
+  if (!response.body || !response.body.getReader) {
+    // در مرورگری که خواندن جریانی پشتیبانی نمی‌شود، درصد ساختگی نمایش نمی‌دهیم.
+    const text = await response.text();
+    return JSON.parse(text);
   }
+ 
+  const reader = response.body.getReader();
+  const chunks = [];
+  let receivedBytes = 0;
+ 
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    receivedBytes += value.byteLength;
+ 
+    if (canCalculatePercent) {
+      // تا پایان کامل دریافت، ۱۰۰٪ نشان داده نمی‌شود.
+      setExamLoaderProgress(Math.min(99, receivedBytes / totalBytes * 100));
+    }
+  }
+ 
+  const allBytes = new Uint8Array(receivedBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    allBytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+ 
+  // اگر طول پاسخ قابل اتکا نباشد، درصد را در حین دریافت تغییر نمی‌دهیم؛
+  // درصد واقعی بدون دانستن حجم کل قابل محاسبه نیست.
+  return JSON.parse(new TextDecoder("utf-8").decode(allBytes));
 }
  
 function hideExamPaperLoader() {
@@ -2405,19 +2483,16 @@ async function loadExam(){
         );
  
         if(!response.ok){
- 
             throw new Error(
                 "سرور آزمون پاسخ مناسبی ارسال نکرد."
             );
- 
         }
- setExamLoaderState(
-  "received",
-  "پاسخ سرور دریافت شد؛ در حال بررسی اطلاعات آزمون..."
-);
  
-        const data =
-            await response.json();
+        const data = await readExamResponseWithProgress(response);
+        setExamLoaderState(
+            "received",
+            "پاسخ دریافت شد؛ در حال بررسی اطلاعات آزمون..."
+        );
  
  
         if(!data.ok){
