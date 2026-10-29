@@ -915,7 +915,7 @@ body.page-loading{
     box-shadow:0 4px 12px rgba(0,0,0,.2);
     line-height:1;
 }
-
+ 
 /* تصاویر سؤال: نمایش منظم پنج تصویر در هر ردیف */
 .question-images {
     width: 100%;
@@ -930,7 +930,7 @@ body.page-loading{
     border-radius: 14px;
     background: #f8fafc;
 }
-
+ 
 .question-images img {
     display: block;
     width: 100%;
@@ -945,12 +945,12 @@ body.page-loading{
     box-shadow: 0 2px 6px rgba(0,0,0,.06);
     transition: box-shadow .15s, transform .15s;
 }
-
+ 
 .question-images img:hover {
     box-shadow: 0 4px 12px rgba(37,99,235,.2);
     transform: translateY(-2px);
 }
-
+ 
 /* پنجره بزرگ‌نمایی تصاویر */
 .image-lightbox {
     position: fixed;
@@ -965,12 +965,12 @@ body.page-loading{
     visibility: hidden;
     transition: opacity .2s, visibility .2s;
 }
-
+ 
 .image-lightbox.active {
     opacity: 1;
     visibility: visible;
 }
-
+ 
 .image-lightbox-inner {
     position: relative;
     width: 100%;
@@ -980,7 +980,7 @@ body.page-loading{
     align-items: center;
     gap: 12px;
 }
-
+ 
 .image-lightbox-inner img {
     display: block;
     width: min(88vw, 620px);
@@ -992,7 +992,7 @@ body.page-loading{
     box-shadow: 0 12px 40px rgba(0,0,0,.35);
     background: #fff;
 }
-
+ 
 .image-lightbox-close {
     position: absolute;
     top: -42px;
@@ -1012,7 +1012,7 @@ body.page-loading{
     box-shadow: 0 4px 12px rgba(0,0,0,.2);
     line-height: 1;
 }
-
+ 
 .image-lightbox-nav {
     display: flex;
     align-items: center;
@@ -1020,7 +1020,7 @@ body.page-loading{
     gap: 16px;
     margin-top: 4px;
 }
-
+ 
 .image-lightbox-nav button {
     width: 44px;
     height: 44px;
@@ -1035,33 +1035,33 @@ body.page-loading{
     justify-content: center;
     box-shadow: 0 4px 12px rgba(0,0,0,.2);
 }
-
+ 
 .image-lightbox-nav button:disabled {
     opacity: .4;
     cursor: not-allowed;
 }
-
+ 
 .image-lightbox-counter {
     color: #e5e7eb;
     font-size: 13px;
     min-width: 70px;
     text-align: center;
 }
-
+ 
 @media (max-width: 600px) {
     .question-images {
         gap: 5px;
         padding: 6px;
     }
-
+ 
     .image-lightbox-inner img {
         width: 88vw;
         height: min(88vw, 70vh);
     }
 }
-
  
-
+ 
+ 
 /* بارگذاری برگه آزمون - فقط برای staging */
 #examPaperLoader {
   position: fixed;
@@ -1074,49 +1074,65 @@ body.page-loading{
   background: rgba(244, 247, 251, 0.97);
   transition: opacity 0.25s ease, visibility 0.25s ease;
 }
-
+ 
 #examPaperLoader.is-hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
-
+ 
 .exam-loader-panel {
   width: min(320px, 92vw);
   text-align: center;
   color: #1f2937;
 }
-
+ 
 .exam-loader-ring {
+  --loader-progress: 0%;
+  position: relative;
+  isolation: isolate;
   width: 188px;
   height: 188px;
   margin: 0 auto 20px;
   border: 0;
-border-radius: 50%;
-background: conic-gradient(
-  #2563eb var(--loader-progress, 0%),
-  #dbeafe var(--loader-progress, 0%)
-);
-position: relative;
+  border-radius: 50%;
+  background: conic-gradient(
+    #2563eb 0 var(--loader-progress),
+    #dbeafe var(--loader-progress) 100%
+  );
   display: grid;
   place-items: center;
-  background: #eff6ff;
-  
 }
+ 
+.exam-loader-ring::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: #eff6ff;
+  z-index: -1;
+}
+ 
 .exam-loader-percent {
   position: absolute;
-  bottom: 12px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  padding: 3px 9px;
-  border-radius: 12px;
-  background: #ffffff;
+  transform: translate(-50%, -50%);
+  min-width: 64px;
+  padding: 7px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
   color: #1d4ed8;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
   direction: ltr;
-  z-index: 2;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
 }
+ 
 .exam-loader-paper {
   position: relative;
   width: 92px;
@@ -1129,7 +1145,7 @@ position: relative;
   box-shadow: 0 5px 14px rgba(37, 99, 235, 0.13);
   
 }
-
+ 
 .exam-loader-paper::before {
   content: "";
   position: absolute;
@@ -1142,17 +1158,17 @@ position: relative;
   transform: translateY(100%);
   transition: transform 0.65s ease;
 }
-
+ 
 #examPaperLoader[data-stage="received"]
 .exam-loader-paper::before {
   transform: translateY(58%);
 }
-
+ 
 #examPaperLoader[data-stage="ready"]
 .exam-loader-paper::before {
   transform: translateY(0);
 }
-
+ 
 .exam-paper-title {
   width: 54%;
   height: 5px;
@@ -1160,25 +1176,25 @@ position: relative;
   border-radius: 3px;
   background: #93c5fd;
 }
-
+ 
 .exam-paper-line {
   height: 4px;
   margin: 8px 0;
   border-radius: 3px;
   background: #e5e7eb;
 }
-
+ 
 .exam-paper-line:nth-child(3) { width: 88%; }
 .exam-paper-line:nth-child(4) { width: 74%; }
 .exam-paper-line:nth-child(5) { width: 94%; }
-
+ 
 .exam-paper-options {
   display: flex;
   justify-content: center;
   gap: 5px;
   margin-top: 10px;
 }
-
+ 
 .exam-paper-options i {
   width: 9px;
   height: 9px;
@@ -1186,26 +1202,26 @@ position: relative;
   border-radius: 50%;
   background: white;
 }
-
+ 
 #examPaperLoader[data-stage="ready"]
 .exam-paper-options i {
   border-color: #2563eb;
   background: #2563eb;
 }
-
+ 
 .exam-loader-title {
   margin: 0 0 8px;
   font-size: 17px;
   font-weight: 700;
 }
-
+ 
 .exam-loader-message {
   margin: 0;
   color: #64748b;
   font-size: 13px;
   line-height: 1.9;
 }
-
+ 
 .exam-loader-retry {
   display: none;
   margin: 16px auto 0;
@@ -1217,33 +1233,36 @@ position: relative;
   font: inherit;
   font-weight: 700;
 }
-
+ 
 #examPaperLoader[data-stage="error"] .exam-loader-ring {
-  border-color: #fecaca;
-  background: #fff1f2;
-  animation: none;
+  --loader-progress: 0%;
+  background: conic-gradient(#fecaca 0 100%);
 }
-
+ 
+#examPaperLoader[data-stage="error"] .exam-loader-ring::before {
+  background: #fff1f2;
+}
+ 
 #examPaperLoader[data-stage="error"] .exam-loader-title {
   color: #b91c1c;
 }
-
+ 
 #examPaperLoader[data-stage="error"] .exam-loader-message {
   color: #991b1b;
 }
-
+ 
 #examPaperLoader[data-stage="error"] .exam-loader-retry {
   display: block;
 }
-
-
+ 
+ 
 @media (max-width: 380px) {
   .exam-loader-ring {
     width: 164px;
     height: 164px;
   }
 }
-
+ 
 @media (prefers-reduced-motion: reduce) {
   .exam-loader-ring {
     animation: none;
@@ -1253,41 +1272,26 @@ position: relative;
 </style>
  </head>
  <body class="page-loading">
-  
-<div id="examPaperLoader" data-stage="fetching"
-     role="status" aria-live="polite">
-  <div class="exam-loader-panel">
-   <div class="exam-loader-percent" id="examLoaderPercent">
-  ۰٪
-   </div>
-    <div class="exam-loader-ring" aria-hidden="true">
-      <div class="exam-loader-paper">
-        <div class="exam-paper-title"></div>
-        <div class="exam-paper-line"></div>
-        <div class="exam-paper-line"></div>
-        <div class="exam-paper-line"></div>
-        <div class="exam-paper-line"></div>
-        <div class="exam-paper-options">
-          <i></i><i></i><i></i><i></i>
-        </div>
+  <div id="examPaperLoader" data-stage="fetching" role="status" aria-live="polite">
+   <div class="exam-loader-panel">
+    <div class="exam-loader-ring">
+     <div class="exam-loader-paper" aria-hidden="true">
+      <div class="exam-paper-title"></div>
+      <div class="exam-paper-line"></div>
+      <div class="exam-paper-line"></div>
+      <div class="exam-paper-line"></div>
+      <div class="exam-paper-line"></div>
+      <div class="exam-paper-options">
+       <i></i><i></i><i></i><i></i>
       </div>
+     </div>
+     <div class="exam-loader-percent" id="examLoaderPercent">۰٪</div>
     </div>
-
-    <p class="exam-loader-title" id="examLoaderTitle">
-      در حال دریافت آزمون
-    </p>
-
-    <p class="exam-loader-message" id="examLoaderMessage">
-      اطلاعات آزمون از سرور دریافت می‌شود.
-    </p>
-
-    <button type="button" class="exam-loader-retry"
-            id="examLoaderRetry">
-      تلاش مجدد
-    </button>
+    <p class="exam-loader-title" id="examLoaderTitle">در حال دریافت آزمون</p>
+    <p class="exam-loader-message" id="examLoaderMessage">اطلاعات آزمون از سرور دریافت می‌شود.</p>
+    <button type="button" class="exam-loader-retry" id="examLoaderRetry">تلاش مجدد</button>
+   </div>
   </div>
-</div>
-
   <div class="container">
    <div class="header">
     <div class="brand">
@@ -2305,27 +2309,27 @@ function setExamLoaderState(stage, message) {
   const overlay = $("examPaperLoader");
   const title = $("examLoaderTitle");
   const detail = $("examLoaderMessage");
-
+ 
   if (!overlay) return;
-
+ 
   overlay.dataset.stage = stage;
  
   const percentElement = $("examLoaderPercent");
-
+ 
   const progressByStage = {
     fetching: 10,
     received: 65,
     ready: 100,
     error: 0
   };
-
+ 
   const progress = progressByStage[stage] ?? 10;
-
+ 
   overlay.style.setProperty(
     "--loader-progress",
     `${progress}%`
   );
-
+ 
   if (percentElement) {
     percentElement.textContent =
       `${toPersianNumber(progress)}٪`;
@@ -2336,28 +2340,28 @@ function setExamLoaderState(stage, message) {
       stage === "ready" ? "آزمون آماده است" :
       "در حال دریافت آزمون";
   }
-
+ 
   if (detail) {
     detail.textContent = message || "";
   }
 }
-
+ 
 function hideExamPaperLoader() {
   const overlay = $("examPaperLoader");
   if (overlay) overlay.classList.add("is-hidden");
 }
-
+ 
 async function retryExamPaperLoad() {
   const retry = $("examLoaderRetry");
-
+ 
   if (retry) {
     retry.disabled = true;
     retry.textContent = "در حال تلاش...";
   }
-
+ 
   try {
     const ok = await loadExam();
-
+ 
     if (ok) {
       setExamLoaderState(
         "ready",
@@ -2377,7 +2381,7 @@ async function retryExamPaperLoad() {
     }
   }
 }
-
+ 
 async function loadExam(){
  setExamLoaderState(
   "fetching",
@@ -2785,51 +2789,51 @@ async function ensureImagesReady(imageUrls) {
             typeof src === "string" && src.trim() !== ""
         )
         : [];
-
+ 
     if (!list.length) return;
-
+ 
     await Promise.all(list.map(async (src) => {
         const key = String(src).trim();
-
+ 
         if (
             questionImageBlobUrls.has(key) ||
             questionImageBlobUrls.has(normalizeImageKey(key))
         ) {
             return;
         }
-
+ 
         for (let attempt = 1; attempt <= 2; attempt++) {
             const controller = new AbortController();
             const timeout = setTimeout(
                 () => controller.abort(),
                 7000
             );
-
+ 
             try {
                 const response = await fetch(key, {
                     mode: "cors",
                     cache: "no-store",
                     signal: controller.signal
                 });
-
+ 
                 if (!response.ok) {
                     throw new Error("HTTP " + response.status);
                 }
-
+ 
                 const blob = await response.blob();
-
+ 
                 if (!blob.size) {
                     throw new Error("تصویر خالی است");
                 }
-
+ 
                 rememberImageBlob(
                     key,
                     URL.createObjectURL(blob)
                 );
-
+ 
                 imagePreloadFailedUrls.delete(key);
                 return;
-
+ 
             } catch (error) {
                 console.warn(
                     "بارگذاری تصویر ناموفق:",
@@ -2837,11 +2841,11 @@ async function ensureImagesReady(imageUrls) {
                     attempt,
                     error
                 );
-
+ 
                 if (attempt === 2) {
                     imagePreloadFailedUrls.add(key);
                 }
-
+ 
             } finally {
                 clearTimeout(timeout);
             }
@@ -2929,27 +2933,27 @@ function getQuestionImages(question) {
 async function applyBlobSrcsToQuestionImages() {
     const container = document.getElementById("questionImages");
     if (!container) return;
-
+ 
     const imgs = Array.from(
         container.querySelectorAll("img[data-original-src]")
     );
-
+ 
     await Promise.all(imgs.map(img => new Promise(resolve => {
         const original = img.dataset.originalSrc || "";
         const finalSrc = resolveQuestionImageSrc(original);
         let finished = false;
-
+ 
         const finish = () => {
             if (finished) return;
             finished = true;
             clearTimeout(timer);
             resolve();
         };
-
+ 
         const timer = setTimeout(finish, 5000);
-
+ 
         img.onload = finish;
-
+ 
         img.onerror = () => {
             if (original && img.src !== original) {
                 img.src = original;
@@ -2957,7 +2961,7 @@ async function applyBlobSrcsToQuestionImages() {
                 finish();
             }
         };
-
+ 
         img.removeAttribute("src");
         img.src = finalSrc || original;
     })));
@@ -5352,7 +5356,7 @@ async function initializePage(){
  
     
 const examLoaded = await loadExam();
-
+ 
 if (examLoaded) {
   setExamLoaderState(
     "ready",
@@ -5365,7 +5369,7 @@ if (examLoaded) {
     "دریافت اطلاعات آزمون انجام نشد. اینترنت را بررسی و دوباره تلاش کنید."
   );
 }
-
+ 
  
  
     handlePaymentReturn(
@@ -5433,7 +5437,7 @@ if (examLoaded) {
 /* =========================
    اجرای صفحه
 ========================= */
-
+ 
 $("examLoaderRetry")?.addEventListener(
   "click",
   retryExamPaperLoad
@@ -5477,9 +5481,7 @@ initializePage().catch(error => {
 </script>
   <footer class="site-footer">
    <div class="enamad-logo">
-    <a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=8103286&amp;Code=aMu7FdUgTI3sClZifudXtsyK5n2kO15Y"> 
-     <img referrerpolicy="origin" src="/Image/010.png" alt="نماد اعتماد الکترونیکی" width="125" height="136" style="cursor:pointer" code="aMu7FdUgTI3sClZifudXtsyK5n2kO15Y">
-    </a>
+    <a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=8103286&amp;Code=aMu7FdUgTI3sClZifudXtsyK5n2kO15Y"> <img referrerpolicy="origin" src="/Image/010.png" alt="نماد اعتماد الکترونیکی" width="125" height="136" style="cursor:pointer" code="aMu7FdUgTI3sClZifudXtsyK5n2kO15Y"> </a>
    </div>
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
