@@ -5411,7 +5411,6 @@ document.addEventListener("keydown", function(e){
  
 async function initializePage(){
  
-    hide("startCard");
     hide("paymentCard");
     hide("rulesCard");
     hide("examCard");
@@ -5419,18 +5418,26 @@ async function initializePage(){
  
     hideQuestionSteps();
  
- 
     /*
      * query را قبل از پاک شدن URL ذخیره می‌کنیم.
-     * این هم یک اصلاح مهم نسبت به نسخه قبلی است.
      */
+    const paymentQuery = getQueryParams();
  
-    const paymentQuery =
-        getQueryParams();
+    /*
+     * در ورود عادی، فرم شروع را بدون انتظار برای API نشان می‌دهیم.
+     * دکمه شروع تا آماده شدن اطلاعات آزمون غیرفعال می‌ماند.
+     * در بازگشت از درگاه، ابتدا مسیر پرداخت بررسی می‌شود تا فرم چشمک نزند.
+     */
+    const isPaymentReturn = Boolean(paymentQuery.payment || paymentQuery.orderId);
+    if (!isPaymentReturn) {
+        show("startCard");
+        hideExamPaperLoader();
+        document.body.classList.remove("page-loading");
+    } else {
+        hide("startCard");
+    }
  
- 
-    
-const examLoaded = await loadExam();
+    const examLoaded = await loadExam();
  
 if (examLoaded) {
   setExamLoaderState(
@@ -5573,4 +5580,4 @@ initializePage().catch(error => {
    </div>
   </div>
  </body>
-</html>
+ </html>
