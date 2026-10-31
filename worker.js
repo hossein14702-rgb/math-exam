@@ -156,6 +156,91 @@ export default {
  
  
       // =========================================================
+      // POST /api/teacher/images/upload
+      // بارگذاری امن تصاویر سؤال
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/images/upload"
+      ) {
+        const uploadSecret = String(
+          env.IMAGE_UPLOAD_SECRET || ""
+        );
+ 
+        if (!uploadSecret) {
+          return json(
+            {
+              ok: false,
+              error: "سرویس بارگذاری تصویر تنظیم نشده است",
+            },
+            503,
+            cors
+          );
+        }
+ 
+        const contentType =
+          request.headers.get("Content-Type") || "";
+ 
+        if (
+          !contentType
+            .toLowerCase()
+            .startsWith("multipart/form-data;")
+        ) {
+          return json(
+            {
+              ok: false,
+              error: "فرمت ارسال فایل نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+ 
+        try {
+          const upstream = await fetch(
+            "https://image.azmoonmath.ir/upload",
+            {
+              method: "POST",
+              headers: {
+                "x-image-secret": uploadSecret,
+                "Content-Type": contentType,
+              },
+              body: request.body,
+            }
+          );
+ 
+          return new Response(
+            await upstream.text(),
+            {
+              status: upstream.status,
+              headers: {
+                ...cors,
+                "Content-Type":
+                  upstream.headers.get("Content-Type") ||
+                  "application/json; charset=UTF-8",
+                "Cache-Control": "no-store",
+              },
+            }
+          );
+        } catch (error) {
+          console.error(
+            "Image upload proxy failed:",
+            error
+          );
+ 
+          return json(
+            {
+              ok: false,
+              error: "ارتباط با سرویس تصاویر برقرار نشد",
+            },
+            502,
+            cors
+          );
+        }
+      }
+ 
+ 
+      // =========================================================
       // GET /api/exam
       // =========================================================
       if (
@@ -258,96 +343,99 @@ export default {
  
         // تعداد سؤال و مدت آزمون = جمع selection_count قوانین
         // نه تعداد کل سؤال‌های فعال بانک
- let questionCount = 0;
-let totalDurationSeconds = 0;
-const rulesSummary = [];
+        let questionCount = 0;
+        let totalDurationSeconds = 0;
+        const rulesSummary = [];
  
-if (rules.length > 0) {
-  const folderIds = rules.map(r => r.folder_id);
-  const placeholders = folderIds.map(() => "?").join(",");
+        if (allRules.length > 0) {
+          // حتی اگر بعضی پوشه‌ها غیرفعال باشند،
+          // مبنای تعداد «قوانین» است نه کل بانک سؤال
+          for (const rule of rules) {
+            const count = Number(
+              rule.selection_count ??
+              rule.selectionCount ??
+              0
+            );
+            if (!Number.isFinite(count) || count <= 0) continue;
  
-  const statsResult = await env.DB
-    .prepare(`
-      SELECT
-        folder_id,
-        COUNT(*) AS cnt,
-        AVG(duration_seconds) AS avg_duration
-      FROM questions
-      WHERE exam_id = ?
-        AND folder_id IN (${placeholders})
-        AND active = 1
-      GROUP BY folder_id
-    `)
-    .bind(examId, ...folderIds)
-    .all();
+            questionCount += count;
  
-  const statsMap = new Map();
-  for (const row of (statsResult.results || [])) {
-    statsMap.set(row.folder_id, {
-      avg: Number(row.avg_duration) > 0 ? Number(row.avg_duration) : 30
-    });
-  }
+            let ruleDuration = 0;
  
-  for (const rule of rules) {
-    const count = Number(rule.selection_count || 0);
-    if (count <= 0) continue;
+            if (rule.selection_mode === "manual") {
+              const manualRows = await env.DB
+                .prepare(`
+                  SELECT q.duration_seconds
+                  FROM exam_manual_questions emq
+                  JOIN questions q
+                    ON q.id = emq.question_id
+                  WHERE emq.exam_id = ?
+                    AND q.exam_id = ?
+                    AND q.folder_id = ?
+                    AND q.active = 1
+                  ORDER BY emq.sort_order, q.id
+                  LIMIT ?
+                `)
+                .bind(examId, examId, rule.folder_id, count)
+                .all();
  
-    questionCount += count;
-    let ruleDuration = 0;
+              const rows = manualRows.results || [];
+              for (const row of rows) {
+                ruleDuration += Number(row.duration_seconds || 30);
+              }
+              if (rows.length < count) {
+                ruleDuration += (count - rows.length) * 30;
+              }
+            } else {
+              const stats = await env.DB
+                .prepare(`
+                  SELECT
+                    COUNT(*) AS cnt,
+                    AVG(duration_seconds) AS avg_duration
+                  FROM questions
+                  WHERE exam_id = ?
+                    AND folder_id = ?
+                    AND active = 1
+                `)
+                .bind(examId, rule.folder_id)
+                .first();
  
-    if (rule.selection_mode === "manual") {
-      const manualRows = await env.DB
-        .prepare(`
-          SELECT q.duration_seconds
-          FROM exam_manual_questions emq
-          JOIN questions q ON q.id = emq.question_id
-          WHERE emq.exam_id = ?
-            AND q.exam_id = ?
-            AND q.folder_id = ?
-            AND q.active = 1
-          ORDER BY emq.sort_order, q.id
-          LIMIT ?
-        `)
-        .bind(examId, examId, rule.folder_id, count)
-        .all();
+              const avg =
+                Number(stats?.avg_duration) > 0
+                  ? Number(stats.avg_duration)
+                  : 30;
  
-      const rows = manualRows.results || [];
-      for (const row of rows) {
-        ruleDuration += Number(row.duration_seconds || 30);
-      }
-      if (rows.length < count) {
-        ruleDuration += (count - rows.length) * 30;
-      }
-    } else {
-      const stats = statsMap.get(rule.folder_id) || { avg: 30 };
-      ruleDuration = Math.round(stats.avg * count);
-    }
+              ruleDuration = Math.round(avg * count);
+            }
  
-    totalDurationSeconds += ruleDuration;
+            totalDurationSeconds += ruleDuration;
  
-    rulesSummary.push({
-      folderId: rule.folder_id,
-      folderName: rule.folder_name || null,
-      selectionCount: count,
-      selectionMode: rule.selection_mode || "random",
-      estimatedDurationSeconds: ruleDuration,
-    });
-  }
-} else {
-  const allActive = await env.DB
-    .prepare(`
-      SELECT
-        COUNT(*) AS cnt,
-        COALESCE(SUM(duration_seconds), 0) AS total_duration
-      FROM questions
-      WHERE exam_id = ? AND active = 1
-    `)
-    .bind(examId)
-    .first();
+            rulesSummary.push({
+              folderId: rule.folder_id,
+              folderName: rule.folder_name || null,
+              selectionCount: count,
+              selectionMode: rule.selection_mode || "random",
+              estimatedDurationSeconds: ruleDuration,
+            });
+          }
+        } else {
+          // فقط وقتی هیچ قانونی تعریف نشده، از کل سؤال‌های فعال استفاده می‌شود
+          const allActive = await env.DB
+            .prepare(`
+              SELECT
+                COUNT(*) AS cnt,
+                COALESCE(SUM(duration_seconds), 0) AS total_duration
+              FROM questions
+              WHERE exam_id = ?
+                AND active = 1
+            `)
+            .bind(examId)
+            .first();
  
-  questionCount = Number(allActive?.cnt || 0);
-  totalDurationSeconds = Number(allActive?.total_duration || 0);
-}
+          questionCount = Number(allActive?.cnt || 0);
+          totalDurationSeconds = Number(allActive?.total_duration || 0);
+        }
+ 
         // برای سازگاری، لیست سؤال‌ها را هم برمی‌گردانیم (نه لزوماً همان‌هایی که در آزمون می‌آیند)
         const result =
           await env.DB
@@ -361,7 +449,8 @@ if (rules.length > 0) {
                 option_d,
                 duration_seconds,
                 folder_id,
-                active
+                active,
+                images_json
               FROM questions
               WHERE exam_id = ?
                 AND active = 1
@@ -444,7 +533,10 @@ if (rules.length > 0) {
             activeQuestionBankCount:
               (result.results || []).length,
  
-            
+            questions:
+              (result.results || []).map(
+                q => publicQuestion(q)
+              ),
           },
           200,
           cors
@@ -1196,6 +1288,7 @@ if (rules.length > 0) {
             q.duration_seconds,
             q.folder_id,
             q.active,
+            q.images_json,
             f.name AS folder_name
           FROM questions q
           LEFT JOIN question_folders f
@@ -1395,6 +1488,50 @@ if (rules.length > 0) {
             );
           }
  
+          let imageUrls = [];
+ 
+          if (
+            body.images === undefined &&
+            action === "update"
+          ) {
+            const existingImageRow = await env.DB
+              .prepare(`
+                SELECT images_json
+                FROM questions
+                WHERE id = ?
+                  AND exam_id = ?
+              `)
+              .bind(questionId, examId)
+              .first();
+ 
+            imageUrls = parseQuestionImages(
+              existingImageRow?.images_json
+            );
+          } else {
+            const imageResult =
+              normalizeQuestionImageUrls(
+                body.images === undefined
+                  ? []
+                  : body.images
+              );
+ 
+            if (!imageResult.ok) {
+              return json(
+                {
+                  ok: false,
+                  error: imageResult.error,
+                },
+                400,
+                cors
+              );
+            }
+ 
+            imageUrls = imageResult.images;
+          }
+ 
+          const imagesJson =
+            JSON.stringify(imageUrls);
+ 
           let folderId = null;
  
           if (
@@ -1456,9 +1593,10 @@ if (rules.length > 0) {
                     correct_index,
                     duration_seconds,
                     folder_id,
-                    active
+                    active,
+                    images_json
                   )
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
                 `)
                 .bind(
                   examId,
@@ -1469,7 +1607,8 @@ if (rules.length > 0) {
                   optionD,
                   correctIndex,
                   durationSeconds,
-                  folderId
+                  folderId,
+                  imagesJson
                 )
                 .run();
  
@@ -1554,7 +1693,8 @@ if (rules.length > 0) {
                   option_d = ?,
                   correct_index = ?,
                   duration_seconds = ?,
-                  folder_id = ?
+                  folder_id = ?,
+                  images_json = ?
                 WHERE id = ?
                   AND exam_id = ?
               `)
@@ -1567,6 +1707,7 @@ if (rules.length > 0) {
                 correctIndex,
                 durationSeconds,
                 folderId,
+                imagesJson,
                 questionId,
                 examId
               )
@@ -2733,9 +2874,17 @@ if (rules.length > 0) {
         const amount =
           pricing.finalPrice;
  
+        // کاربر خاص: حسین + 09137400603 → بدون پرداخت، سفارش paid
+        const isPaymentBypass =
+          name === "حسین" &&
+          phone === "09137400603";
+ 
         if (
-          !Number.isInteger(amount) ||
-          amount <= 0
+          !isPaymentBypass &&
+          (
+            !Number.isInteger(amount) ||
+            amount <= 0
+          )
         ) {
           return json(
             {
@@ -2753,6 +2902,67 @@ if (rules.length > 0) {
  
         const createdAt =
           new Date().toISOString();
+ 
+        if (isPaymentBypass) {
+ 
+          const paidAt =
+            createdAt;
+ 
+          await env.DB
+            .prepare(`
+              INSERT INTO orders (
+                id,
+                exam_id,
+                name,
+                phone,
+                amount,
+                status,
+                created_at,
+                paid_at
+              )
+              VALUES (?, ?, ?, ?, ?, 'paid', ?, ?)
+            `)
+            .bind(
+              orderId,
+              examId,
+              name,
+              phone,
+              amount > 0 ? amount : 0,
+              createdAt,
+              paidAt
+            )
+            .run();
+ 
+          return json(
+            {
+              ok: true,
+              paymentReady: false,
+              paymentBypass: true,
+              orderId,
+              amount: amount > 0 ? amount : 0,
+              message:
+                "دسترسی ویژه تأیید شد. می‌توانید آزمون را شروع کنید.",
+              pricing: {
+                basePrice:
+                  pricing.basePrice,
+                finalPrice:
+                  pricing.finalPrice,
+                discountEnabled:
+                  pricing.discountEnabled,
+                discountActive:
+                  pricing.discountActive,
+                discountPercent:
+                  pricing.discountPercent,
+                discountStartAt:
+                  pricing.discountStartAt,
+                discountEndAt:
+                  pricing.discountEndAt,
+              },
+            },
+            200,
+            cors
+          );
+        }
  
         await env.DB
           .prepare(`
@@ -2959,9 +3169,7 @@ if (rules.length > 0) {
           cors
         );
       }
- 
- 
-      // =========================================================
+       // =========================================================
       // GET /api/payment/callback
       // =========================================================
       if (
@@ -3057,9 +3265,8 @@ if (rules.length > 0) {
             "سرور پرداخت هنوز تنظیم نشده است"
           );
         }
- 
-        let verifyResponse;
- 
+         let verifyResponse;
+         
         try {
  
           const vpsResponse =
@@ -3272,19 +3479,27 @@ if (rules.length > 0) {
             .bind(orderId)
             .first();
  
+        // کاربر خاص (حسین / 09137400603) می‌تواند دوباره آزمون بدهد
+        const isBypassUser =
+          order.name === "حسین" &&
+          String(order.phone || "") === "09137400603";
+ 
         if (existingAttempt) {
  
           if (existingAttempt.finished_at) {
-            return json(
-              {
-                ok: false,
-                error:
-                  "این آزمون قبلاً تمام شده است",
-              },
-              400,
-              cors
-            );
-          }
+            if (!isBypassUser) {
+              return json(
+                {
+                  ok: false,
+                  error:
+                    "این آزمون قبلاً تمام شده است",
+                },
+                400,
+                cors
+              );
+            }
+            // attempt قبلی تمام شده؛ برای کاربر خاص اجازه attempt جدید
+          } else {
  
           const snapshots =
             await env.DB
@@ -3375,6 +3590,7 @@ if (rules.length > 0) {
               cors
             );
           }
+          } // end else (not finished)
         }
  
         let questions;
@@ -3462,9 +3678,10 @@ if (rules.length > 0) {
                   option_d_snapshot,
                   correct_index_snapshot,
                   duration_seconds_snapshot,
+                  images_json_snapshot,
                   started_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               `)
               .bind(
                 attemptId,
@@ -3477,6 +3694,7 @@ if (rules.length > 0) {
                 q.option_d,
                 q.correct_index,
                 q.duration_seconds,
+                JSON.stringify(q.images || []),
                 i === 0
                   ? startedAt
                   : null
@@ -3504,11 +3722,7 @@ if (rules.length > 0) {
               startedAt,
  
             question:
-              publicQuestion(
-                normalizeQuestionForSnapshot(
-                  questions[0]
-                )
-              ),
+  publicQuestion(questions[0]),
           },
           200,
           cors
@@ -4769,9 +4983,26 @@ if (rules.length > 0) {
       // =========================================================
       // Static files
       // =========================================================
-      if (env.ASSETS) {
-        return env.ASSETS.fetch(request);
-      }
+      
+if (env.ASSETS) {
+  const assetResponse = await env.ASSETS.fetch(request);
+  const body = await assetResponse.arrayBuffer();
+
+  const headers = new Headers(assetResponse.headers);
+
+  headers.set("Content-Length", String(body.byteLength));
+  headers.set("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate");
+  headers.set("X-Azmoon-Diagnostic", "asset-buffer-v2");
+
+  headers.delete("Transfer-Encoding");
+
+  return new Response(body, {
+    status: assetResponse.status,
+    statusText: assetResponse.statusText,
+    headers,
+  });
+}
+
  
       return json(
         {
@@ -4809,6 +5040,8 @@ const ALLOWED_ORIGINS = [
   "https://azmoonmath.ir",
   "https://www.azmoonmath.ir",
   "https://azmon.hosseinkhorasani1.workers.dev",
+  "https://staging.azmoonmath.ir",
+  "https://azmon-staging.hosseinkhorasani1.workers.dev",
 ];
  
 function getCorsHeaders(origin) {
@@ -5220,6 +5453,92 @@ function compactOptions(
  
  
 // =============================================================
+// اعتبارسنجی آدرس تصاویر سؤال
+// =============================================================
+ 
+function normalizeQuestionImageUrls(value) {
+  if (!Array.isArray(value)) {
+    return {
+      ok: false,
+      error: "فهرست تصاویر نامعتبر است",
+    };
+  }
+ 
+  if (value.length > 5) {
+    return {
+      ok: false,
+      error: "حداکثر ۵ تصویر برای هر سؤال مجاز است",
+    };
+  }
+ 
+  const images = [];
+ 
+  for (const item of value) {
+    const raw = String(item || "").trim();
+ 
+    let parsed;
+ 
+    try {
+      parsed = new URL(raw);
+    } catch {
+      return {
+        ok: false,
+        error: "آدرس یکی از تصاویر نامعتبر است",
+      };
+    }
+ 
+    const validPath =
+      /^\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp|gif)$/i;
+ 
+    if (
+      parsed.protocol !== "https:" ||
+      parsed.hostname !== "image.azmoonmath.ir" ||
+      parsed.port ||
+      parsed.username ||
+      parsed.password ||
+      !validPath.test(parsed.pathname) ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      return {
+        ok: false,
+        error:
+          "فقط تصاویر معتبر سرویس رسمی تصاویر مجاز هستند",
+      };
+    }
+ 
+    if (!images.includes(parsed.href)) {
+      images.push(parsed.href);
+    }
+  }
+ 
+  return {
+    ok: true,
+    images,
+  };
+}
+ 
+ 
+function parseQuestionImages(value) {
+  let parsed = value;
+ 
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed || "[]");
+    } catch {
+      parsed = [];
+    }
+  }
+ 
+  const result = normalizeQuestionImageUrls(
+    Array.isArray(parsed) ? parsed : []
+  );
+ 
+  return result.ok ? result.images : [];
+}
+ 
+ 
+// =============================================================
 // نرمال‌سازی سؤال برای Snapshot
 // =============================================================
 function normalizeQuestionForSnapshot(q) {
@@ -5276,6 +5595,8 @@ function normalizeQuestionForSnapshot(q) {
  
     active:
       q.active,
+ 
+    images: parseQuestionImages(q.images_json),
   };
 }
  
@@ -5334,6 +5655,8 @@ function publicQuestion(q) {
  
     duration_seconds:
       duration,
+ 
+    images: normalized.images || [],
   };
 }
  
@@ -5393,6 +5716,8 @@ function publicSnapshotQuestion(q) {
  
     duration_seconds:
       duration,
+ 
+    images: parseQuestionImages(q.images_json_snapshot),
   };
 }
  
@@ -5460,6 +5785,9 @@ function teacherQuestion(q) {
  
     folderName:
       q.folder_name || null,
+ 
+    images:
+      parseQuestionImages(q.images_json),
  
     active:
       Number(q.active || 0) === 1,
@@ -5728,6 +6056,8 @@ async function buildResult(
         question:
           row.question_text_snapshot,
  
+        images: parseQuestionImages(row.images_json_snapshot),
+ 
         options:
           compact.options,
  
@@ -5892,6 +6222,9 @@ async function buildLegacyResult(
  
         question:
           normalized.question_text,
+ 
+        images:
+          normalized.images || [],
  
         options: [
           normalized.option_a,
@@ -6139,4 +6472,5 @@ function normalizePhone(
   }
  
   return phone;
-    }
+}
+ 
