@@ -3406,7 +3406,68 @@ export default {
       }
  
  
+      
       // =========================================================
+      // GET /api/order-status
+      // وضعیت سفارش برای بازگشت پایدار از درگاه (بدون وابستگی به حافظه مرورگر)
+      // =========================================================
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/order-status"
+      ) {
+        const orderId = String(
+          url.searchParams.get("orderId") || ""
+        ).trim();
+ 
+        if (!orderId) {
+          return json(
+            {
+              ok: false,
+              error: "orderId الزامی است",
+            },
+            400,
+            cors
+          );
+        }
+ 
+        const order = await env.DB
+          .prepare(`
+            SELECT
+              id,
+              status,
+              exam_id,
+              name
+            FROM orders
+            WHERE id = ?
+          `)
+          .bind(orderId)
+          .first();
+ 
+        if (!order) {
+          return json(
+            {
+              ok: false,
+              error: "سفارش پیدا نشد",
+            },
+            404,
+            cors
+          );
+        }
+ 
+        return json(
+          {
+            ok: true,
+            orderId: order.id,
+            status: order.status,
+            examId: order.exam_id,
+            paid: String(order.status || "") === "paid",
+          },
+          200,
+          cors
+        );
+      }
+ 
+// =========================================================
       // POST /api/start
       // =========================================================
       if (
