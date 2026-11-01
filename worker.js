@@ -3567,10 +3567,16 @@ export default {
               current.started_at = now;
             }
  
+            const allQuestionsResume =
+              (snapshots.results || []).map(
+                (row) => publicSnapshotQuestion(row)
+              );
+ 
             return json(
               {
                 ok: true,
                 resumed: true,
+                mode: "local",
  
                 attemptId:
                   existingAttempt.id,
@@ -3578,13 +3584,20 @@ export default {
                 currentQuestion,
  
                 totalQuestions:
-                  snapshots.results.length,
+                  allQuestionsResume.length,
  
                 questionStartedAt:
                   current.started_at,
  
+                serverNow:
+                  new Date().toISOString(),
+ 
+                questions:
+                  allQuestionsResume,
+ 
                 question:
-                  publicSnapshotQuestion(current),
+                  allQuestionsResume[currentQuestion] ||
+                  null,
               },
               200,
               cors
@@ -3706,23 +3719,48 @@ export default {
           await env.DB.batch(statements);
         }
  
+        const allQuestionsNew =
+          (
+            await env.DB
+              .prepare(`
+                SELECT *
+                FROM attempt_questions
+                WHERE attempt_id = ?
+                ORDER BY question_order
+              `)
+              .bind(attemptId)
+              .all()
+          ).results || [];
+ 
+        const mappedNew =
+          allQuestionsNew.map(
+            (row) => publicSnapshotQuestion(row)
+          );
+ 
         return json(
           {
             ok: true,
             resumed: false,
+            mode: "local",
  
             attemptId,
  
             currentQuestion: 0,
  
             totalQuestions:
-              questions.length,
+              mappedNew.length,
  
             questionStartedAt:
               startedAt,
  
+            serverNow:
+              new Date().toISOString(),
+ 
+            questions:
+              mappedNew,
+ 
             question:
-  publicQuestion(questions[0]),
+              mappedNew[0] || null,
           },
           200,
           cors
@@ -4009,6 +4047,9 @@ export default {
               totalQuestions,
  
               timedOut,
+ 
+              serverNow:
+                new Date().toISOString(),
             },
             200,
             cors
@@ -4075,8 +4116,21 @@ export default {
             questionStartedAt:
               next.started_at,
  
+            serverNow:
+              new Date().toISOString(),
+            offlineScoreKey:
+              await exportOfflineScoreKeyB64(
+                env,
+                attemptId
+              ),
+ 
             question:
-              publicSnapshotQuestion(next),
+              await attachCorrectEnc(
+                env,
+                attemptId,
+                publicSnapshotQuestion(next),
+                next.correct_index_snapshot
+              ),
           },
           200,
           cors
@@ -4143,6 +4197,69 @@ export default {
             cors
           );
         }
+ 
+        const incomingAnswers =
+          Array.isArray(body.answers)
+            ? body.answers
+            : null;
+ 
+        if (incomingAnswers && incomingAnswers.length) {
+          const updateStatements = [];
+ 
+          for (const item of incomingAnswers) {
+            const qIndex = Number(item.questionIndex);
+            if (!Number.isInteger(qIndex) || qIndex < 0) {
+              continue;
+            }
+ 
+            let selectedIndex =
+              item.selectedIndex === null ||
+              item.selectedIndex === undefined ||
+              item.selectedIndex === ""
+                ? null
+                : Number(item.selectedIndex);
+ 
+            if (
+              selectedIndex !== null &&
+              (
+                !Number.isInteger(selectedIndex) ||
+                selectedIndex < 0 ||
+                selectedIndex > 3
+              )
+            ) {
+              selectedIndex = null;
+            }
+ 
+            const elapsedRaw = item.elapsedSeconds;
+            const elapsed =
+              elapsedRaw === null || elapsedRaw === undefined || elapsedRaw === ""
+                ? null
+                : Math.max(0, Number(elapsedRaw) || 0);
+ 
+            updateStatements.push(
+              env.DB
+                .prepare(`
+                  UPDATE attempt_questions
+                  SET
+                    selected_index = ?,
+                    elapsed_seconds = COALESCE(?, elapsed_seconds)
+                  WHERE attempt_id = ?
+                    AND question_order = ?
+                `)
+                .bind(
+                  selectedIndex,
+                  elapsed,
+                  attemptId,
+                  qIndex
+                )
+            );
+          }
+ 
+          if (updateStatements.length) {
+            await env.DB.batch(updateStatements);
+          }
+        }
+ 
  
         const rows =
           await env.DB
@@ -4987,22 +5104,22 @@ export default {
 if (env.ASSETS) {
   const assetResponse = await env.ASSETS.fetch(request);
   const body = await assetResponse.arrayBuffer();
-
+ 
   const headers = new Headers(assetResponse.headers);
-
+ 
   headers.set("Content-Length", String(body.byteLength));
   headers.set("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate");
   headers.set("X-Azmoon-Diagnostic", "asset-buffer-v2");
-
+ 
   headers.delete("Transfer-Encoding");
-
+ 
   return new Response(body, {
     status: assetResponse.status,
     statusText: assetResponse.statusText,
     headers,
   });
 }
-
+ 
  
       return json(
         {
@@ -5604,6 +5721,76 @@ function normalizeQuestionForSnapshot(q) {
 // =============================================================
 // سوال عمومی برای student
 // =============================================================
+ 
+// =============================================================
+// رمزنگاری پاسخ صحیح برای کلاینت (آفلاین) — AES-GCM
+// =============================================================
+function bytesToBase64(buf) {
+  const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : new Uint8Array(buf);
+  let s = "";
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s);
+}
+ 
+async function deriveOfflineScoreKeyRaw(env, attemptId) {
+  const secret = String(
+    env.OFFLINE_SCORE_SECRET ||
+    env.TEACHER_PASSWORD ||
+    "azmoon-offline-score"
+  );
+  const material = new TextEncoder().encode(
+    secret + "|" + String(attemptId || "")
+  );
+  return await crypto.subtle.digest("SHA-256", material);
+}
+ 
+async function deriveOfflineScoreKey(env, attemptId) {
+  const raw = await deriveOfflineScoreKeyRaw(env, attemptId);
+  return crypto.subtle.importKey(
+    "raw",
+    raw,
+    { name: "AES-GCM" },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+ 
+async function exportOfflineScoreKeyB64(env, attemptId) {
+  const raw = await deriveOfflineScoreKeyRaw(env, attemptId);
+  return bytesToBase64(raw);
+}
+ 
+async function encryptCorrectIndexForAttempt(env, attemptId, correctIndex) {
+  if (correctIndex === null || correctIndex === undefined) return null;
+  try {
+    const key = await deriveOfflineScoreKey(env, attemptId);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encoded = new TextEncoder().encode(String(Number(correctIndex)));
+    const cipher = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      encoded
+    );
+    return bytesToBase64(iv) + ":" + bytesToBase64(cipher);
+  } catch (e) {
+    console.error("encryptCorrectIndexForAttempt:", e);
+    return null;
+  }
+}
+ 
+async function attachCorrectEnc(env, attemptId, questionObj, rawCorrectIndex) {
+  if (!questionObj) return questionObj;
+  const enc = await encryptCorrectIndexForAttempt(
+    env,
+    attemptId,
+    rawCorrectIndex
+  );
+  return {
+    ...questionObj,
+    correctEnc: enc,
+  };
+}
+ 
 function publicQuestion(q) {
  
   if (!q) {
@@ -5634,7 +5821,6 @@ function publicQuestion(q) {
       normalized.question_text,
  
     options,
- 
     durationSeconds:
       duration,
  
@@ -5695,7 +5881,6 @@ function publicSnapshotQuestion(q) {
  
     options:
       compact.options,
- 
     durationSeconds:
       duration,
  
