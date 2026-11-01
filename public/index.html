@@ -2407,103 +2407,232 @@ function getQueryParams(){
    بازگشت از زرین‌پال
 ========================= */
  
-function handlePaymentReturn(query){
+ 
+async function confirmOrderPaidFromServer(id, retries) {
+    const oid = String(id || "").trim();
+    if (!oid) return false;
+ 
+    const maxTries = Number(retries || 3);
+ 
+    for (let tryNo = 1; tryNo <= maxTries; tryNo++) {
+        try {
+            const response = await fetch(
+                `${API}/api/order-status?orderId=${encodeURIComponent(oid)}&_=${Date.now()}`,
+                {
+                    method: "GET",
+                    cache: "no-store",
+                    headers: { "Accept": "application/json" }
+                }
+            );
+ 
+            const data = await readApiJson(response);
+ 
+            if (response.ok && data.ok && (data.paid === true || data.status === "paid")) {
+                orderId = oid;
+                try {
+                    localStorage.setItem("math_exam_order_id", oid);
+                    localStorage.setItem("math_exam_paid", "1");
+                } catch (e) {}
+                return true;
+            }
+ 
+            /* سفارش هست ولی هنوز paid نیست */
+            if (response.ok && data.ok && data.status && data.status !== "paid") {
+                return false;
+            }
+        } catch (e) {
+            console.warn("confirmOrderPaidFromServer try", tryNo, e);
+        }
+ 
+        if (tryNo < maxTries) {
+            await new Promise(function (r) {
+                setTimeout(r, 1200 * tryNo);
+            });
+        }
+    }
+ 
+    return false;
+}
+ 
+async function recheckPaymentStatus() {
+    const oid =
+        orderId ||
+        (function () {
+            try { return localStorage.getItem("math_exam_order_id"); }
+            catch (e) { return null; }
+        })();
+ 
+    if (!oid) {
+        showError(
+            "startError",
+            "شناسه سفارش پیدا نشد. اگر پرداخت کرده‌اید، رسید را نگه دارید و به پشتیبانی پیام دهید."
+        );
+        return;
+    }
+ 
+    orderId = oid;
+ 
+    const box =
+        $("rulesError") || $("startError");
+ 
+    if ($("rulesError")) {
+        $("rulesError").innerHTML =
+            `<div class="loading">در حال بررسی وضعیت پرداخت از سرور...</div>`;
+    }
+    if ($("startError")) {
+        clearError("startError");
+        showError("startError", "در حال بررسی وضعیت پرداخت از سرور...");
+    }
+ 
+    const paidOk = await confirmOrderPaidFromServer(oid, 4);
+ 
+    if (paidOk) {
+        hide("startCard");
+        hide("paymentCard");
+        hide("examCard");
+        hide("resultCard");
+        show("rulesCard");
+        $("rulesError").innerHTML = `
+            <div class="success">
+                پرداخت تأیید شد. اکنون می‌توانید آزمون را شروع کنید.
+            </div>
+        `;
+        clearError("startError");
+        return;
+    }
+ 
+    const msg =
+        "هنوز تأیید نهایی پرداخت از سرور گرفته نشد. " +
+        "اگر از حسابتان پول کم شده، لطفاً ۲ تا ۳ دقیقه بعد دکمه «بررسی دوباره پرداخت» را بزنید. " +
+        "نیازی به پرداخت مجدد نیست.";
+ 
+    if ($("rulesCard") && !$("rulesCard").classList.contains("hidden")) {
+        $("rulesError").innerHTML =
+            `<div class="error" style="line-height:2">${escapeHtml(msg)}</div>
+             <button type="button" class="secondary-btn" style="margin-top:10px"
+                onclick="recheckPaymentStatus()">بررسی دوباره پرداخت</button>`;
+    } else {
+        show("startCard");
+        showError("startError", msg);
+        const startErr = $("startError");
+        if (startErr) {
+            startErr.innerHTML +=
+                `<button type="button" class="secondary-btn" style="margin-top:10px"
+                    onclick="recheckPaymentStatus()">بررسی دوباره پرداخت</button>`;
+        }
+    }
+}
+ 
+ 
+async function handlePaymentReturn(query){
  
     if(!query){
         query = getQueryParams();
     }
  
+    const returnedId =
+        query.returnedOrderId ||
+        query.orderId ||
+        null;
  
-    if(query.returnedOrderId){
- 
-        orderId =
-            query.returnedOrderId;
- 
- 
-        localStorage.setItem(
-            "math_exam_order_id",
-            orderId
-        );
- 
+    if(returnedId){
+        orderId = returnedId;
+        try {
+            localStorage.setItem("math_exam_order_id", orderId);
+        } catch (e) {}
     }
  
+    if(query.payment === "success"){
  
-    if(
-        query.payment === "success"
-    ){
+        if(!orderId){
+            try {
+                orderId = localStorage.getItem("math_exam_order_id");
+            } catch (e) {}
+        }
  
-        if(orderId){
- 
-            localStorage.setItem(
-                "math_exam_paid",
-                "1"
+        if(!orderId){
+            show("startCard");
+            showError(
+                "startError",
+                "پرداخت انجام شد ولی شناسه سفارش پیدا نشد. اگر مبلغ کم شده، رسید را نگه دارید و به پشتیبانی پیام دهید. نیازی به پرداخت دوباره نیست تا وقتی وضعیت مشخص شود."
             );
- 
+        } else {
+            /* چند بار از سرور چک می‌کند */
+            const paidOk = await confirmOrderPaidFromServer(orderId, 4);
  
             hide("startCard");
             hide("paymentCard");
- 
+            hide("examCard");
+            hide("resultCard");
             show("rulesCard");
  
+            if(paidOk){
+                try {
+                    localStorage.setItem("math_exam_paid", "1");
+                    localStorage.setItem("math_exam_order_id", orderId);
+                } catch (e) {}
  
-            $("rulesError").innerHTML = `
+                $("rulesError").innerHTML = `
+                    <div class="success">
+                        پرداخت با موفقیت تأیید شد.
+                        اکنون می‌توانید آزمون را شروع کنید.
+                    </div>
+                `;
+            } else {
+                /* سرور لحظه‌ای جواب نداد — بدون پرداخت دوباره */
+                try {
+                    localStorage.setItem("math_exam_paid", "1");
+                    localStorage.setItem("math_exam_order_id", orderId);
+                } catch (e) {}
  
-                <div class="success">
- 
-                    پرداخت با موفقیت تأیید شد.
-                    اکنون می‌توانید آزمون را شروع کنید.
- 
-                </div>
- 
-            `;
- 
+                $("rulesError").innerHTML = `
+                    <div class="error" style="line-height:2">
+                        پرداخت از درگاه موفق بود، اما تأیید نهایی از سرور کمی طول کشید.
+                        <br>
+                        نیازی به پرداخت دوباره نیست.
+                        <br>
+                        لطفاً دکمه زیر را بزنید یا ۱ تا ۲ دقیقه بعد دوباره بررسی کنید.
+                    </div>
+                    <button type="button" class="secondary-btn" style="margin-top:10px"
+                        onclick="recheckPaymentStatus()">بررسی دوباره پرداخت</button>
+                    <button type="button" class="primary-btn" style="margin-top:8px"
+                        onclick="document.getElementById('beginExamButton').click()">
+                        تلاش برای شروع آزمون
+                    </button>
+                `;
+            }
         }
  
     }
-    else if(
-        query.payment === "failed"
-    ){
+    else if(query.payment === "failed"){
  
         show("startCard");
- 
         hide("paymentCard");
         hide("rulesCard");
  
- 
         showError(
             "startError",
-            "پرداخت انجام نشد یا توسط درگاه تأیید نشد."
+            "پرداخت انجام نشد یا توسط درگاه تأیید نشد. اگر مبلغی کم شده، رسید را نگه دارید و به پشتیبانی پیام دهید."
         );
  
     }
  
- 
-    if(
-        query.payment ||
-        query.returnedOrderId
-    ){
- 
+    if(query.payment || returnedId){
         try{
- 
             window.history.replaceState(
                 {},
                 document.title,
                 window.location.pathname
             );
- 
         }
         catch(error){
- 
-            console.warn(
-                "Could not clean payment query:",
-                error
-            );
- 
+            console.warn("Could not clean payment query:", error);
         }
- 
     }
  
 }
+ 
+ 
  
  
 /* =========================
@@ -4138,7 +4267,7 @@ async function initializePage(){
     await loadExam();
  
  
-    handlePaymentReturn(
+    await handlePaymentReturn(
         paymentQuery
     );
  
