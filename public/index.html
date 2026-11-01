@@ -1058,7 +1058,7 @@ function escapeHtml(value){
 }
  
  
-function showError(id,message){
+function showError(id, message){
  
     const element = $(id);
  
@@ -1066,9 +1066,12 @@ function showError(id,message){
         return;
     }
  
+    const safe = escapeHtml(message || "")
+        .replace(/\n/g, "<br>");
+ 
     element.innerHTML =
-        `<div class="error">
-            ${escapeHtml(message)}
+        `<div class="error" style="line-height:2">
+            ${safe}
         </div>`;
  
 }
@@ -1995,11 +1998,122 @@ async function loadExam(){
         button.textContent = "پرداخت و شروع آزمون";
     } catch (error) {
         console.error("[AZMOON_LOAD_DIAG] all endpoints failed", { failures, error });
-        info.innerHTML = `<div class="error">دریافت اطلاعات آزمون انجام نشد؛ لطفاً دوباره تلاش کنید.<br><small>${escapeHtml(error.message || "خطای نامشخص")}</small></div>`;
+        info.innerHTML = `
+            <div class="error" style="line-height:2">
+                <strong>صفحه آزمون الان در دسترس نیست.</strong><br>
+                لطفاً این کارها را انجام دهید:<br>
+                ۱) چند لحظه صبر کنید و دکمه زیر را بزنید<br>
+                ۲) اینترنت را قطع و وصل کنید<br>
+                ۳) اگر باز هم نشد، وای‌فای یا اینترنت دیگری را امتحان کنید
+            </div>
+            <button type="button" id="retryLoadExamBtn" class="secondary-btn" style="margin-top:12px">
+                تلاش دوباره برای بارگذاری آزمون
+            </button>`;
         button.disabled = true;
-        button.textContent = "دریافت اطلاعات ناموفق بود";
+        button.textContent = "ابتدا اطلاعات آزمون را بارگذاری کنید";
+        const retryBtn = $("retryLoadExamBtn");
+        if (retryBtn) {
+            retryBtn.onclick = function () { loadExam(); };
+        }
     }
 }
+ 
+ 
+/* خواندن پاسخ API با پیام مناسب برای دانش‌آموز */
+async function readApiJson(response) {
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    const text = await response.text();
+    const trimmed = (text || "").trim();
+ 
+    if (!trimmed) {
+        throw new Error(
+            "پاسخی از سرور دریافت نشد. لطفاً چند لحظه بعد دوباره تلاش کنید."
+        );
+    }
+ 
+    /* سرور به‌جای JSON صفحه HTML برگردانده (خطا/فیلتر/قطعی) */
+    if (
+        trimmed.startsWith("<!DOCTYPE") ||
+        trimmed.startsWith("<!doctype") ||
+        trimmed.startsWith("<html") ||
+        trimmed.startsWith("<HTML") ||
+        !contentType.includes("json")
+    ) {
+        /* اگر شبیه JSON نبود */
+        if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            throw new Error(
+                "در حال حاضر ارتباط با درگاه پرداخت برقرار نشد. " +
+                "لطفاً چند دقیقه بعد دوباره تلاش کنید یا اینترنت دیگری (مثلاً وای‌فای) را امتحان کنید."
+            );
+        }
+    }
+ 
+    let data;
+    try {
+        data = JSON.parse(trimmed);
+    } catch (e) {
+        throw new Error(
+            "پاسخ سرور قابل‌خواندن نبود. لطفاً دوباره تلاش کنید. " +
+            "اگر چند بار تکرار شد، اینترنت دیگری را امتحان کنید."
+        );
+    }
+ 
+    return data;
+}
+ 
+function friendlyPaymentError(error) {
+    const raw = String(
+        (error && error.message) || error || ""
+    );
+ 
+    if (
+        /Unexpected token\s*['"]?</i.test(raw) ||
+        /<!DOCTYPE/i.test(raw) ||
+        /is not valid JSON/i.test(raw) ||
+        /JSON\.parse/i.test(raw)
+    ) {
+        return (
+            "در حال حاضر ورود به درگاه پرداخت ممکن نیست.\n" +
+            "لطفاً چند دقیقه بعد دوباره تلاش کنید.\n" +
+            "اگر درست نشد، اینترنت دیگری (مثلاً وای‌فای) را امتحان کنید."
+        );
+    }
+ 
+    if (/زرین|zarin|paymentUrl|درگاه|پرداخت/i.test(raw)) {
+        return (
+            "اتصال به درگاه زرین‌پال برقرار نشد.\n" +
+            "لطفاً چند دقیقه بعد دوباره دکمه پرداخت را بزنید.\n" +
+            "اگر چند بار تکرار شد، با اینترنت دیگری امتحان کنید."
+        );
+    }
+ 
+    if (/Failed to fetch|NetworkError|Load failed|network/i.test(raw)) {
+        return (
+            "ارتباط اینترنت قطع یا ناپایدار است.\n" +
+            "اتصال خود را بررسی کنید و دوباره تلاش کنید."
+        );
+    }
+ 
+    if (/AbortError|timeout|مهلت/i.test(raw)) {
+        return (
+            "پاسخ سرور طول کشید.\n" +
+            "لطفاً دوباره تلاش کنید."
+        );
+    }
+ 
+    if (/سفارش|order/i.test(raw)) {
+        return (
+            "ثبت سفارش انجام نشد.\n" +
+            "لطفاً دوباره تلاش کنید. اگر مشکل ادامه داشت، کمی بعد مراجعه کنید."
+        );
+    }
+ 
+    return raw || (
+        "خطایی هنگام رفتن به درگاه پرداخت رخ داد.\n" +
+        "لطفاً دوباره تلاش کنید."
+    );
+}
+ 
  
 /* =========================
    ساخت سفارش
@@ -2092,7 +2206,7 @@ async function createOrderAndPay(){
  
  
         const data =
-            await response.json();
+            await readApiJson(response);
  
  
         if(
@@ -2102,7 +2216,7 @@ async function createOrderAndPay(){
  
             throw new Error(
                 data.error ||
-                "ثبت سفارش انجام نشد."
+                "ثبت سفارش انجام نشد. لطفاً دوباره تلاش کنید."
             );
  
         }
@@ -2120,7 +2234,7 @@ async function createOrderAndPay(){
         if(!data.paymentUrl){
  
             throw new Error(
-                "لینک پرداخت از زرین‌پال دریافت نشد."
+                "اتصال به درگاه زرین‌پال برقرار نشد. لطفاً دوباره تلاش کنید."
             );
  
         }
@@ -2192,8 +2306,7 @@ async function createOrderAndPay(){
  
         showError(
             "startError",
-            error.message ||
-            "خطایی هنگام ایجاد سفارش رخ داد."
+            friendlyPaymentError(error)
         );
  
  
