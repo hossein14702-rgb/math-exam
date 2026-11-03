@@ -157,7 +157,7 @@ export default {
  
       // =========================================================
       // POST /api/teacher/images/upload
-      // بارگذاری امن تصاویر سؤال
+      // بارگذاری امن تصاویر سؤال (پروکسی به سرویس VPS)
       // =========================================================
       if (
         request.method === "POST" &&
@@ -171,7 +171,7 @@ export default {
           return json(
             {
               ok: false,
-              error: "سرویس بارگذاری تصویر تنظیم نشده است",
+              error: "سرویس بارگذاری تصویر تنظیم نشده است (IMAGE_UPLOAD_SECRET خالی است)",
             },
             503,
             cors
@@ -189,49 +189,110 @@ export default {
           return json(
             {
               ok: false,
-              error: "فرمت ارسال فایل نامعتبر است",
+              error: "فرمت ارسال فایل نامعتبر است (باید multipart/form-data باشد)",
             },
             400,
             cors
           );
         }
  
-        try {
-          const upstream = await fetch(
-            "https://image.azmoonmath.ir/upload",
-            {
-              method: "POST",
-              headers: {
-                "x-image-secret": uploadSecret,
-                "Content-Type": contentType,
-              },
-              body: request.body,
-            }
-          );
+        // آدرس سرویس آپلود روی VPS — در صورت نیاز از env قابل تغییر
+        const uploadUrl = String(
+          env.IMAGE_UPLOAD_URL || "https://image.azmoonmath.ir/upload"
+        ).trim();
  
-          return new Response(
-            await upstream.text(),
-            {
-              status: upstream.status,
-              headers: {
-                ...cors,
-                "Content-Type":
-                  upstream.headers.get("Content-Type") ||
-                  "application/json; charset=UTF-8",
-                "Cache-Control": "no-store",
+        try {
+          const upstream = await fetch(uploadUrl, {
+            method: "POST",
+            headers: {
+              "x-image-secret": uploadSecret,
+              "Content-Type": contentType,
+            },
+            body: request.body,
+            // برای multipart نباید body را دستکاری کرد
+          });
+ 
+          const rawText = await upstream.text();
+          let parsed = null;
+ 
+          try {
+            parsed = JSON.parse(rawText);
+          } catch {
+            parsed = null;
+          }
+ 
+          // اگر سرویس بالادستی خطا داد
+          if (!upstream.ok) {
+            const msg =
+              (parsed && (parsed.error || parsed.message)) ||
+              rawText.slice(0, 300) ||
+              `سرویس تصویر پاسخ ${upstream.status} داد`;
+ 
+            console.error("Image upload upstream error:", upstream.status, rawText.slice(0, 500));
+ 
+            return json(
+              {
+                ok: false,
+                error: `خطای سرویس تصویر (${upstream.status}): ${msg}`,
+                upstreamStatus: upstream.status,
               },
+              // 502 برای خطای سرور بالادستی، در غیر این صورت همان status
+              upstream.status >= 500 ? 502 : upstream.status,
+              cors
+            );
+          }
+ 
+          // پاسخ موفق — اگر JSON نبود، سعی می‌کنیم ساختار استاندارد بسازیم
+          if (parsed && typeof parsed === "object") {
+            // اطمینان از وجود فیلدهای رایج برای فرانت
+            if (
+              !parsed.files &&
+              !parsed.images &&
+              !parsed.urls &&
+              !parsed.data
+            ) {
+              // اگر فقط یک url برگشته
+              if (typeof parsed.url === "string") {
+                parsed = { ok: true, files: [parsed.url], images: [parsed.url] };
+              } else if (Array.isArray(parsed)) {
+                parsed = { ok: true, files: parsed, images: parsed };
+              }
             }
+ 
+            if (parsed.ok === undefined) {
+              parsed.ok = true;
+            }
+ 
+            return json(parsed, 200, cors);
+          }
+ 
+          // پاسخ متنی غیر JSON
+          console.error("Image upload non-JSON response:", rawText.slice(0, 500));
+          return json(
+            {
+              ok: false,
+              error: "پاسخ سرویس تصویر قابل پردازش نبود (JSON نبود)",
+              raw: rawText.slice(0, 200),
+            },
+            502,
+            cors
           );
         } catch (error) {
-          console.error(
-            "Image upload proxy failed:",
-            error
-          );
+          console.error("Image upload proxy failed:", error);
+ 
+          const detail =
+            error?.message ||
+            String(error) ||
+            "خطای ناشناخته";
  
           return json(
             {
               ok: false,
-              error: "ارتباط با سرویس تصاویر برقرار نشد",
+              error:
+                "ارتباط با سرویس تصاویر برقرار نشد. " +
+                "ممکن است VPS در دسترس نباشد، فایروال IPهای Cloudflare را بسته باشد، " +
+                "یا دامنه image.azmoonmath.ir درست تنظیم نشده باشد. جزئیات: " +
+                detail,
             },
             502,
             cors
