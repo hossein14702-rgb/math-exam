@@ -4827,6 +4827,151 @@ export default {
  
  
       // =========================================================
+      // POST /api/teacher/confirm-payment
+      // تایید دستی پرداخت توسط معلم
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/confirm-payment"
+      ) {
+        const body = await request.json().catch(() => ({}));
+ 
+        const orderId = String(body.orderId || "").trim();
+        const examId = Number(body.examId || 1);
+ 
+        if (!orderId) {
+          return json(
+            {
+              ok: false,
+              error: "orderId الزامی است",
+            },
+            400,
+            cors
+          );
+        }
+ 
+        if (!Number.isInteger(examId) || examId <= 0) {
+          return json(
+            {
+              ok: false,
+              error: "examId نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+ 
+        const order = await env.DB
+          .prepare(`
+            SELECT
+              id,
+              exam_id,
+              name,
+              phone,
+              amount,
+              status,
+              paid_at
+            FROM orders
+            WHERE id = ?
+          `)
+          .bind(orderId)
+          .first();
+ 
+        if (!order) {
+          return json(
+            {
+              ok: false,
+              error: "سفارش / دانش‌آموز پیدا نشد",
+            },
+            404,
+            cors
+          );
+        }
+ 
+        if (Number(order.exam_id) !== examId) {
+          return json(
+            {
+              ok: false,
+              error: "این سفارش مربوط به این آزمون نیست",
+            },
+            400,
+            cors
+          );
+        }
+ 
+        const currentStatus = String(order.status || "").toLowerCase();
+ 
+        if (currentStatus === "paid") {
+          return json(
+            {
+              ok: true,
+              message: "وضعیت پرداخت از قبل «پرداخت شده» است",
+              alreadyPaid: true,
+              order: {
+                orderId: order.id,
+                name: order.name,
+                phone: order.phone,
+                amount: order.amount,
+                paymentStatus: "paid",
+                paidAt: order.paid_at || null,
+              },
+            },
+            200,
+            cors
+          );
+        }
+ 
+        const paidAt = new Date().toISOString();
+ 
+        await env.DB
+          .prepare(`
+            UPDATE orders
+            SET
+              status = 'paid',
+              paid_at = COALESCE(paid_at, ?)
+            WHERE id = ?
+          `)
+          .bind(paidAt, orderId)
+          .run();
+ 
+        const updated = await env.DB
+          .prepare(`
+            SELECT
+              id,
+              exam_id,
+              name,
+              phone,
+              amount,
+              status,
+              paid_at
+            FROM orders
+            WHERE id = ?
+          `)
+          .bind(orderId)
+          .first();
+ 
+        return json(
+          {
+            ok: true,
+            message: "پرداخت به‌صورت دستی تایید شد",
+            alreadyPaid: false,
+            order: {
+              orderId: updated.id,
+              examId: updated.exam_id,
+              name: updated.name,
+              phone: updated.phone,
+              amount: updated.amount,
+              paymentStatus: updated.status,
+              paidAt: updated.paid_at || paidAt,
+            },
+          },
+          200,
+          cors
+        );
+      }
+ 
+ 
+      // =========================================================
       // DELETE /api/teacher/student
       // =========================================================
       if (
@@ -5665,8 +5810,9 @@ function normalizeQuestionImageUrls(value) {
       };
     }
  
+    // پذیرش نام فایل شبیه UUID (کمی انعطاف‌پذیرتر از قبل تا خطای ثبت سؤال با تصویر کم شود)
     const validPath =
-      /^\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp|gif)$/i;
+      /^\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:jpg|jpeg|png|webp|gif)$/i;
  
     if (
       parsed.protocol !== "https:" ||
@@ -5681,7 +5827,7 @@ function normalizeQuestionImageUrls(value) {
       return {
         ok: false,
         error:
-          "فقط تصاویر معتبر سرویس رسمی تصاویر مجاز هستند",
+          "فقط تصاویر معتبر سرویس رسمی تصاویر (image.azmoonmath.ir) مجاز هستند",
       };
     }
  
