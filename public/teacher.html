@@ -1566,10 +1566,12 @@ function openQuestionModal(questionId = null) {
  
         document.getElementById("questionModalTitle").textContent = "✏️ ویرایش سؤال";
  
-        questionImageUrls = Array.isArray(q.images)
-            ? [...q.images]
-            : [];
+        const rawImages = Array.isArray(q.images) ? q.images : [];
+        questionImageUrls = rawImages
+            .map(normalizeImageUrl)
+            .filter(Boolean);
  
+        console.log("edit question images:", questionImageUrls);
         renderQuestionImagesPreview();
  
         document.getElementById("questionText").value = q.questionText || q.question || "";
@@ -1673,23 +1675,78 @@ function showQuestionImagesMessage(message, isError = false) {
     box.style.display = "block";
 }
  
+ 
+// نرمال‌سازی آدرس تصویر از رشته یا آبجکت
+function normalizeImageUrl(item) {
+    if (!item) return "";
+    if (typeof item === "string") {
+        let u = item.trim();
+        if (u.startsWith("/files/")) {
+            u = "https://image.azmoonmath.ir" + u;
+        }
+        return u;
+    }
+    if (typeof item === "object") {
+        let u = String(item.url || item.publicUrl || item.location || item.src || item.href || "").trim();
+        if (u.startsWith("/files/")) {
+            u = "https://image.azmoonmath.ir" + u;
+        }
+        return u;
+    }
+    return "";
+}
+ 
 function renderQuestionImagesPreview() {
     const box = document.getElementById("questionImagesPreview");
  
     box.innerHTML = "";
  
-    questionImageUrls.forEach((url, index) => {
+    questionImageUrls.forEach((raw, index) => {
+        const finalUrl = normalizeImageUrl(raw);
         const item = document.createElement("div");
  
         item.style.cssText =
-            "width:140px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center";
+            "width:180px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center;background:#fafafa";
  
         const img = document.createElement("img");
-        img.src = url;
         img.alt = "تصویر سؤال";
-        img.loading = "lazy";
+        img.loading = "eager";
+        img.referrerPolicy = "no-referrer";
+        img.decoding = "async";
         img.style.cssText =
-            "width:100%;height:100px;object-fit:contain";
+            "width:100%;height:120px;object-fit:contain;background:#fff;border-radius:6px";
+ 
+        const status = document.createElement("div");
+        status.style.cssText =
+            "margin:6px 0 2px;font-size:11px;line-height:1.4;word-break:break-all";
+ 
+        if (!finalUrl) {
+            status.style.color = "#991b1b";
+            status.textContent = "آدرس تصویر خالی/نامعتبر است";
+        } else {
+            status.style.color = "#64748b";
+            status.textContent = "در حال بارگذاری...";
+ 
+            img.onload = () => {
+                status.style.color = "#166534";
+                status.textContent = "نمایش OK";
+            };
+ 
+            img.onerror = () => {
+                status.style.color = "#991b1b";
+                status.innerHTML =
+                    "بارگذاری ناموفق<br><a href=\"" + finalUrl.replace(/"/g, "&quot;") +
+                    "\" target=\"_blank\" rel=\"noopener\" style=\"color:#2563eb;font-size:11px;\">باز کردن لینک تصویر</a>";
+                img.style.opacity = "0.25";
+            };
+ 
+            img.src = finalUrl;
+        }
+ 
+        const urlLabel = document.createElement("div");
+        urlLabel.style.cssText =
+            "margin-top:4px;color:#94a3b8;font-size:10px;word-break:break-all;direction:ltr;max-height:36px;overflow:hidden";
+        urlLabel.textContent = finalUrl || String(raw);
  
         const removeButton = document.createElement("button");
         removeButton.type = "button";
@@ -1703,6 +1760,8 @@ function renderQuestionImagesPreview() {
         });
  
         item.appendChild(img);
+        item.appendChild(status);
+        item.appendChild(urlLabel);
         item.appendChild(removeButton);
         box.appendChild(item);
     });
@@ -1711,22 +1770,21 @@ function renderQuestionImagesPreview() {
         const item = document.createElement("div");
  
         item.style.cssText =
-            "width:140px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center";
+            "width:180px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center;background:#fafafa";
  
         const img = document.createElement("img");
         img.alt = file.name;
         img.style.cssText =
-            "width:100%;height:100px;object-fit:contain";
+            "width:100%;height:120px;object-fit:contain;background:#fff;border-radius:6px";
  
         const localUrl = URL.createObjectURL(file);
         img.src = localUrl;
- 
         img.onload = () => URL.revokeObjectURL(localUrl);
  
         const name = document.createElement("small");
         name.textContent = file.name;
         name.style.cssText =
-            "display:block;overflow-wrap:anywhere;margin:5px 0";
+            "display:block;overflow-wrap:anywhere;margin:5px 0;font-size:11px";
  
         const removeButton = document.createElement("button");
         removeButton.type = "button";
@@ -1744,6 +1802,7 @@ function renderQuestionImagesPreview() {
         box.appendChild(item);
     });
 }
+ 
  
 document.getElementById("questionImagesInput")
     .addEventListener("change", event => {
@@ -3027,4 +3086,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
- </html>
+   </html>
