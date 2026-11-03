@@ -227,7 +227,6 @@ tr:hover td{background:#fafafa}
      <div class="controls">
       <button class="refresh-btn" onclick="loadAll()">🔄 بروزرسانی</button>
       <button class="primary-btn" onclick="openQuestionModal()">➕ افزودن سؤال</button>
-      <button class="delete-all-btn" onclick="deleteAllStudents()">🗑 حذف همه دانش‌آموزان</button>
       <button class="logout-btn" onclick="handleLogout()">🚪 خروج</button>
      </div>
     </div>
@@ -408,6 +407,10 @@ tr:hover td{background:#fafafa}
     </div>
     <!-- جدول دانش‌آموزان -->
     <div class="table-box">
+     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+      <button class="refresh-btn" onclick="loadStudents()">🔄 بروزرسانی لیست دانش‌آموزان</button>
+      <button class="delete-all-btn" onclick="deleteAllStudents()">🗑 حذف همه دانش‌آموزان</button>
+     </div>
      <div id="loading" class="loading">در حال دریافت اطلاعات...</div>
      <table id="studentsTable" class="students-table" style="display:none;">
       <thead>
@@ -798,10 +801,31 @@ function renderJalaliPicker(type) {
     const firstDay = jalaliWeekDay(state.year, state.month, 1);
     const today = getTodayJalali();
  
+    // سال‌های قابل انتخاب: ۵ سال قبل تا ۵ سال بعد از امروز
+    const yearOptions = [];
+    for (let y = today[0] - 5; y <= today[0] + 5; y++) {
+        const selected = y === state.year ? "selected" : "";
+        yearOptions.push(`<option value="${y}" ${selected}>${faNumber(y)}</option>`);
+    }
+ 
+    // ماه‌ها
+    const monthOptions = jalaliMonths.map((name, i) => {
+        const m = i + 1;
+        const selected = m === state.month ? "selected" : "";
+        return `<option value="${m}" ${selected}>${name}</option>`;
+    }).join("");
+ 
     let html = `
-        <div class="jalali-picker-header">
+        <div class="jalali-picker-header" style="flex-wrap:wrap;gap:6px;">
             <button type="button" onclick="changeJalaliMonth('${type}',-1)">‹</button>
-            <div class="jalali-month-title">${jalaliMonths[state.month - 1]} ${faNumber(state.year)}</div>
+            <select onchange="setJalaliYearMonth('${type}', this.value, datePickerState['${type}'].month)"
+                    style="flex:1;min-width:90px;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:13px;">
+                ${yearOptions.join("")}
+            </select>
+            <select onchange="setJalaliYearMonth('${type}', datePickerState['${type}'].year, this.value)"
+                    style="flex:1;min-width:100px;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:13px;">
+                ${monthOptions}
+            </select>
             <button type="button" onclick="changeJalaliMonth('${type}',1)">›</button>
         </div>
         <div class="jalali-weekdays">
@@ -843,6 +867,17 @@ function renderJalaliPicker(type) {
     `;
  
     picker.innerHTML = html;
+}
+ 
+function setJalaliYearMonth(type, year, month) {
+    const state = datePickerState[type];
+    state.year = Number(year);
+    state.month = Number(month);
+ 
+    const maxDay = jalaliMonthDays(state.year, state.month);
+    if (state.day > maxDay) state.day = maxDay;
+ 
+    renderJalaliPicker(type);
 }
  
 function changeJalaliMonth(type, amount) {
@@ -1778,13 +1813,18 @@ async function uploadQuestionImageFiles() {
         formData.append("images", file, file.name);
     });
  
-    const result = await apiRequest(
-        "/api/teacher/images/upload",
-        {
-            method: "POST",
-            body: formData
-        }
-    );
+    let result;
+    try {
+        result = await apiRequest(
+            "/api/teacher/images/upload",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+    } catch (err) {
+        throw new Error("خطا در بارگذاری تصویر: " + (err.message || "ارتباط با سرور برقرار نشد"));
+    }
  
     // پشتیبانی از ساختارهای متداول پاسخ سرویس
     const uploadedItems =
@@ -1792,48 +1832,71 @@ async function uploadQuestionImageFiles() {
         result.images ||
         result.urls ||
         result.data?.files ||
-        result.data?.images;
+        result.data?.images ||
+        (Array.isArray(result) ? result : null);
  
-    if (!Array.isArray(uploadedItems)) {
+    if (!Array.isArray(uploadedItems) || uploadedItems.length === 0) {
+        console.error("upload response:", result);
         throw new Error(
-            "فهرست تصاویر بارگذاری‌شده از سرور دریافت نشد."
+            "فهرست تصاویر بارگذاری‌شده از سرور دریافت نشد. پاسخ سرور را در کنسول مرورگر بررسی کنید."
         );
     }
  
     const uploadedUrls = uploadedItems.map(item => {
         if (typeof item === "string") {
-            return item;
+            return item.trim();
         }
+        return (item.url || item.publicUrl || item.location || item.src || "").trim();
+    }).filter(Boolean);
  
-        return item.url || item.publicUrl || item.location || "";
-    });
+    if (uploadedUrls.length === 0) {
+        throw new Error("هیچ آدرس معتبری از سرور برای تصاویر دریافت نشد.");
+    }
  
-    const validUrls = uploadedUrls.filter(url => {
+    // اعتبارسنجی انعطاف‌پذیرتر (قبلاً خیلی سخت‌گیرانه بود و باعث خطا می‌شد)
+    const validUrls = [];
+    const invalid = [];
+ 
+    for (const url of uploadedUrls) {
         try {
             const parsed = new URL(url);
- 
-            return (
+            const hostOk =
                 parsed.protocol === "https:" &&
-                parsed.hostname === "image.azmoonmath.ir" &&
-                /^\/files\/[0-9a-f-]+\.(jpg|png|webp|gif)$/i.test(
-                    parsed.pathname
-                ) &&
-                !parsed.search &&
-                !parsed.hash
-            );
-        } catch {
-            return false;
-        }
-    });
+                (parsed.hostname === "image.azmoonmath.ir" ||
+                 parsed.hostname === "azmoonmath.ir" ||
+                 parsed.hostname.endsWith(".azmoonmath.ir"));
  
-    if (validUrls.length !== questionImageFiles.length) {
+            const pathOk = /\.(jpg|jpeg|png|webp|gif)$/i.test(parsed.pathname);
+ 
+            if (hostOk && pathOk) {
+                validUrls.push(url);
+            } else {
+                invalid.push(url);
+            }
+        } catch {
+            invalid.push(url);
+        }
+    }
+ 
+    if (validUrls.length === 0) {
         throw new Error(
-            "تعداد یا آدرس تصاویر دریافتی با فایل‌های انتخاب‌شده مطابقت ندارد."
+            "آدرس تصاویر دریافتی معتبر نیست.\nدریافت‌شده: " +
+            uploadedUrls.slice(0, 3).join("\n")
         );
+    }
+ 
+    // اگر تعداد کمتر از فایل‌ها بود، هشدار بده ولی ادامه بده (حداقل یکی آپلود شده)
+    if (validUrls.length < questionImageFiles.length) {
+        console.warn("تعداد تصاویر معتبر کمتر از فایل‌های انتخاب‌شده است.", {
+            expected: questionImageFiles.length,
+            got: validUrls.length,
+            invalid
+        });
     }
  
     return validUrls;
 }
+ 
  
 async function saveQuestion() {
     const text = document.getElementById("questionText").value.trim();
@@ -1897,18 +1960,17 @@ async function saveQuestion() {
     try {
         // ابتدا تصاویر جدید را روی سرور بارگذاری می‌کنیم.
         if (questionImageFiles.length > 0) {
-            showQuestionImagesMessage(
-                "در حال بارگذاری تصاویر..."
-            );
+            showQuestionImagesMessage("در حال بارگذاری تصاویر...");
  
-            const uploadedUrls =
-                await uploadQuestionImageFiles();
+            const uploadedUrls = await uploadQuestionImageFiles();
  
             questionImageUrls.push(...uploadedUrls);
- 
             questionImageFiles = [];
- 
             renderQuestionImagesPreview();
+ 
+            // پیام بارگذاری را پاک کن تا گیر نکند
+            const imgBox = document.getElementById("questionImagesMessage");
+            if (imgBox) imgBox.style.display = "none";
         }
  
         // آدرس تصاویر همراه اطلاعات سؤال ذخیره می‌شود.
@@ -1922,7 +1984,11 @@ async function saveQuestion() {
         showBankMessage(isEdit ? "سؤال با موفقیت ویرایش شد." : "سؤال با موفقیت ایجاد شد.");
  
     } catch (error) {
-        showQuestionModalMessage(error.message);
+        // در صورت خطا، پیام بارگذاری تصویر را هم مخفی کن
+        const imgMsg = document.getElementById("questionImagesMessage");
+        if (imgMsg) imgMsg.style.display = "none";
+        showQuestionModalMessage(error.message || "خطا در ذخیره سؤال");
+        console.error("saveQuestion error:", error);
     } finally {
         button.disabled = false;
         button.textContent = "💾 ذخیره سؤال";
@@ -2506,9 +2572,14 @@ async function loadStudents() {
  
             const orderId = student.orderId || "";
             const paymentStatus = String(student.paymentStatus || "").toLowerCase();
+            const isPaid = paymentStatus === "paid" || paymentStatus === "demo";
             const canCopyExamLink =
                 Boolean(orderId) &&
-                paymentStatus === "paid" &&
+                isPaid &&
+                student.status !== "finished";
+            const canManualConfirm =
+                Boolean(orderId) &&
+                !isPaid &&
                 student.status !== "finished";
  
             tr.innerHTML = `
@@ -2538,6 +2609,14 @@ async function loadStudents() {
                         ? `<button class="primary-btn small-btn"
                               data-attempt-id="${escapeHtml(String(student.attemptId))}"
                               onclick="showAttempt(this.dataset.attemptId)">مشاهده</button>`
+                        : ""}
+ 
+                    ${canManualConfirm
+                        ? `<button class="warning-btn small-btn"
+                              type="button"
+                              data-order-id="${escapeHtml(String(orderId))}"
+                              data-name="${escapeHtml(student.name || "")}"
+                              onclick="confirmManualPayment(this.dataset.orderId, this.dataset.name)">✅ تایید پرداخت دستی</button>`
                         : ""}
  
                     ${canCopyExamLink
@@ -2803,6 +2882,38 @@ async function copyExamEntryLink(orderId) {
 }
  
  
+/* ===== تایید پرداخت دستی ===== */
+ 
+async function confirmManualPayment(orderId, studentName) {
+    if (!orderId) {
+        alert("شناسه سفارش معتبر نیست.");
+        return;
+    }
+ 
+    if (!confirm(
+        "تایید پرداخت دستی\n\n" +
+        "دانش‌آموز: " + (studentName || "—") + "\n" +
+        "شناسه سفارش: " + orderId + "\n\n" +
+        "وضعیت پرداخت این دانش‌آموز به «پرداخت شده» تغییر کند؟"
+    )) {
+        return;
+    }
+ 
+    try {
+        await postJson("/api/teacher/confirm-payment", {
+            examId: EXAM_ID,
+            orderId: String(orderId)
+        });
+ 
+        alert("پرداخت با موفقیت تایید شد.\nحالا می‌توانید لینک ورود را کپی کنید.");
+        await loadStudents();
+ 
+    } catch (error) {
+        alert("خطا در تایید پرداخت دستی:\n\n" + error.message);
+    }
+}
+ 
+ 
 /* ===== حذف دانش‌آموز ===== */
  
 async function deleteStudent(orderId, studentName) {
@@ -2916,4 +3027,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
-</html>
+ </html>
