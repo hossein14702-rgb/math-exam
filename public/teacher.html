@@ -3,7 +3,7 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>پنل معلم</title>
+  <title> پنل معلم نسخه آزمایشی</title>
   <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f5f7fb;color:#222}
@@ -140,7 +140,7 @@ tr:hover td{background:#fafafa}
 .stat-title{color:#666;font-size:13px;margin-bottom:8px}
 .stat-value{font-size:25px;font-weight:bold}
 .table-box{overflow-x:auto}
-.students-table{min-width:1350px}
+.students-table{min-width:1550px}
 .status{display:inline-block;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:bold}
 .status-payment-paid,.status-finished{background:#dcfce7;color:#166534}
 .status-pending,.status-not-started{background:#fef3c7;color:#92400e}
@@ -227,7 +227,6 @@ tr:hover td{background:#fafafa}
      <div class="controls">
       <button class="refresh-btn" onclick="loadAll()">🔄 بروزرسانی</button>
       <button class="primary-btn" onclick="openQuestionModal()">➕ افزودن سؤال</button>
-      <button class="delete-all-btn" onclick="deleteAllStudents()">🗑 حذف همه دانش‌آموزان</button>
       <button class="logout-btn" onclick="handleLogout()">🚪 خروج</button>
      </div>
     </div>
@@ -408,6 +407,10 @@ tr:hover td{background:#fafafa}
     </div>
     <!-- جدول دانش‌آموزان -->
     <div class="table-box">
+     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+      <button class="refresh-btn" onclick="loadStudents()">🔄 بروزرسانی لیست دانش‌آموزان</button>
+      <button class="delete-all-btn" onclick="deleteAllStudents()">🗑 حذف همه دانش‌آموزان</button>
+     </div>
      <div id="loading" class="loading">در حال دریافت اطلاعات...</div>
      <table id="studentsTable" class="students-table" style="display:none;">
       <thead>
@@ -415,6 +418,7 @@ tr:hover td{background:#fafafa}
         <th>ردیف</th>
         <th>نام</th>
         <th>موبایل</th>
+        <th>شناسه سفارش</th>
         <th>مبلغ</th>
         <th>ثبت سفارش</th>
         <th>تاریخ پرداخت</th>
@@ -797,10 +801,31 @@ function renderJalaliPicker(type) {
     const firstDay = jalaliWeekDay(state.year, state.month, 1);
     const today = getTodayJalali();
  
+    // سال‌های قابل انتخاب: ۵ سال قبل تا ۵ سال بعد از امروز
+    const yearOptions = [];
+    for (let y = today[0] - 5; y <= today[0] + 5; y++) {
+        const selected = y === state.year ? "selected" : "";
+        yearOptions.push(`<option value="${y}" ${selected}>${faNumber(y)}</option>`);
+    }
+ 
+    // ماه‌ها
+    const monthOptions = jalaliMonths.map((name, i) => {
+        const m = i + 1;
+        const selected = m === state.month ? "selected" : "";
+        return `<option value="${m}" ${selected}>${name}</option>`;
+    }).join("");
+ 
     let html = `
-        <div class="jalali-picker-header">
+        <div class="jalali-picker-header" style="flex-wrap:wrap;gap:6px;">
             <button type="button" onclick="changeJalaliMonth('${type}',-1)">‹</button>
-            <div class="jalali-month-title">${jalaliMonths[state.month - 1]} ${faNumber(state.year)}</div>
+            <select onchange="setJalaliYearMonth('${type}', this.value, datePickerState['${type}'].month)"
+                    style="flex:1;min-width:90px;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:13px;">
+                ${yearOptions.join("")}
+            </select>
+            <select onchange="setJalaliYearMonth('${type}', datePickerState['${type}'].year, this.value)"
+                    style="flex:1;min-width:100px;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:13px;">
+                ${monthOptions}
+            </select>
             <button type="button" onclick="changeJalaliMonth('${type}',1)">›</button>
         </div>
         <div class="jalali-weekdays">
@@ -842,6 +867,17 @@ function renderJalaliPicker(type) {
     `;
  
     picker.innerHTML = html;
+}
+ 
+function setJalaliYearMonth(type, year, month) {
+    const state = datePickerState[type];
+    state.year = Number(year);
+    state.month = Number(month);
+ 
+    const maxDay = jalaliMonthDays(state.year, state.month);
+    if (state.day > maxDay) state.day = maxDay;
+ 
+    renderJalaliPicker(type);
 }
  
 function changeJalaliMonth(type, amount) {
@@ -1530,10 +1566,12 @@ function openQuestionModal(questionId = null) {
  
         document.getElementById("questionModalTitle").textContent = "✏️ ویرایش سؤال";
  
-        questionImageUrls = Array.isArray(q.images)
-            ? [...q.images]
-            : [];
+        const rawImages = Array.isArray(q.images) ? q.images : [];
+        questionImageUrls = rawImages
+            .map(normalizeImageUrl)
+            .filter(Boolean);
  
+        console.log("edit question images:", questionImageUrls);
         renderQuestionImagesPreview();
  
         document.getElementById("questionText").value = q.questionText || q.question || "";
@@ -1637,23 +1675,78 @@ function showQuestionImagesMessage(message, isError = false) {
     box.style.display = "block";
 }
  
+ 
+// نرمال‌سازی آدرس تصویر از رشته یا آبجکت
+function normalizeImageUrl(item) {
+    if (!item) return "";
+    if (typeof item === "string") {
+        let u = item.trim();
+        if (u.startsWith("/files/")) {
+            u = "https://image.azmoonmath.ir" + u;
+        }
+        return u;
+    }
+    if (typeof item === "object") {
+        let u = String(item.url || item.publicUrl || item.location || item.src || item.href || "").trim();
+        if (u.startsWith("/files/")) {
+            u = "https://image.azmoonmath.ir" + u;
+        }
+        return u;
+    }
+    return "";
+}
+ 
 function renderQuestionImagesPreview() {
     const box = document.getElementById("questionImagesPreview");
  
     box.innerHTML = "";
  
-    questionImageUrls.forEach((url, index) => {
+    questionImageUrls.forEach((raw, index) => {
+        const finalUrl = normalizeImageUrl(raw);
         const item = document.createElement("div");
  
         item.style.cssText =
-            "width:140px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center";
+            "width:180px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center;background:#fafafa";
  
         const img = document.createElement("img");
-        img.src = url;
         img.alt = "تصویر سؤال";
-        img.loading = "lazy";
+        img.loading = "eager";
+        img.referrerPolicy = "no-referrer";
+        img.decoding = "async";
         img.style.cssText =
-            "width:100%;height:100px;object-fit:contain";
+            "width:100%;height:120px;object-fit:contain;background:#fff;border-radius:6px";
+ 
+        const status = document.createElement("div");
+        status.style.cssText =
+            "margin:6px 0 2px;font-size:11px;line-height:1.4;word-break:break-all";
+ 
+        if (!finalUrl) {
+            status.style.color = "#991b1b";
+            status.textContent = "آدرس تصویر خالی/نامعتبر است";
+        } else {
+            status.style.color = "#64748b";
+            status.textContent = "در حال بارگذاری...";
+ 
+            img.onload = () => {
+                status.style.color = "#166534";
+                status.textContent = "نمایش OK";
+            };
+ 
+            img.onerror = () => {
+                status.style.color = "#991b1b";
+                status.innerHTML =
+                    "بارگذاری ناموفق<br><a href=\"" + finalUrl.replace(/"/g, "&quot;") +
+                    "\" target=\"_blank\" rel=\"noopener\" style=\"color:#2563eb;font-size:11px;\">باز کردن لینک تصویر</a>";
+                img.style.opacity = "0.25";
+            };
+ 
+            img.src = finalUrl;
+        }
+ 
+        const urlLabel = document.createElement("div");
+        urlLabel.style.cssText =
+            "margin-top:4px;color:#94a3b8;font-size:10px;word-break:break-all;direction:ltr;max-height:36px;overflow:hidden";
+        urlLabel.textContent = finalUrl || String(raw);
  
         const removeButton = document.createElement("button");
         removeButton.type = "button";
@@ -1667,6 +1760,8 @@ function renderQuestionImagesPreview() {
         });
  
         item.appendChild(img);
+        item.appendChild(status);
+        item.appendChild(urlLabel);
         item.appendChild(removeButton);
         box.appendChild(item);
     });
@@ -1675,22 +1770,21 @@ function renderQuestionImagesPreview() {
         const item = document.createElement("div");
  
         item.style.cssText =
-            "width:140px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center";
+            "width:180px;border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center;background:#fafafa";
  
         const img = document.createElement("img");
         img.alt = file.name;
         img.style.cssText =
-            "width:100%;height:100px;object-fit:contain";
+            "width:100%;height:120px;object-fit:contain;background:#fff;border-radius:6px";
  
         const localUrl = URL.createObjectURL(file);
         img.src = localUrl;
- 
         img.onload = () => URL.revokeObjectURL(localUrl);
  
         const name = document.createElement("small");
         name.textContent = file.name;
         name.style.cssText =
-            "display:block;overflow-wrap:anywhere;margin:5px 0";
+            "display:block;overflow-wrap:anywhere;margin:5px 0;font-size:11px";
  
         const removeButton = document.createElement("button");
         removeButton.type = "button";
@@ -1708,6 +1802,7 @@ function renderQuestionImagesPreview() {
         box.appendChild(item);
     });
 }
+ 
  
 document.getElementById("questionImagesInput")
     .addEventListener("change", event => {
@@ -1777,13 +1872,18 @@ async function uploadQuestionImageFiles() {
         formData.append("images", file, file.name);
     });
  
-    const result = await apiRequest(
-        "/api/teacher/images/upload",
-        {
-            method: "POST",
-            body: formData
-        }
-    );
+    let result;
+    try {
+        result = await apiRequest(
+            "/api/teacher/images/upload",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+    } catch (err) {
+        throw new Error("خطا در بارگذاری تصویر: " + (err.message || "ارتباط با سرور برقرار نشد"));
+    }
  
     // پشتیبانی از ساختارهای متداول پاسخ سرویس
     const uploadedItems =
@@ -1791,48 +1891,71 @@ async function uploadQuestionImageFiles() {
         result.images ||
         result.urls ||
         result.data?.files ||
-        result.data?.images;
+        result.data?.images ||
+        (Array.isArray(result) ? result : null);
  
-    if (!Array.isArray(uploadedItems)) {
+    if (!Array.isArray(uploadedItems) || uploadedItems.length === 0) {
+        console.error("upload response:", result);
         throw new Error(
-            "فهرست تصاویر بارگذاری‌شده از سرور دریافت نشد."
+            "فهرست تصاویر بارگذاری‌شده از سرور دریافت نشد. پاسخ سرور را در کنسول مرورگر بررسی کنید."
         );
     }
  
     const uploadedUrls = uploadedItems.map(item => {
         if (typeof item === "string") {
-            return item;
+            return item.trim();
         }
+        return (item.url || item.publicUrl || item.location || item.src || "").trim();
+    }).filter(Boolean);
  
-        return item.url || item.publicUrl || item.location || "";
-    });
+    if (uploadedUrls.length === 0) {
+        throw new Error("هیچ آدرس معتبری از سرور برای تصاویر دریافت نشد.");
+    }
  
-    const validUrls = uploadedUrls.filter(url => {
+    // اعتبارسنجی انعطاف‌پذیرتر (قبلاً خیلی سخت‌گیرانه بود و باعث خطا می‌شد)
+    const validUrls = [];
+    const invalid = [];
+ 
+    for (const url of uploadedUrls) {
         try {
             const parsed = new URL(url);
- 
-            return (
+            const hostOk =
                 parsed.protocol === "https:" &&
-                parsed.hostname === "image.azmoonmath.ir" &&
-                /^\/files\/[0-9a-f-]+\.(jpg|png|webp|gif)$/i.test(
-                    parsed.pathname
-                ) &&
-                !parsed.search &&
-                !parsed.hash
-            );
-        } catch {
-            return false;
-        }
-    });
+                (parsed.hostname === "image.azmoonmath.ir" ||
+                 parsed.hostname === "azmoonmath.ir" ||
+                 parsed.hostname.endsWith(".azmoonmath.ir"));
  
-    if (validUrls.length !== questionImageFiles.length) {
+            const pathOk = /\.(jpg|jpeg|png|webp|gif)$/i.test(parsed.pathname);
+ 
+            if (hostOk && pathOk) {
+                validUrls.push(url);
+            } else {
+                invalid.push(url);
+            }
+        } catch {
+            invalid.push(url);
+        }
+    }
+ 
+    if (validUrls.length === 0) {
         throw new Error(
-            "تعداد یا آدرس تصاویر دریافتی با فایل‌های انتخاب‌شده مطابقت ندارد."
+            "آدرس تصاویر دریافتی معتبر نیست.\nدریافت‌شده: " +
+            uploadedUrls.slice(0, 3).join("\n")
         );
+    }
+ 
+    // اگر تعداد کمتر از فایل‌ها بود، هشدار بده ولی ادامه بده (حداقل یکی آپلود شده)
+    if (validUrls.length < questionImageFiles.length) {
+        console.warn("تعداد تصاویر معتبر کمتر از فایل‌های انتخاب‌شده است.", {
+            expected: questionImageFiles.length,
+            got: validUrls.length,
+            invalid
+        });
     }
  
     return validUrls;
 }
+ 
  
 async function saveQuestion() {
     const text = document.getElementById("questionText").value.trim();
@@ -1896,18 +2019,17 @@ async function saveQuestion() {
     try {
         // ابتدا تصاویر جدید را روی سرور بارگذاری می‌کنیم.
         if (questionImageFiles.length > 0) {
-            showQuestionImagesMessage(
-                "در حال بارگذاری تصاویر..."
-            );
+            showQuestionImagesMessage("در حال بارگذاری تصاویر...");
  
-            const uploadedUrls =
-                await uploadQuestionImageFiles();
+            const uploadedUrls = await uploadQuestionImageFiles();
  
             questionImageUrls.push(...uploadedUrls);
- 
             questionImageFiles = [];
- 
             renderQuestionImagesPreview();
+ 
+            // پیام بارگذاری را پاک کن تا گیر نکند
+            const imgBox = document.getElementById("questionImagesMessage");
+            if (imgBox) imgBox.style.display = "none";
         }
  
         // آدرس تصاویر همراه اطلاعات سؤال ذخیره می‌شود.
@@ -1921,7 +2043,11 @@ async function saveQuestion() {
         showBankMessage(isEdit ? "سؤال با موفقیت ویرایش شد." : "سؤال با موفقیت ایجاد شد.");
  
     } catch (error) {
-        showQuestionModalMessage(error.message);
+        // در صورت خطا، پیام بارگذاری تصویر را هم مخفی کن
+        const imgMsg = document.getElementById("questionImagesMessage");
+        if (imgMsg) imgMsg.style.display = "none";
+        showQuestionModalMessage(error.message || "خطا در ذخیره سؤال");
+        console.error("saveQuestion error:", error);
     } finally {
         button.disabled = false;
         button.textContent = "💾 ذخیره سؤال";
@@ -2503,10 +2629,25 @@ async function loadStudents() {
         students.forEach((student, index) => {
             const tr = document.createElement("tr");
  
+            const orderId = student.orderId || "";
+            const paymentStatus = String(student.paymentStatus || "").toLowerCase();
+            const isPaid = paymentStatus === "paid" || paymentStatus === "demo";
+            const canCopyExamLink =
+                Boolean(orderId) &&
+                isPaid &&
+                student.status !== "finished";
+            const canManualConfirm =
+                Boolean(orderId) &&
+                !isPaid &&
+                student.status !== "finished";
+ 
             tr.innerHTML = `
                 <td>${faNumber(index + 1)}</td>
                 <td><strong>${escapeHtml(student.name || "—")}</strong></td>
                 <td dir="ltr">${escapeHtml(student.phone || "—")}</td>
+                <td dir="ltr" style="font-size:11px;max-width:180px;word-break:break-all;">
+                    ${orderId ? escapeHtml(orderId) : "—"}
+                </td>
                 <td>${faNumber(Number(student.amount || 0).toLocaleString("en-US"))}</td>
                 <td>${formatDate(student.createdAt)}</td>
                 <td>${formatDate(student.paidAt)}</td>
@@ -2525,12 +2666,28 @@ async function loadStudents() {
                 <td>
                     ${student.attemptId
                         ? `<button class="primary-btn small-btn"
-                              data-attempt-id="${escapeHtml(student.attemptId)}"
+                              data-attempt-id="${escapeHtml(String(student.attemptId))}"
                               onclick="showAttempt(this.dataset.attemptId)">مشاهده</button>`
                         : ""}
  
+                    ${canManualConfirm
+                        ? `<button class="warning-btn small-btn"
+                              type="button"
+                              data-order-id="${escapeHtml(String(orderId))}"
+                              data-name="${escapeHtml(student.name || "")}"
+                              onclick="confirmManualPayment(this.dataset.orderId, this.dataset.name)">✅ تایید پرداخت دستی</button>`
+                        : ""}
+ 
+                    ${canCopyExamLink
+                        ? `<button class="success-btn small-btn"
+                              type="button"
+                              data-order-id="${escapeHtml(String(orderId))}"
+                              onclick="copyExamEntryLink(this.dataset.orderId)">📋 کپی لینک ورود</button>`
+                        : ""}
+ 
                     <button class="danger-btn small-btn"
-                        data-order-id="${escapeHtml(student.orderId)}"
+                        type="button"
+                        data-order-id="${escapeHtml(String(orderId))}"
                         data-name="${escapeHtml(student.name || "")}"
                         onclick="deleteStudent(this.dataset.orderId,this.dataset.name)">حذف</button>
                 </td>
@@ -2746,6 +2903,76 @@ function closeModalByBackground(event) {
 }
  
  
+/* ===== کپی لینک ورود به آزمون برای دانش‌آموز ===== */
+ 
+const STUDENT_EXAM_PAGE = "https://azmoonmath.ir";
+ 
+function buildExamEntryLink(orderId) {
+    const id = String(orderId || "").trim();
+    if (!id) return "";
+    return STUDENT_EXAM_PAGE + "/?payment=success&orderId=" + encodeURIComponent(id);
+}
+ 
+async function copyExamEntryLink(orderId) {
+    const link = buildExamEntryLink(orderId);
+    if (!link) {
+        alert("شناسه سفارش معتبر نیست.");
+        return;
+    }
+ 
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(link);
+        } else {
+            const input = document.createElement("textarea");
+            input.value = link;
+            input.setAttribute("readonly", "");
+            input.style.position = "fixed";
+            input.style.top = "-9999px";
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand("copy");
+            document.body.removeChild(input);
+        }
+        alert("لینک ورود به آزمون کپی شد.\n\nمی‌توانید آن را برای دانش‌آموز بفرستید:\n\n" + link);
+    } catch (error) {
+        window.prompt("کپی خودکار ممکن نشد. لینک را دستی کپی کنید:", link);
+    }
+}
+ 
+ 
+/* ===== تایید پرداخت دستی ===== */
+ 
+async function confirmManualPayment(orderId, studentName) {
+    if (!orderId) {
+        alert("شناسه سفارش معتبر نیست.");
+        return;
+    }
+ 
+    if (!confirm(
+        "تایید پرداخت دستی\n\n" +
+        "دانش‌آموز: " + (studentName || "—") + "\n" +
+        "شناسه سفارش: " + orderId + "\n\n" +
+        "وضعیت پرداخت این دانش‌آموز به «پرداخت شده» تغییر کند؟"
+    )) {
+        return;
+    }
+ 
+    try {
+        await postJson("/api/teacher/confirm-payment", {
+            examId: EXAM_ID,
+            orderId: String(orderId)
+        });
+ 
+        alert("پرداخت با موفقیت تایید شد.\nحالا می‌توانید لینک ورود را کپی کنید.");
+        await loadStudents();
+ 
+    } catch (error) {
+        alert("خطا در تایید پرداخت دستی:\n\n" + error.message);
+    }
+}
+ 
+ 
 /* ===== حذف دانش‌آموز ===== */
  
 async function deleteStudent(orderId, studentName) {
@@ -2859,4 +3086,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
-</html>
+      </html>
