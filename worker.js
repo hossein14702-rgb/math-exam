@@ -157,7 +157,7 @@ export default {
  
       // =========================================================
       // POST /api/teacher/images/upload
-      // بارگذاری امن تصاویر سؤال
+      // بارگذاری امن تصاویر سؤال (پروکسی به سرویس VPS)
       // =========================================================
       if (
         request.method === "POST" &&
@@ -171,7 +171,7 @@ export default {
           return json(
             {
               ok: false,
-              error: "سرویس بارگذاری تصویر تنظیم نشده است",
+              error: "سرویس بارگذاری تصویر تنظیم نشده است (IMAGE_UPLOAD_SECRET خالی است)",
             },
             503,
             cors
@@ -189,49 +189,110 @@ export default {
           return json(
             {
               ok: false,
-              error: "فرمت ارسال فایل نامعتبر است",
+              error: "فرمت ارسال فایل نامعتبر است (باید multipart/form-data باشد)",
             },
             400,
             cors
           );
         }
  
-        try {
-          const upstream = await fetch(
-            "https://image.azmoonmath.ir/upload",
-            {
-              method: "POST",
-              headers: {
-                "x-image-secret": uploadSecret,
-                "Content-Type": contentType,
-              },
-              body: request.body,
-            }
-          );
+        // آدرس سرویس آپلود روی VPS — در صورت نیاز از env قابل تغییر
+        const uploadUrl = String(
+          env.IMAGE_UPLOAD_URL || "https://image.azmoonmath.ir/upload"
+        ).trim();
  
-          return new Response(
-            await upstream.text(),
-            {
-              status: upstream.status,
-              headers: {
-                ...cors,
-                "Content-Type":
-                  upstream.headers.get("Content-Type") ||
-                  "application/json; charset=UTF-8",
-                "Cache-Control": "no-store",
+        try {
+          const upstream = await fetch(uploadUrl, {
+            method: "POST",
+            headers: {
+              "x-image-secret": uploadSecret,
+              "Content-Type": contentType,
+            },
+            body: request.body,
+            // برای multipart نباید body را دستکاری کرد
+          });
+ 
+          const rawText = await upstream.text();
+          let parsed = null;
+ 
+          try {
+            parsed = JSON.parse(rawText);
+          } catch {
+            parsed = null;
+          }
+ 
+          // اگر سرویس بالادستی خطا داد
+          if (!upstream.ok) {
+            const msg =
+              (parsed && (parsed.error || parsed.message)) ||
+              rawText.slice(0, 300) ||
+              `سرویس تصویر پاسخ ${upstream.status} داد`;
+ 
+            console.error("Image upload upstream error:", upstream.status, rawText.slice(0, 500));
+ 
+            return json(
+              {
+                ok: false,
+                error: `خطای سرویس تصویر (${upstream.status}): ${msg}`,
+                upstreamStatus: upstream.status,
               },
+              // 502 برای خطای سرور بالادستی، در غیر این صورت همان status
+              upstream.status >= 500 ? 502 : upstream.status,
+              cors
+            );
+          }
+ 
+          // پاسخ موفق — اگر JSON نبود، سعی می‌کنیم ساختار استاندارد بسازیم
+          if (parsed && typeof parsed === "object") {
+            // اطمینان از وجود فیلدهای رایج برای فرانت
+            if (
+              !parsed.files &&
+              !parsed.images &&
+              !parsed.urls &&
+              !parsed.data
+            ) {
+              // اگر فقط یک url برگشته
+              if (typeof parsed.url === "string") {
+                parsed = { ok: true, files: [parsed.url], images: [parsed.url] };
+              } else if (Array.isArray(parsed)) {
+                parsed = { ok: true, files: parsed, images: parsed };
+              }
             }
+ 
+            if (parsed.ok === undefined) {
+              parsed.ok = true;
+            }
+ 
+            return json(parsed, 200, cors);
+          }
+ 
+          // پاسخ متنی غیر JSON
+          console.error("Image upload non-JSON response:", rawText.slice(0, 500));
+          return json(
+            {
+              ok: false,
+              error: "پاسخ سرویس تصویر قابل پردازش نبود (JSON نبود)",
+              raw: rawText.slice(0, 200),
+            },
+            502,
+            cors
           );
         } catch (error) {
-          console.error(
-            "Image upload proxy failed:",
-            error
-          );
+          console.error("Image upload proxy failed:", error);
+ 
+          const detail =
+            error?.message ||
+            String(error) ||
+            "خطای ناشناخته";
  
           return json(
             {
               ok: false,
-              error: "ارتباط با سرویس تصاویر برقرار نشد",
+              error:
+                "ارتباط با سرویس تصاویر برقرار نشد. " +
+                "ممکن است VPS در دسترس نباشد، فایروال IPهای Cloudflare را بسته باشد، " +
+                "یا دامنه image.azmoonmath.ir درست تنظیم نشده باشد. جزئیات: " +
+                detail,
             },
             502,
             cors
@@ -3406,7 +3467,68 @@ export default {
       }
  
  
+      
       // =========================================================
+      // GET /api/order-status
+      // وضعیت سفارش برای بازگشت پایدار از درگاه (بدون وابستگی به حافظه مرورگر)
+      // =========================================================
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/order-status"
+      ) {
+        const orderId = String(
+          url.searchParams.get("orderId") || ""
+        ).trim();
+ 
+        if (!orderId) {
+          return json(
+            {
+              ok: false,
+              error: "orderId الزامی است",
+            },
+            400,
+            cors
+          );
+        }
+ 
+        const order = await env.DB
+          .prepare(`
+            SELECT
+              id,
+              status,
+              exam_id,
+              name
+            FROM orders
+            WHERE id = ?
+          `)
+          .bind(orderId)
+          .first();
+ 
+        if (!order) {
+          return json(
+            {
+              ok: false,
+              error: "سفارش پیدا نشد",
+            },
+            404,
+            cors
+          );
+        }
+ 
+        return json(
+          {
+            ok: true,
+            orderId: order.id,
+            status: order.status,
+            examId: order.exam_id,
+            paid: String(order.status || "") === "paid",
+          },
+          200,
+          cors
+        );
+      }
+ 
+// =========================================================
       // POST /api/start
       // =========================================================
       if (
@@ -3567,10 +3689,16 @@ export default {
               current.started_at = now;
             }
  
+            const allQuestionsResume =
+              (snapshots.results || []).map(
+                (row) => publicSnapshotQuestion(row)
+              );
+ 
             return json(
               {
                 ok: true,
                 resumed: true,
+                mode: "local",
  
                 attemptId:
                   existingAttempt.id,
@@ -3578,13 +3706,20 @@ export default {
                 currentQuestion,
  
                 totalQuestions:
-                  snapshots.results.length,
+                  allQuestionsResume.length,
  
                 questionStartedAt:
                   current.started_at,
  
+                serverNow:
+                  new Date().toISOString(),
+ 
+                questions:
+                  allQuestionsResume,
+ 
                 question:
-                  publicSnapshotQuestion(current),
+                  allQuestionsResume[currentQuestion] ||
+                  null,
               },
               200,
               cors
@@ -3706,23 +3841,48 @@ export default {
           await env.DB.batch(statements);
         }
  
+        const allQuestionsNew =
+          (
+            await env.DB
+              .prepare(`
+                SELECT *
+                FROM attempt_questions
+                WHERE attempt_id = ?
+                ORDER BY question_order
+              `)
+              .bind(attemptId)
+              .all()
+          ).results || [];
+ 
+        const mappedNew =
+          allQuestionsNew.map(
+            (row) => publicSnapshotQuestion(row)
+          );
+ 
         return json(
           {
             ok: true,
             resumed: false,
+            mode: "local",
  
             attemptId,
  
             currentQuestion: 0,
  
             totalQuestions:
-              questions.length,
+              mappedNew.length,
  
             questionStartedAt:
               startedAt,
  
+            serverNow:
+              new Date().toISOString(),
+ 
+            questions:
+              mappedNew,
+ 
             question:
-  publicQuestion(questions[0]),
+              mappedNew[0] || null,
           },
           200,
           cors
@@ -4009,6 +4169,9 @@ export default {
               totalQuestions,
  
               timedOut,
+ 
+              serverNow:
+                new Date().toISOString(),
             },
             200,
             cors
@@ -4075,8 +4238,21 @@ export default {
             questionStartedAt:
               next.started_at,
  
+            serverNow:
+              new Date().toISOString(),
+            offlineScoreKey:
+              await exportOfflineScoreKeyB64(
+                env,
+                attemptId
+              ),
+ 
             question:
-              publicSnapshotQuestion(next),
+              await attachCorrectEnc(
+                env,
+                attemptId,
+                publicSnapshotQuestion(next),
+                next.correct_index_snapshot
+              ),
           },
           200,
           cors
@@ -4143,6 +4319,69 @@ export default {
             cors
           );
         }
+ 
+        const incomingAnswers =
+          Array.isArray(body.answers)
+            ? body.answers
+            : null;
+ 
+        if (incomingAnswers && incomingAnswers.length) {
+          const updateStatements = [];
+ 
+          for (const item of incomingAnswers) {
+            const qIndex = Number(item.questionIndex);
+            if (!Number.isInteger(qIndex) || qIndex < 0) {
+              continue;
+            }
+ 
+            let selectedIndex =
+              item.selectedIndex === null ||
+              item.selectedIndex === undefined ||
+              item.selectedIndex === ""
+                ? null
+                : Number(item.selectedIndex);
+ 
+            if (
+              selectedIndex !== null &&
+              (
+                !Number.isInteger(selectedIndex) ||
+                selectedIndex < 0 ||
+                selectedIndex > 3
+              )
+            ) {
+              selectedIndex = null;
+            }
+ 
+            const elapsedRaw = item.elapsedSeconds;
+            const elapsed =
+              elapsedRaw === null || elapsedRaw === undefined || elapsedRaw === ""
+                ? null
+                : Math.max(0, Number(elapsedRaw) || 0);
+ 
+            updateStatements.push(
+              env.DB
+                .prepare(`
+                  UPDATE attempt_questions
+                  SET
+                    selected_index = ?,
+                    elapsed_seconds = COALESCE(?, elapsed_seconds)
+                  WHERE attempt_id = ?
+                    AND question_order = ?
+                `)
+                .bind(
+                  selectedIndex,
+                  elapsed,
+                  attemptId,
+                  qIndex
+                )
+            );
+          }
+ 
+          if (updateStatements.length) {
+            await env.DB.batch(updateStatements);
+          }
+        }
+ 
  
         const rows =
           await env.DB
@@ -4649,6 +4888,151 @@ export default {
  
  
       // =========================================================
+      // POST /api/teacher/confirm-payment
+      // تایید دستی پرداخت توسط معلم
+      // =========================================================
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/teacher/confirm-payment"
+      ) {
+        const body = await request.json().catch(() => ({}));
+ 
+        const orderId = String(body.orderId || "").trim();
+        const examId = Number(body.examId || 1);
+ 
+        if (!orderId) {
+          return json(
+            {
+              ok: false,
+              error: "orderId الزامی است",
+            },
+            400,
+            cors
+          );
+        }
+ 
+        if (!Number.isInteger(examId) || examId <= 0) {
+          return json(
+            {
+              ok: false,
+              error: "examId نامعتبر است",
+            },
+            400,
+            cors
+          );
+        }
+ 
+        const order = await env.DB
+          .prepare(`
+            SELECT
+              id,
+              exam_id,
+              name,
+              phone,
+              amount,
+              status,
+              paid_at
+            FROM orders
+            WHERE id = ?
+          `)
+          .bind(orderId)
+          .first();
+ 
+        if (!order) {
+          return json(
+            {
+              ok: false,
+              error: "سفارش / دانش‌آموز پیدا نشد",
+            },
+            404,
+            cors
+          );
+        }
+ 
+        if (Number(order.exam_id) !== examId) {
+          return json(
+            {
+              ok: false,
+              error: "این سفارش مربوط به این آزمون نیست",
+            },
+            400,
+            cors
+          );
+        }
+ 
+        const currentStatus = String(order.status || "").toLowerCase();
+ 
+        if (currentStatus === "paid") {
+          return json(
+            {
+              ok: true,
+              message: "وضعیت پرداخت از قبل «پرداخت شده» است",
+              alreadyPaid: true,
+              order: {
+                orderId: order.id,
+                name: order.name,
+                phone: order.phone,
+                amount: order.amount,
+                paymentStatus: "paid",
+                paidAt: order.paid_at || null,
+              },
+            },
+            200,
+            cors
+          );
+        }
+ 
+        const paidAt = new Date().toISOString();
+ 
+        await env.DB
+          .prepare(`
+            UPDATE orders
+            SET
+              status = 'paid',
+              paid_at = COALESCE(paid_at, ?)
+            WHERE id = ?
+          `)
+          .bind(paidAt, orderId)
+          .run();
+ 
+        const updated = await env.DB
+          .prepare(`
+            SELECT
+              id,
+              exam_id,
+              name,
+              phone,
+              amount,
+              status,
+              paid_at
+            FROM orders
+            WHERE id = ?
+          `)
+          .bind(orderId)
+          .first();
+ 
+        return json(
+          {
+            ok: true,
+            message: "پرداخت به‌صورت دستی تایید شد",
+            alreadyPaid: false,
+            order: {
+              orderId: updated.id,
+              examId: updated.exam_id,
+              name: updated.name,
+              phone: updated.phone,
+              amount: updated.amount,
+              paymentStatus: updated.status,
+              paidAt: updated.paid_at || paidAt,
+            },
+          },
+          200,
+          cors
+        );
+      }
+ 
+ 
+      // =========================================================
       // DELETE /api/teacher/student
       // =========================================================
       if (
@@ -4987,22 +5371,22 @@ export default {
 if (env.ASSETS) {
   const assetResponse = await env.ASSETS.fetch(request);
   const body = await assetResponse.arrayBuffer();
-
+ 
   const headers = new Headers(assetResponse.headers);
-
+ 
   headers.set("Content-Length", String(body.byteLength));
   headers.set("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate");
   headers.set("X-Azmoon-Diagnostic", "asset-buffer-v2");
-
+ 
   headers.delete("Transfer-Encoding");
-
+ 
   return new Response(body, {
     status: assetResponse.status,
     statusText: assetResponse.statusText,
     headers,
   });
 }
-
+ 
  
       return json(
         {
@@ -5487,8 +5871,9 @@ function normalizeQuestionImageUrls(value) {
       };
     }
  
+    // پذیرش نام فایل شبیه UUID (کمی انعطاف‌پذیرتر از قبل تا خطای ثبت سؤال با تصویر کم شود)
     const validPath =
-      /^\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp|gif)$/i;
+      /^\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:jpg|jpeg|png|webp|gif)$/i;
  
     if (
       parsed.protocol !== "https:" ||
@@ -5503,7 +5888,7 @@ function normalizeQuestionImageUrls(value) {
       return {
         ok: false,
         error:
-          "فقط تصاویر معتبر سرویس رسمی تصاویر مجاز هستند",
+          "فقط تصاویر معتبر سرویس رسمی تصاویر (image.azmoonmath.ir) مجاز هستند",
       };
     }
  
@@ -5604,6 +5989,76 @@ function normalizeQuestionForSnapshot(q) {
 // =============================================================
 // سوال عمومی برای student
 // =============================================================
+ 
+// =============================================================
+// رمزنگاری پاسخ صحیح برای کلاینت (آفلاین) — AES-GCM
+// =============================================================
+function bytesToBase64(buf) {
+  const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : new Uint8Array(buf);
+  let s = "";
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s);
+}
+ 
+async function deriveOfflineScoreKeyRaw(env, attemptId) {
+  const secret = String(
+    env.OFFLINE_SCORE_SECRET ||
+    env.TEACHER_PASSWORD ||
+    "azmoon-offline-score"
+  );
+  const material = new TextEncoder().encode(
+    secret + "|" + String(attemptId || "")
+  );
+  return await crypto.subtle.digest("SHA-256", material);
+}
+ 
+async function deriveOfflineScoreKey(env, attemptId) {
+  const raw = await deriveOfflineScoreKeyRaw(env, attemptId);
+  return crypto.subtle.importKey(
+    "raw",
+    raw,
+    { name: "AES-GCM" },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+ 
+async function exportOfflineScoreKeyB64(env, attemptId) {
+  const raw = await deriveOfflineScoreKeyRaw(env, attemptId);
+  return bytesToBase64(raw);
+}
+ 
+async function encryptCorrectIndexForAttempt(env, attemptId, correctIndex) {
+  if (correctIndex === null || correctIndex === undefined) return null;
+  try {
+    const key = await deriveOfflineScoreKey(env, attemptId);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encoded = new TextEncoder().encode(String(Number(correctIndex)));
+    const cipher = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      encoded
+    );
+    return bytesToBase64(iv) + ":" + bytesToBase64(cipher);
+  } catch (e) {
+    console.error("encryptCorrectIndexForAttempt:", e);
+    return null;
+  }
+}
+ 
+async function attachCorrectEnc(env, attemptId, questionObj, rawCorrectIndex) {
+  if (!questionObj) return questionObj;
+  const enc = await encryptCorrectIndexForAttempt(
+    env,
+    attemptId,
+    rawCorrectIndex
+  );
+  return {
+    ...questionObj,
+    correctEnc: enc,
+  };
+}
+ 
 function publicQuestion(q) {
  
   if (!q) {
@@ -5634,7 +6089,6 @@ function publicQuestion(q) {
       normalized.question_text,
  
     options,
- 
     durationSeconds:
       duration,
  
@@ -5695,7 +6149,6 @@ function publicSnapshotQuestion(q) {
  
     options:
       compact.options,
- 
     durationSeconds:
       duration,
  
