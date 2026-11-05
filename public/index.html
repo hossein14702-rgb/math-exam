@@ -1,11 +1,10 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
- <!-- deploy-bust: 2026-10-16-02 -->
  <head>
   <meta name="enamad" content="2623488">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>آزمون ریاضی نسخه آزمایشی| آزمون آنلاین</title>
+  <title>آزمون ریاضی نسخه آزمایشی | آزمون آنلاین</title>
   <style>
 *{box-sizing:border-box}
  
@@ -445,39 +444,6 @@ body.page-loading{
     transition:width .2s;
 }
  
-.image-load-progress-wrap{
-    margin-top:18px;
-    margin-bottom:0;
-}
- 
-.image-load-progress-wrap.hidden{
-    display:none !important;
-}
- 
-.image-load-bar{
-    height:10px;
-    background:#e5e7eb;
-    border-radius:20px;
-    overflow:hidden;
-}
- 
-.image-load-bar .progress-fill{
-    background:linear-gradient(90deg,#2563eb,#3b82f6);
-}
- 
-#startPaymentButton.is-loading{
-    opacity:.85;
-    cursor:wait;
-}
- 
-#startPaymentButton.is-retry{
-    background:#c2410c;
-}
- 
-#startPaymentButton.is-retry:hover{
-    background:#9a3412;
-}
- 
 .question-box{
     margin-top:22px;
 }
@@ -818,502 +784,9 @@ body.page-loading{
     cursor:pointer;
 }
  
- 
-/* تصاویر سؤال - نمایش افقی */
-.question-images{
-    display:flex;
-    flex-wrap:wrap;
-    gap:12px;
-    justify-content:center;
-    align-items:flex-start;
-    margin:18px 0 8px;
-    padding:4px 0;
-}
- 
-.question-images img{
-    display:block;
-    max-width:100%;
-    width:auto;
-    height:auto;
-    max-height:200px;
-    object-fit:contain;
-    border-radius:10px;
-    border:1px solid #e5e7eb;
-    background:#f8fafc;
-    cursor:zoom-in;
-    transition:box-shadow .15s, transform .15s;
-    box-shadow:0 2px 8px rgba(0,0,0,.06);
-}
- 
-.question-images img:hover{
-    box-shadow:0 4px 16px rgba(37,99,235,.18);
-    transform:translateY(-1px);
-}
- 
-/* وقتی فقط یک تصویر است کمی بزرگ‌تر */
-.question-images img:only-child{
-    max-height:260px;
-}
- 
-/* Lightbox / مودال بزرگ‌نمایی */
-.image-lightbox{
-    position:fixed;
-    inset:0;
-    z-index:9999;
-    background:rgba(15,23,42,.88);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:16px;
-    opacity:0;
-    visibility:hidden;
-    transition:opacity .2s, visibility .2s;
-}
- 
-.image-lightbox.active{
-    opacity:1;
-    visibility:visible;
-}
- 
-.image-lightbox-inner{
-    position:relative;
-    max-width:92vw;
-    max-height:88vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:12px;
-}
- 
-.image-lightbox-inner img{
-    max-width:92vw;
-    max-height:78vh;
-    width:auto;
-    height:auto;
-    object-fit:contain;
-    border-radius:12px;
-    box-shadow:0 12px 40px rgba(0,0,0,.35);
-    background:#fff;
-}
- 
-.image-lightbox-close{
-    position:absolute;
-    top:-42px;
-    left:0;
-    width:36px;
-    height:36px;
-    border:0;
-    border-radius:50%;
-    background:#fff;
-    color:#1f2937;
-    font-size:20px;
-    font-weight:bold;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    box-shadow:0 4px 12px rgba(0,0,0,.2);
-    line-height:1;
-}
- 
-/* تصاویر سؤال: نمایش منظم پنج تصویر در هر ردیف */
-.question-images {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
-    justify-items: stretch;
-    align-items: stretch;
-    margin: 18px 0 12px;
-    padding: 10px;
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    background: #f8fafc;
-}
- 
-.question-images img {
-    display: block;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    height: auto;
-    min-width: 0;
-    object-fit: contain;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    cursor: zoom-in;
-    box-shadow: 0 2px 6px rgba(0,0,0,.06);
-    transition: box-shadow .15s, transform .15s;
-}
- 
-.question-images img:hover {
-    box-shadow: 0 4px 12px rgba(37,99,235,.2);
-    transform: translateY(-2px);
-}
- 
-/* پنجره بزرگ‌نمایی تصاویر */
-.image-lightbox {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: rgba(15,23,42,.90);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity .2s, visibility .2s;
-}
- 
-.image-lightbox.active {
-    opacity: 1;
-    visibility: visible;
-}
- 
-.image-lightbox-inner {
-    position: relative;
-    width: 100%;
-    max-width: 640px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-}
- 
-.image-lightbox-inner img {
-    display: block;
-    width: min(88vw, 620px);
-    height: min(88vw, 620px, 70vh);
-    max-width: 100%;
-    object-fit: contain;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,.2);
-    box-shadow: 0 12px 40px rgba(0,0,0,.35);
-    background: #fff;
-}
- 
-.image-lightbox-close {
-    position: absolute;
-    top: -42px;
-    left: 0;
-    width: 36px;
-    height: 36px;
-    border: 0;
-    border-radius: 50%;
-    background: #fff;
-    color: #1f2937;
-    font-size: 20px;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,.2);
-    line-height: 1;
-}
- 
-.image-lightbox-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    margin-top: 4px;
-}
- 
-.image-lightbox-nav button {
-    width: 44px;
-    height: 44px;
-    border: 0;
-    border-radius: 50%;
-    background: #fff;
-    color: #1f2937;
-    font-size: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,.2);
-}
- 
-.image-lightbox-nav button:disabled {
-    opacity: .4;
-    cursor: not-allowed;
-}
- 
-.image-lightbox-counter {
-    color: #e5e7eb;
-    font-size: 13px;
-    min-width: 70px;
-    text-align: center;
-}
- 
-@media (max-width: 600px) {
-    .question-images {
-        gap: 5px;
-        padding: 6px;
-    }
- 
-    .image-lightbox-inner img {
-        width: 88vw;
-        height: min(88vw, 70vh);
-    }
-}
- 
- 
- 
-/* بارگذاری برگه آزمون - فقط برای staging */
-#examPaperLoader {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(244, 247, 251, 0.97);
-  transition: opacity 0.25s ease, visibility 0.25s ease;
-}
- 
-#examPaperLoader.is-hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
- 
-.exam-loader-panel {
-  width: min(320px, 92vw);
-  text-align: center;
-  color: #1f2937;
-}
- 
-.exam-loader-ring {
-  --loader-progress: 0%;
-  position: relative;
-  isolation: isolate;
-  width: 206px;
-  height: 206px;
-  margin: 0 auto 20px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  /* بخش آبی از بالای حلقه و در جهت ساعت‌گرد، مطابق درصد واقعی پر می‌شود. */
-  background: conic-gradient(
-    from -90deg,
-    #2563eb 0 var(--loader-progress),
-    #dbeafe var(--loader-progress) 100%
-  );
-  display: grid;
-  place-items: center;
-  transition: background 0.08s linear;
-}
- 
-.exam-loader-ring::before {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  border-radius: 50%;
-  background: #eff6ff;
-  z-index: -1;
-  pointer-events: none;
-}
- 
-.exam-loader-percent {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  min-width: 58px;
-  padding: 5px 8px;
-  border: 1px solid #bfdbfe;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  color: #1d4ed8;
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1.2;
-  text-align: center;
-  direction: ltr;
-  z-index: 5;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
-}
- 
-.exam-loader-paper {
-  position: relative;
-  width: 92px;
-  height: 122px;
-  padding: 12px 10px;
-  overflow: hidden;
-  border: 1px solid #bfdbfe;
-  border-radius: 7px;
-  background: white;
-  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.13);
-  
-}
- 
-.exam-loader-paper::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(147, 197, 253, 0.8)
-  );
-  transform: translateY(100%);
-  transition: transform 0.65s ease;
-}
- 
-#examPaperLoader[data-stage="received"]
-.exam-loader-paper::before {
-  transform: translateY(58%);
-}
- 
-#examPaperLoader[data-stage="ready"]
-.exam-loader-paper::before {
-  transform: translateY(0);
-}
- 
-.exam-paper-title {
-  width: 54%;
-  height: 5px;
-  margin: 0 auto 12px;
-  border-radius: 3px;
-  background: #93c5fd;
-}
- 
-.exam-paper-line {
-  height: 4px;
-  margin: 8px 0;
-  border-radius: 3px;
-  background: #e5e7eb;
-}
- 
-.exam-paper-line:nth-child(3) { width: 88%; }
-.exam-paper-line:nth-child(4) { width: 74%; }
-.exam-paper-line:nth-child(5) { width: 94%; }
- 
-.exam-paper-options {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-  margin-top: 10px;
-}
- 
-.exam-paper-options i {
-  width: 9px;
-  height: 9px;
-  border: 1.5px solid #93c5fd;
-  border-radius: 50%;
-  background: white;
-}
- 
-#examPaperLoader[data-stage="ready"]
-.exam-paper-options i {
-  border-color: #2563eb;
-  background: #2563eb;
-}
- 
-.exam-loader-title {
-  margin: 0 0 8px;
-  font-size: 17px;
-  font-weight: 700;
-}
- 
-.exam-loader-message {
-  margin: 0;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.9;
-}
- 
-.exam-loader-retry {
-  display: none;
-  margin: 16px auto 0;
-  padding: 12px 22px;
-  border: 0;
-  border-radius: 12px;
-  background: #2563eb;
-  color: white;
-  font: inherit;
-  font-weight: 700;
-}
- 
-#examPaperLoader[data-stage="error"] .exam-loader-ring {
-  --loader-progress: 0%;
-  background: conic-gradient(#fecaca 0 100%);
-}
- 
-#examPaperLoader[data-stage="error"] .exam-loader-ring::before {
-  background: #fff1f2;
-}
- 
-#examPaperLoader[data-stage="error"] .exam-loader-title {
-  color: #b91c1c;
-}
- 
-#examPaperLoader[data-stage="error"] .exam-loader-message {
-  color: #991b1b;
-}
- 
-#examPaperLoader[data-stage="error"] .exam-loader-retry {
-  display: block;
-}
- 
-/* وقتی حجم کل پاسخ قابل محاسبه نیست، فقط حرکت حلقه را نشان بده؛ درصد ساختگی نساز. */
-#examPaperLoader[data-progress-mode="indeterminate"] .exam-loader-ring {
-  background: conic-gradient(from -90deg, #2563eb 0 26%, #dbeafe 26% 100%);
-  animation: exam-loader-ring-spin 1.1s linear infinite;
-}
-@keyframes exam-loader-ring-spin {
-  to { transform: rotate(360deg); }
-}
-@media (prefers-reduced-motion: reduce) {
-  #examPaperLoader[data-progress-mode="indeterminate"] .exam-loader-ring {
-    animation: none;
-  }
-}
- 
- 
-@media (max-width: 380px) {
-  .exam-loader-ring {
-    width: 174px;
-    height: 174px;
-  }
-  .exam-loader-paper {
-    transform: scale(.92);
-  }
-}
- 
-@media (prefers-reduced-motion: reduce) {
-  .exam-loader-ring {
-    animation: none;
-  }
-}
- 
 </style>
  </head>
  <body class="page-loading">
-  <div id="examPaperLoader" data-stage="fetching" role="status" aria-live="polite">
-   <div class="exam-loader-panel">
-    <div class="exam-loader-ring">
-     <div class="exam-loader-paper" aria-hidden="true">
-      <div class="exam-paper-title"></div>
-      <div class="exam-paper-line"></div>
-      <div class="exam-paper-line"></div>
-      <div class="exam-paper-line"></div>
-      <div class="exam-paper-line"></div>
-      <div class="exam-paper-options">
-       <i></i><i></i><i></i><i></i>
-      </div>
-     </div>
-     <div class="exam-loader-percent" id="examLoaderPercent">۰٪</div>
-    </div>
-    <p class="exam-loader-title" id="examLoaderTitle">در حال دریافت آزمون</p>
-    <p class="exam-loader-message" id="examLoaderMessage">اطلاعات آزمون از سرور دریافت می‌شود.</p>
-    <button type="button" class="exam-loader-retry" id="examLoaderRetry">تلاش مجدد</button>
-   </div>
-  </div>
   <div class="container">
    <div class="header">
     <div class="brand">
@@ -1349,12 +822,7 @@ body.page-loading{
      <span class="hint"> شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود. </span>
     </div>
     <div id="startError"></div>
-    <div id="imageLoadProgressWrap" class="image-load-progress-wrap">
-     <div class="progress-bar image-load-bar">
-      <div class="progress-fill" id="imageLoadProgressFill" style="width:0%"></div>
-     </div>
-    </div>
-    <button id="startPaymentButton" class="primary-btn" type="button" disabled>در حال بارگذاری سؤالات...</button>
+    <button id="startPaymentButton" class="primary-btn" disabled>در حال دریافت اطلاعات آزمون...</button>
    </div>
    <!-- پرداخت -->
    <div class="card hidden" id="paymentCard">
@@ -1440,13 +908,23 @@ body.page-loading{
    </div>
   </div>
   <script>
-// همیشه همان دامنه‌ای که صفحه از آن باز شده (بدون مشکل CORS)
-const API = window.location.origin;
+const API =
+    "https://azmoonmath.ir";
+const EXAM_API =
+    "https://api.azmoonmath.ir";
+const WORKER_API =
+    "https://azmon.hosseinkhorasani1.workers.dev";
  
 const EXAM_ID = 1;
  
 let orderId = null;
 let attemptId = null;
+ 
+let examQuestionsList = [];
+let localAnswersMap = {};
+let currentQIndex = 0;
+let clockOffsetMs = 0;
+ 
  
 let currentQuestion = null;
  
@@ -1457,12 +935,7 @@ let submitting = false;
  
 let examQuestionsCount = 0;
 let examData = null;
- // مدیریت حافظهٔ تصاویر سؤال‌ها
-const questionImageBlobUrls = new Map();
  
-let imagePreloadPromise = null;
-let imagePreloadRunning = false;
-let imagePreloadFailed = 0;
 let examStartedAt = null;
 let examFinishedAt = null;
  
@@ -1486,15 +959,6 @@ function show(id){
  
     if(element){
         element.classList.remove("hidden");
-    }
- 
-    // وقتی صفحه قوانین باز می‌شود، دکمه شروع آزمون حتماً فعال باشد
-    if (id === "rulesCard") {
-        const beginButton = $("beginExamButton");
-        if (beginButton) {
-            beginButton.disabled = false;
-            beginButton.textContent = "شروع آزمون";
-        }
     }
  
 }
@@ -1594,7 +1058,7 @@ function escapeHtml(value){
 }
  
  
-function showError(id,message){
+function showError(id, message){
  
     const element = $(id);
  
@@ -1602,9 +1066,12 @@ function showError(id,message){
         return;
     }
  
+    const safe = escapeHtml(message || "")
+        .replace(/\n/g, "<br>");
+ 
     element.innerHTML =
-        `<div class="error">
-            ${escapeHtml(message)}
+        `<div class="error" style="line-height:2">
+            ${safe}
         </div>`;
  
 }
@@ -1659,6 +1126,149 @@ function clearSession(){
  
 }
  
+ 
+ 
+function applyServerTime(serverNowIso) {
+    if (!serverNowIso) return;
+    const serverMs = Date.parse(serverNowIso);
+    if (Number.isNaN(serverMs)) return;
+    clockOffsetMs = serverMs - Date.now();
+}
+ 
+function nowMs() {
+    return Date.now() + clockOffsetMs;
+}
+ 
+function localAnswersStorageKey() {
+    return "math_exam_local_answers_" + String(attemptId || "");
+}
+ 
+function saveLocalAnswersMap() {
+    if (!attemptId) return;
+    try {
+        localStorage.setItem(
+            localAnswersStorageKey(),
+            JSON.stringify(localAnswersMap || {})
+        );
+        localStorage.setItem(
+            "math_exam_current_q_" + String(attemptId),
+            String(currentQIndex)
+        );
+    } catch (e) {}
+}
+ 
+function loadLocalAnswersMap() {
+    localAnswersMap = {};
+    if (!attemptId) return;
+    try {
+        const raw = localStorage.getItem(localAnswersStorageKey());
+        const parsed = raw ? JSON.parse(raw) : {};
+        if (parsed && typeof parsed === "object") {
+            localAnswersMap = parsed;
+        }
+        const cq = localStorage.getItem(
+            "math_exam_current_q_" + String(attemptId)
+        );
+        if (cq !== null && cq !== "") {
+            const n = Number(cq);
+            if (Number.isInteger(n) && n >= 0) currentQIndex = n;
+        }
+    } catch (e) {
+        localAnswersMap = {};
+    }
+}
+ 
+function buildAnswersPayload() {
+    const total = examQuestionsList.length || examQuestionsCount || 0;
+    const answers = [];
+    for (let i = 0; i < total; i++) {
+        const has =
+            Object.prototype.hasOwnProperty.call(localAnswersMap, i) ||
+            Object.prototype.hasOwnProperty.call(localAnswersMap, String(i));
+        let selected = has
+            ? (localAnswersMap[i] !== undefined
+                ? localAnswersMap[i]
+                : localAnswersMap[String(i)])
+            : null;
+        if (selected === undefined) selected = null;
+        answers.push({
+            questionIndex: i,
+            selectedIndex: selected,
+            elapsedSeconds: null
+        });
+    }
+    return answers;
+}
+ 
+function startLocalExamFromData(data) {
+    applyServerTime(data.serverNow);
+ 
+    attemptId = data.attemptId;
+    examQuestionsList = Array.isArray(data.questions)
+        ? data.questions.slice()
+        : (data.question ? [data.question] : []);
+    examQuestionsCount =
+        Number(data.totalQuestions) || examQuestionsList.length;
+ 
+    loadLocalAnswersMap();
+ 
+    let startIndex = Number(data.currentQuestion || 0);
+    if (!Number.isInteger(startIndex) || startIndex < 0) startIndex = 0;
+ 
+    if (Object.keys(localAnswersMap).length) {
+        for (let i = 0; i < examQuestionsCount; i++) {
+            const has =
+                Object.prototype.hasOwnProperty.call(localAnswersMap, i) ||
+                Object.prototype.hasOwnProperty.call(localAnswersMap, String(i));
+            if (!has) {
+                startIndex = i;
+                break;
+            }
+            if (i === examQuestionsCount - 1) {
+                startIndex = examQuestionsCount;
+            }
+        }
+    }
+ 
+    currentQIndex = startIndex;
+ 
+    localStorage.setItem("math_exam_attempt_id", attemptId);
+    localStorage.setItem("math_exam_started", "1");
+    localStorage.setItem("math_exam_paid", "1");
+ 
+    if (data.questionStartedAt && !examStartedAt) {
+        examStartedAt = data.questionStartedAt;
+        localStorage.setItem("math_exam_started_at", examStartedAt);
+    }
+ 
+    hide("startCard");
+    hide("paymentCard");
+    hide("rulesCard");
+    show("examCard");
+    renderQuestionSteps();
+ 
+    if (currentQIndex >= examQuestionsCount) {
+        void finishExam();
+        return;
+    }
+ 
+    showLocalQuestion(currentQIndex);
+}
+ 
+function showLocalQuestion(index) {
+    const q = examQuestionsList[index];
+    if (!q) {
+        void finishExam();
+        return;
+    }
+    currentQIndex = index;
+    saveLocalAnswersMap();
+    showQuestion(
+        q,
+        index,
+        new Date(nowMs()).toISOString()
+    );
+}
  
 /* =========================
    اطلاعات تخفیف
@@ -2327,755 +1937,183 @@ function renderExamInfo(){
    دریافت آزمون
 ========================= */
  
-let examLoaderDisplayedProgress = 0;
-let examLoaderTargetProgress = 0;
-let examLoaderProgressTimer = null;
- 
-function renderExamLoaderProgress(progress) {
-  const overlay = $("examPaperLoader");
-  const percentElement = $("examLoaderPercent");
-  if (!overlay) return;
- 
-  const safeProgress = Math.max(0, Math.min(100, Math.floor(progress)));
-  overlay.style.setProperty("--loader-progress", `${safeProgress}%`);
- 
-  if (percentElement) {
-    percentElement.textContent = `${toPersianNumber(safeProgress)}٪`;
-  }
-}
- 
-function setExamLoaderProgress(progress) {
-  examLoaderTargetProgress = Math.max(
-    0,
-    Math.min(100, Math.floor(progress))
-  );
- 
-  // از صفر شروع می‌کنیم و فقط تا درصدی بالا می‌رویم که واقعاً از
-  // نسبت بایت‌های دریافت‌شده به حجم کل پاسخ به دست آمده است.
-  if (examLoaderProgressTimer !== null) return;
- 
-  examLoaderProgressTimer = setInterval(() => {
-    if (examLoaderDisplayedProgress < examLoaderTargetProgress) {
-      examLoaderDisplayedProgress += 1;
-      renderExamLoaderProgress(examLoaderDisplayedProgress);
-    } else if (examLoaderDisplayedProgress > examLoaderTargetProgress) {
-      examLoaderDisplayedProgress -= 1;
-      renderExamLoaderProgress(examLoaderDisplayedProgress);
-    } else {
-      clearInterval(examLoaderProgressTimer);
-      examLoaderProgressTimer = null;
-    }
-  }, 25);
-}
- 
-function resetExamLoaderProgress() {
-  if (examLoaderProgressTimer !== null) {
-    clearInterval(examLoaderProgressTimer);
-    examLoaderProgressTimer = null;
-  }
- 
-  examLoaderDisplayedProgress = 0;
-  examLoaderTargetProgress = 0;
-  renderExamLoaderProgress(0);
-}
- 
-function setExamLoaderState(stage, message) {
-  const overlay = $("examPaperLoader");
-  const title = $("examLoaderTitle");
-  const detail = $("examLoaderMessage");
- 
-  if (!overlay) return;
- 
-  overlay.dataset.stage = stage;
- 
-  // درصد فقط از بایت‌های واقعاً دریافت‌شده به‌روزرسانی می‌شود.
-  // شروع دریافت همیشه صفر است؛ ۱۰۰ فقط بعد از پردازش موفق نمایش داده می‌شود.
-  if (stage === "fetching") {
-    overlay.dataset.progressMode = "determinate";
-    resetExamLoaderProgress();
-  }
-  if (stage === "ready") {
-    overlay.dataset.progressMode = "determinate";
-    setExamLoaderProgress(100);
-  }
-  if (stage === "error") {
-    overlay.dataset.progressMode = "determinate";
-    resetExamLoaderProgress();
-  }
- 
-  if (title) {
-    title.textContent =
-      stage === "error" ? "دریافت آزمون ناموفق بود" :
-      stage === "ready" ? "آزمون آماده است" :
-      "در حال دریافت آزمون";
-  }
- 
-  if (detail) detail.textContent = message || "";
-}
- 
-async function readExamResponseWithProgress(response) {
-  const contentLengthHeader = response.headers.get("content-length");
-  const contentEncoding = response.headers.get("content-encoding");
-  const totalBytes = contentLengthHeader ? Number(contentLengthHeader) : 0;
-  // در پاسخ فشرده، Content-Length ممکن است اندازه بایت‌های فشرده باشد؛
-  // بنابراین برای جلوگیری از درصد اشتباه، فقط طولِ قابل اتکا را مبنا می‌گیریم.
-  const canCalculatePercent = Number.isFinite(totalBytes) && totalBytes > 0 && !contentEncoding;
-  const loader = $("examPaperLoader");
-  if (loader) {
-    loader.dataset.progressMode = canCalculatePercent ? "determinate" : "indeterminate";
-  }
- 
-  if (!response.body || !response.body.getReader) {
-    // در مرورگری که خواندن جریانی پشتیبانی نمی‌شود، درصد ساختگی نمایش نمی‌دهیم.
-    const text = await response.text();
-    return JSON.parse(text);
-  }
- 
-  const reader = response.body.getReader();
-  const chunks = [];
-  let receivedBytes = 0;
- 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    receivedBytes += value.byteLength;
- 
-    if (canCalculatePercent) {
-      // تا پایان کامل دریافت، ۱۰۰٪ نشان داده نمی‌شود.
-      setExamLoaderProgress(Math.min(99, receivedBytes / totalBytes * 100));
-    }
-  }
- 
-  const allBytes = new Uint8Array(receivedBytes);
-  let offset = 0;
-  for (const chunk of chunks) {
-    allBytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
- 
-  // اگر طول پاسخ قابل اتکا نباشد، درصد را در حین دریافت تغییر نمی‌دهیم؛
-  // درصد واقعی بدون دانستن حجم کل قابل محاسبه نیست. چرخش در وضعیت ready/error متوقف می‌شود.
-  return JSON.parse(new TextDecoder("utf-8").decode(allBytes));
-}
- 
-function hideExamPaperLoader() {
-  const overlay = $("examPaperLoader");
-  if (overlay) overlay.classList.add("is-hidden");
-}
- 
-async function retryExamPaperLoad() {
-  const retry = $("examLoaderRetry");
- 
-  if (retry) {
-    retry.disabled = true;
-    retry.textContent = "در حال تلاش...";
-  }
- 
-  try {
-    const ok = await loadExam();
- 
-    if (ok) {
-      setExamLoaderState(
-        "ready",
-        "اطلاعات آزمون با موفقیت دریافت شد."
-      );
-      hideExamPaperLoader();
-    } else {
-      setExamLoaderState(
-        "error",
-        "اتصال اینترنت را بررسی کنید و دوباره تلاش کنید."
-      );
-    }
-  } finally {
-    if (retry) {
-      retry.disabled = false;
-      retry.textContent = "تلاش مجدد";
-    }
-  }
+async function requestExamDataFrom(baseUrl, label) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const started = performance.now();
+    try {
+        const url = `${baseUrl.replace(/\/$/, "")}/api/exam?id=${EXAM_ID}&_=${Date.now()}`;
+        const response = await fetch(url, {
+            method: "GET", cache: "no-store",
+            headers: { "Accept": "application/json" }, signal: controller.signal
+        });
+        const elapsed = Math.round(performance.now() - started);
+        if (!response.ok) throw new Error(`${label}: HTTP ${response.status} (${elapsed}ms)`);
+        const contentType = response.headers.get("content-type") || "";
+        if (!/json/i.test(contentType)) throw new Error(`${label}: پاسخ JSON نیست (Content-Type=${contentType || "نامشخص"})`);
+        const data = await response.json();
+        if (!data || data.ok !== true) throw new Error(`${label}: پاسخ برنامه‌ای نامعتبر؛ ${data?.error || "ok=true نیست"}`);
+        if (!data.exam || typeof data.exam !== "object") throw new Error(`${label}: فیلد exam وجود ندارد`);
+        const count = Number(
+            data.questionCount ?? data.exam?.questionCount ?? 0
+        );
+        if (!Number.isFinite(count) || count <= 0) {
+            throw new Error(
+                `${label}: تعداد سؤال معتبر نیست (${String(data.questionCount)}). در پنل معلم قوانین پوشه و سؤال فعال را بررسی کنید.`
+            );
+        }
+        if (data.exam.active === 0 || data.exam.active === false) throw new Error(`${label}: آزمون غیرفعال است`);
+        console.info("[AZMOON_LOAD_DIAG] success", { label, elapsedMs: elapsed, count, hasQuestionsArray: Array.isArray(data.questions), keys: Object.keys(data) });
+        return data;
+    } catch (error) {
+        const detail = error?.name === "AbortError" ? `${label}: مهلت ۸ ثانیه‌ای تمام شد` : `${label}: ${error?.message || String(error)}`;
+        console.error("[AZMOON_LOAD_DIAG] failed", detail);
+        throw new Error(detail);
+    } finally { clearTimeout(timeout); }
 }
  
 async function loadExam(){
- setExamLoaderState(
-  "fetching",
-  "در انتظار پاسخ سرور آزمون..."
-);
-    $("examInfo").innerHTML =
-        `<div class="loading">
-            در حال دریافت اطلاعات آزمون...
-        </div>`;
- 
-    updateImageLoadUI({ state: "loading", percent: 0, total: 0 });
- 
-    try{
- 
-        const response = await fetch(
-            `${API}/api/exam?id=1`,
-            {
-                method: "GET",
-                cache: "no-store"
-            }
-        );
- 
-        if(!response.ok){
-            throw new Error(
-                "سرور آزمون پاسخ مناسبی ارسال نکرد."
-            );
-        }
- 
-        const data = await readExamResponseWithProgress(response);
-        setExamLoaderState(
-            "received",
-            "پاسخ دریافت شد؛ در حال بررسی اطلاعات آزمون..."
-        );
- 
- 
-        if(!data.ok){
- 
-            throw new Error(
-                data.error ||
-                "خطا در دریافت اطلاعات آزمون."
-            );
- 
-        }
- 
- 
-        if(!data.exam){
- 
-            throw new Error(
-                "اطلاعات آزمون در پاسخ سرور وجود ندارد."
-            );
- 
-        }
- 
- 
-        examData =
-            data;
- 
- 
-        // فقط questionCount سرور (جمع قوانین انتخابی)
-        // هرگز از data.questions.length استفاده نکن
-        examQuestionsCount =
-            Number(
-                data.questionCount ?? 0
-            );
- 
- 
-        renderExamInfo();
-    updateImageLoadUI({
-    state: "ready",
-    percent: 100,
-    total: 0
-}); 
-   setExamLoaderState(
-  "ready",
-  "اطلاعات آزمون با موفقیت دریافت شد."
-);
-return true;     
-    }
-    catch(error){
- 
-        console.error(
-            "LOAD EXAM ERROR:",
-            error
-        );
- setExamLoaderState(
-  "error",
-  "دریافت اطلاعات آزمون انجام نشد. اینترنت را بررسی و دوباره تلاش کنید."
-);
-return false;
- 
-        $("examInfo").innerHTML = `
- 
-            <div class="error">
- 
-                دریافت اطلاعات آزمون انجام نشد.
- 
-                <br>
- 
-                ${escapeHtml(
-                    error.message ||
-                    "خطای نامشخص"
-                )}
- 
-            </div>
- 
-        `;
- 
- 
-        updateImageLoadUI({
-            state: "retry",
-            percent: 0,
-            total: 0,
-            failed: 1
-        });
-        // دکمه را برای تلاش مجدد فعال نگه می‌داریم ولی create-order بدون examData کار نمی‌کند
-        const btn = $("startPaymentButton");
-        if (btn) {
-            btn.disabled = true;
-            btn.classList.remove("is-retry");
-            btn.textContent = "خطا در دریافت اطلاعات آزمون";
-        }
- 
-    }
- 
-}
- // ========================================
-// مدیریت بارگذاری تصاویر سؤال‌ها
-// ========================================
- 
-const imagePreloadFailedUrls = new Set();
- 
-function getAllQuestionImageUrls() {
-    const questions = Array.isArray(examData?.questions)
-        ? examData.questions
-        : [];
- 
-    return [
-        ...new Set(
-            questions.flatMap(question =>
-                Array.isArray(question.images)
-                    ? question.images.filter(
-                        src =>
-                            typeof src === "string" &&
-                            src.trim() !== ""
-                    )
-                    : []
-            )
-        )
+    const info = $("examInfo");
+    const button = $("startPaymentButton");
+    info.innerHTML = `<div class="loading">در حال دریافت اطلاعات آزمون...</div>`;
+    button.disabled = true;
+    button.textContent = "در حال دریافت اطلاعات آزمون...";
+    const failures = [];
+    let data = null;
+    const endpoints = [
+        [API || window.location.origin, "API دامنه اصلی"],
+        [WORKER_API, "API ورکر"],
+        [EXAM_API, "API ایران"]
     ];
+    try {
+        for (const [baseUrl, label] of endpoints) {
+            try { data = await requestExamDataFrom(baseUrl, label); break; }
+            catch (error) { failures.push(error.message); }
+        }
+        if (!data) throw new Error(failures.join(" | ") || "هیچ مسیر API پاسخ معتبر نداد.");
+        examData = data;
+        examQuestionsCount = Number(data.questionCount);
+        renderExamInfo();
+        button.disabled = false;
+        button.textContent = "پرداخت و شروع آزمون";
+    } catch (error) {
+        console.error("[AZMOON_LOAD_DIAG] all endpoints failed", { failures, error });
+        info.innerHTML = `
+            <div class="error" style="line-height:2">
+                <strong>صفحه آزمون الان در دسترس نیست.</strong><br>
+                لطفاً این کارها را انجام دهید:<br>
+                ۱) چند لحظه صبر کنید و دکمه زیر را بزنید<br>
+                ۲) اینترنت را قطع و وصل کنید<br>
+                ۳) اگر باز هم نشد، وای‌فای یا اینترنت دیگری را امتحان کنید
+            </div>
+            <button type="button" id="retryLoadExamBtn" class="secondary-btn" style="margin-top:12px">
+                تلاش دوباره برای بارگذاری آزمون
+            </button>`;
+        button.disabled = true;
+        button.textContent = "ابتدا اطلاعات آزمون را بارگذاری کنید";
+        const retryBtn = $("retryLoadExamBtn");
+        if (retryBtn) {
+            retryBtn.onclick = function () { loadExam(); };
+        }
+    }
 }
  
-async function preloadQuestionImages(retryFailedOnly = false) {
-    if (imagePreloadRunning) {
-        return imagePreloadPromise;
-    }
  
-    const allUrls = getAllQuestionImageUrls();
-    const totalAll = allUrls.length;
+/* خواندن پاسخ API با پیام مناسب برای دانش‌آموز */
+async function readApiJson(response) {
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    const text = await response.text();
+    const trimmed = (text || "").trim();
  
-    const urls = retryFailedOnly
-        ? [...imagePreloadFailedUrls]
-        : allUrls.filter(src => {
-            const key = String(src).trim();
-            if (questionImageBlobUrls.has(key)) return false;
-            try {
-                const u = new URL(key);
-                if (questionImageBlobUrls.has(u.origin + u.pathname)) return false;
-            } catch (_) {}
-            return true;
-        });
- 
-    // هیچ تصویری در بانک نیست → پرداخت آزاد
-    if (totalAll === 0) {
-        imagePreloadFailed = 0;
-        updateImageLoadUI({
-            state: "ready",
-            percent: 100,
-            total: 0
-        });
-        syncBeginExamButton();
-        return;
-    }
- 
-    // همه از قبل آماده‌اند
-    if (urls.length === 0) {
-        imagePreloadFailed = imagePreloadFailedUrls.size;
-        const loaded = allUrls.filter(src => questionImageBlobUrls.has(src)).length;
-        const percent = Math.round((loaded / totalAll) * 100);
- 
-        if (imagePreloadFailed > 0) {
-            updateImageLoadUI({
-                state: "retry",
-                percent,
-                total: totalAll,
-                failed: imagePreloadFailed
-            });
-        } else {
-            updateImageLoadUI({
-                state: "ready",
-                percent: 100,
-                total: totalAll
-            });
-        }
-        syncBeginExamButton();
-        return;
-    }
- 
-    imagePreloadRunning = true;
- 
-    imagePreloadPromise = (async () => {
-        let nextIndex = 0;
-        let batchDone = 0;
-        const batchTotal = urls.length;
- 
-        function refreshProgress() {
-            const loaded = allUrls.filter(src =>
-                questionImageBlobUrls.has(src)
-            ).length;
-            const percent = Math.min(
-                100,
-                Math.round((loaded / totalAll) * 100)
-            );
-            updateImageLoadUI({
-                state: "loading",
-                percent,
-                total: totalAll,
-                loaded
-            });
-        }
- 
-        refreshProgress();
- 
-        async function loadOneImage(src) {
-            const maxAttempts = 4;
- 
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                try {
-                    const response = await fetch(src, {
-                        mode: "cors",
-                        cache: "no-store"
-                    });
- 
-                    if (!response.ok) {
-                        throw new Error(
-                            `خطای دریافت تصویر: ${response.status}`
-                        );
-                    }
- 
-                    const blob = await response.blob();
- 
-                    if (!blob.size) {
-                        throw new Error("فایل تصویر خالی است.");
-                    }
- 
-                    const oldUrl = questionImageBlobUrls.get(src);
- 
-                    if (oldUrl) {
-                        URL.revokeObjectURL(oldUrl);
-                    }
- 
-                    rememberImageBlob(
-                        src,
-                        URL.createObjectURL(blob)
-                    );
- 
-                    imagePreloadFailedUrls.delete(src);
-                    return;
- 
-                } catch (error) {
-                    console.error(
-                        `تلاش ${attempt} از ${maxAttempts} برای دریافت تصویر ناموفق بود:`,
-                        src,
-                        error
-                    );
- 
-                    if (attempt < maxAttempts) {
-                        await new Promise(resolve =>
-                            setTimeout(resolve, attempt * 1000)
-                        );
-                    }
-                }
-            }
- 
-            imagePreloadFailedUrls.add(src);
-        }
- 
-        async function worker() {
-            while (nextIndex < urls.length) {
-                const index = nextIndex++;
-                await loadOneImage(urls[index]);
-                batchDone++;
-                refreshProgress();
-            }
-        }
- 
-        await Promise.all([
-            worker(),
-            worker(),
-            worker()
-        ]);
- 
-        imagePreloadFailed = imagePreloadFailedUrls.size;
- 
-        const loaded = allUrls.filter(src =>
-            questionImageBlobUrls.has(src)
-        ).length;
-        const percent = Math.min(
-            100,
-            Math.round((loaded / totalAll) * 100)
+    if (!trimmed) {
+        throw new Error(
+            "پاسخی از سرور دریافت نشد. لطفاً چند لحظه بعد دوباره تلاش کنید."
         );
- 
-        if (imagePreloadFailed > 0) {
-            updateImageLoadUI({
-                state: "retry",
-                percent,
-                total: totalAll,
-                failed: imagePreloadFailed
-            });
-        } else {
-            updateImageLoadUI({
-                state: "ready",
-                percent: 100,
-                total: totalAll
-            });
-        }
- 
-        syncBeginExamButton();
-    })();
- 
-    try {
-        await imagePreloadPromise;
-    } finally {
-        imagePreloadRunning = false;
-        imagePreloadPromise = null;
-    }
-}
- 
-/** وضعیت دکمه پرداخت + نوار پیشرفت تصاویر */
-let imageLoadUiState = "loading"; // loading | ready | retry
- 
-function updateImageLoadUI({ state, percent = 0, total = 0, loaded = 0, failed = 0 }) {
-    imageLoadUiState = state;
- 
-    const btn = $("startPaymentButton");
-    const fill = $("imageLoadProgressFill");
-    const wrap = $("imageLoadProgressWrap");
- 
-    const safePercent = Math.max(0, Math.min(100, Number(percent) || 0));
- 
-    if (fill) {
-        fill.style.width = safePercent + "%";
     }
  
-    if (!btn) {
-        return;
-    }
- 
-    btn.classList.remove("is-loading", "is-retry");
- 
-    if (state === "loading") {
-        if (wrap) wrap.classList.remove("hidden");
-        btn.disabled = true;
-        btn.classList.add("is-loading");
-        btn.textContent =
-            "در حال بارگذاری سؤالات " +
-            toPersianNumber(safePercent) +
-            "٪";
-        return;
-    }
- 
-    if (state === "retry") {
-        if (wrap) wrap.classList.remove("hidden");
-        btn.disabled = false;
-        btn.classList.add("is-retry");
-        btn.textContent =
-            "تلاش مجدد (" +
-            toPersianNumber(safePercent) +
-            "٪)";
-        return;
-    }
- 
-    // ready
-    if (wrap) {
-        // نوار را بعد از موفقیت مخفی کن
-        wrap.classList.add("hidden");
-    }
-    btn.disabled = false;
-    btn.textContent = "پرداخت و شروع آزمون";
-}
- 
-function syncBeginExamButton() {
-    const beginButton = $("beginExamButton");
-    if (!beginButton) return;
-    // بعد از پرداخت، تصاویر از قبل لود شده‌اند؛ دکمه شروع همیشه فعال باشد
-    beginButton.disabled = false;
-    beginButton.textContent = "شروع آزمون";
-}
- 
-async function ensureImagesReady(imageUrls) {
-    const list = Array.isArray(imageUrls)
-        ? imageUrls.filter(src =>
-            typeof src === "string" && src.trim() !== ""
-        )
-        : [];
- 
-    if (!list.length) return;
- 
-    await Promise.all(list.map(async (src) => {
-        const key = String(src).trim();
- 
-        if (
-            questionImageBlobUrls.has(key) ||
-            questionImageBlobUrls.has(normalizeImageKey(key))
-        ) {
-            return;
-        }
- 
-        for (let attempt = 1; attempt <= 2; attempt++) {
-            const controller = new AbortController();
-            const timeout = setTimeout(
-                () => controller.abort(),
-                7000
+    /* سرور به‌جای JSON صفحه HTML برگردانده (خطا/فیلتر/قطعی) */
+    if (
+        trimmed.startsWith("<!DOCTYPE") ||
+        trimmed.startsWith("<!doctype") ||
+        trimmed.startsWith("<html") ||
+        trimmed.startsWith("<HTML") ||
+        !contentType.includes("json")
+    ) {
+        /* اگر شبیه JSON نبود */
+        if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            throw new Error(
+                "در حال حاضر ارتباط با درگاه پرداخت برقرار نشد. " +
+                "لطفاً چند دقیقه بعد دوباره تلاش کنید یا اینترنت دیگری (مثلاً وای‌فای) را امتحان کنید."
             );
- 
-            try {
-                const response = await fetch(key, {
-                    mode: "cors",
-                    cache: "no-store",
-                    signal: controller.signal
-                });
- 
-                if (!response.ok) {
-                    throw new Error("HTTP " + response.status);
-                }
- 
-                const blob = await response.blob();
- 
-                if (!blob.size) {
-                    throw new Error("تصویر خالی است");
-                }
- 
-                rememberImageBlob(
-                    key,
-                    URL.createObjectURL(blob)
-                );
- 
-                imagePreloadFailedUrls.delete(key);
-                return;
- 
-            } catch (error) {
-                console.warn(
-                    "بارگذاری تصویر ناموفق:",
-                    key,
-                    attempt,
-                    error
-                );
- 
-                if (attempt === 2) {
-                    imagePreloadFailedUrls.add(key);
-                }
- 
-            } finally {
-                clearTimeout(timeout);
-            }
         }
-    }));
-}
+    }
  
-function normalizeImageKey(src) {
-    const key = String(src || "").trim();
-    if (!key) return "";
+    let data;
     try {
-        const u = new URL(key);
-        // کلید پایدار بدون query/hash
-        return u.origin + u.pathname;
-    } catch (_) {
-        return key;
+        data = JSON.parse(trimmed);
+    } catch (e) {
+        throw new Error(
+            "پاسخ سرور قابل‌خواندن نبود. لطفاً دوباره تلاش کنید. " +
+            "اگر چند بار تکرار شد، اینترنت دیگری را امتحان کنید."
+        );
     }
+ 
+    return data;
 }
  
-function rememberImageBlob(src, blobUrl) {
-    const key = String(src || "").trim();
-    if (!key || !blobUrl) return;
-    questionImageBlobUrls.set(key, blobUrl);
-    const stable = normalizeImageKey(key);
-    if (stable) {
-        questionImageBlobUrls.set(stable, blobUrl);
-    }
-    try {
-        questionImageBlobUrls.set(new URL(key).href, blobUrl);
-    } catch (_) {}
-}
- 
-function resolveQuestionImageSrc(src) {
-    if (!src) return "";
-    const key = String(src).trim();
-    if (questionImageBlobUrls.has(key)) {
-        return questionImageBlobUrls.get(key);
-    }
-    const stable = normalizeImageKey(key);
-    if (stable && questionImageBlobUrls.has(stable)) {
-        return questionImageBlobUrls.get(stable);
-    }
-    for (const [k, blob] of questionImageBlobUrls.entries()) {
-        if (k === key || normalizeImageKey(k) === stable) {
-            return blob;
-        }
-        try {
-            const a = new URL(k);
-            const b = new URL(key);
-            if (a.origin === b.origin && a.pathname === b.pathname) {
-                return blob;
-            }
-        } catch (_) {}
-    }
-    return key;
-}
- 
-/** استخراج لیست URL تصویر از آبجکت سؤال (سازگار با شکل‌های مختلف API) */
-function getQuestionImages(question) {
-    if (!question) return [];
-    let imgs = question.images;
- 
-    if (typeof imgs === "string") {
-        try {
-            imgs = JSON.parse(imgs || "[]");
-        } catch (_) {
-            imgs = [];
-        }
-    }
- 
-    if (!Array.isArray(imgs)) {
-        imgs = [];
-    }
- 
-    return imgs
-        .map(item => {
-            if (typeof item === "string") return item.trim();
-            if (item && typeof item.url === "string") return item.url.trim();
-            if (item && typeof item.src === "string") return item.src.trim();
-            return "";
-        })
-        .filter(Boolean);
-}
- 
-async function applyBlobSrcsToQuestionImages() {
-    const container = document.getElementById("questionImages");
-    if (!container) return;
- 
-    const imgs = Array.from(
-        container.querySelectorAll("img[data-original-src]")
+function friendlyPaymentError(error) {
+    const raw = String(
+        (error && error.message) || error || ""
     );
  
-    await Promise.all(imgs.map(img => new Promise(resolve => {
-        const original = img.dataset.originalSrc || "";
-        const finalSrc = resolveQuestionImageSrc(original);
-        let finished = false;
+    if (
+        /Unexpected token\s*['"]?</i.test(raw) ||
+        /<!DOCTYPE/i.test(raw) ||
+        /is not valid JSON/i.test(raw) ||
+        /JSON\.parse/i.test(raw)
+    ) {
+        return (
+            "در حال حاضر ورود به درگاه پرداخت ممکن نیست.\n" +
+            "لطفاً چند دقیقه بعد دوباره تلاش کنید.\n" +
+            "اگر درست نشد، اینترنت دیگری (مثلاً وای‌فای) را امتحان کنید."
+        );
+    }
  
-        const finish = () => {
-            if (finished) return;
-            finished = true;
-            clearTimeout(timer);
-            resolve();
-        };
+    if (/زرین|zarin|paymentUrl|درگاه|پرداخت/i.test(raw)) {
+        return (
+            "اتصال به درگاه زرین‌پال برقرار نشد.\n" +
+            "لطفاً چند دقیقه بعد دوباره دکمه پرداخت را بزنید.\n" +
+            "اگر چند بار تکرار شد، با اینترنت دیگری امتحان کنید."
+        );
+    }
  
-        const timer = setTimeout(finish, 5000);
+    if (/Failed to fetch|NetworkError|Load failed|network/i.test(raw)) {
+        return (
+            "ارتباط اینترنت قطع یا ناپایدار است.\n" +
+            "اتصال خود را بررسی کنید و دوباره تلاش کنید."
+        );
+    }
  
-        img.onload = finish;
+    if (/AbortError|timeout|مهلت/i.test(raw)) {
+        return (
+            "پاسخ سرور طول کشید.\n" +
+            "لطفاً دوباره تلاش کنید."
+        );
+    }
  
-        img.onerror = () => {
-            if (original && img.src !== original) {
-                img.src = original;
-            } else {
-                finish();
-            }
-        };
+    if (/سفارش|order/i.test(raw)) {
+        return (
+            "ثبت سفارش انجام نشد.\n" +
+            "لطفاً دوباره تلاش کنید. اگر مشکل ادامه داشت، کمی بعد مراجعه کنید."
+        );
+    }
  
-        img.removeAttribute("src");
-        img.src = finalSrc || original;
-    })));
+    return raw || (
+        "خطایی هنگام رفتن به درگاه پرداخت رخ داد.\n" +
+        "لطفاً دوباره تلاش کنید."
+    );
 }
+ 
  
 /* =========================
    ساخت سفارش
@@ -3084,16 +2122,7 @@ async function applyBlobSrcsToQuestionImages() {
 $("startPaymentButton")
     .addEventListener(
         "click",
-        function(){
-            if (imageLoadUiState === "loading" || imagePreloadRunning) {
-                return;
-            }
-            if (imageLoadUiState === "retry") {
-                preloadQuestionImages(true);
-                return;
-            }
-            createOrderAndPay();
-        }
+        createOrderAndPay
     );
  
  
@@ -3138,25 +2167,12 @@ async function createOrderAndPay(){
     }
  
  
-    // کاربر خاص: حسین + ۰۹۱۳۷۴۰۰۶۰۳ → بدون پرداخت مستقیم به آزمون
-    const isPaymentBypass =
-        name === "حسین" &&
-        phone === "09137400603";
- 
-    // برای شروع تازه (به‌خصوص کاربر خاص) attempt/order قبلی پاک شود
-    if (isPaymentBypass) {
-        clearSession();
-    }
- 
- 
     $("startPaymentButton").disabled =
         true;
  
  
     $("startPaymentButton").textContent =
-        isPaymentBypass
-            ? "در حال آماده‌سازی آزمون..."
-            : "در حال ایجاد سفارش...";
+        "در حال ایجاد سفارش...";
  
  
     try{
@@ -3190,7 +2206,7 @@ async function createOrderAndPay(){
  
  
         const data =
-            await response.json();
+            await readApiJson(response);
  
  
         if(
@@ -3200,7 +2216,7 @@ async function createOrderAndPay(){
  
             throw new Error(
                 data.error ||
-                "ثبت سفارش انجام نشد."
+                "ثبت سفارش انجام نشد. لطفاً دوباره تلاش کنید."
             );
  
         }
@@ -3215,11 +2231,10 @@ async function createOrderAndPay(){
         }
  
  
-        // برای کاربر عادی لینک پرداخت لازم است
-        if(!isPaymentBypass && !data.paymentUrl){
+        if(!data.paymentUrl){
  
             throw new Error(
-                "لینک پرداخت از زرین‌پال دریافت نشد."
+                "اتصال به درگاه زرین‌پال برقرار نشد. لطفاً دوباره تلاش کنید."
             );
  
         }
@@ -3253,6 +2268,12 @@ async function createOrderAndPay(){
         );
  
  
+        localStorage.setItem(
+            "math_exam_paid",
+            "0"
+        );
+ 
+ 
         localStorage.removeItem(
             "math_exam_attempt_id"
         );
@@ -3273,45 +2294,6 @@ async function createOrderAndPay(){
         );
  
  
-        if(isPaymentBypass){
- 
-            // بدون درگاه پرداخت → مستقیم به صفحه قوانین/آزمون
-            localStorage.setItem(
-                "math_exam_paid",
-                "1"
-            );
- 
-            pendingPaymentUrl = null;
- 
-            hide("startCard");
-            hide("paymentCard");
- 
-            show("rulesCard");
- 
-            $("rulesError").innerHTML = `
-                <div class="success">
-                    دسترسی ویژه تأیید شد.
-                    اکنون می‌توانید آزمون را شروع کنید.
-                </div>
-            `;
- 
-            $("startPaymentButton").disabled =
-                false;
- 
-            $("startPaymentButton").textContent =
-                "پرداخت و شروع آزمون";
- 
-            return;
- 
-        }
- 
- 
-        // مسیر عادی: هدایت به درگاه
-        localStorage.setItem(
-            "math_exam_paid",
-            "0"
-        );
- 
         pendingPaymentUrl =
             data.paymentUrl;
  
@@ -3324,8 +2306,7 @@ async function createOrderAndPay(){
  
         showError(
             "startError",
-            error.message ||
-            "خطایی هنگام ایجاد سفارش رخ داد."
+            friendlyPaymentError(error)
         );
  
  
@@ -3416,6 +2397,7 @@ function getQueryParams(){
  
         authority:
             params.get("Authority")
+ 
     };
  
 }
@@ -3425,102 +2407,232 @@ function getQueryParams(){
    بازگشت از زرین‌پال
 ========================= */
  
-function handlePaymentReturn(query){
+ 
+async function confirmOrderPaidFromServer(id, retries) {
+    const oid = String(id || "").trim();
+    if (!oid) return false;
+ 
+    const maxTries = Number(retries || 3);
+ 
+    for (let tryNo = 1; tryNo <= maxTries; tryNo++) {
+        try {
+            const response = await fetch(
+                `${API}/api/order-status?orderId=${encodeURIComponent(oid)}&_=${Date.now()}`,
+                {
+                    method: "GET",
+                    cache: "no-store",
+                    headers: { "Accept": "application/json" }
+                }
+            );
+ 
+            const data = await readApiJson(response);
+ 
+            if (response.ok && data.ok && (data.paid === true || data.status === "paid")) {
+                orderId = oid;
+                try {
+                    localStorage.setItem("math_exam_order_id", oid);
+                    localStorage.setItem("math_exam_paid", "1");
+                } catch (e) {}
+                return true;
+            }
+ 
+            /* سفارش هست ولی هنوز paid نیست */
+            if (response.ok && data.ok && data.status && data.status !== "paid") {
+                return false;
+            }
+        } catch (e) {
+            console.warn("confirmOrderPaidFromServer try", tryNo, e);
+        }
+ 
+        if (tryNo < maxTries) {
+            await new Promise(function (r) {
+                setTimeout(r, 1200 * tryNo);
+            });
+        }
+    }
+ 
+    return false;
+}
+ 
+async function recheckPaymentStatus() {
+    const oid =
+        orderId ||
+        (function () {
+            try { return localStorage.getItem("math_exam_order_id"); }
+            catch (e) { return null; }
+        })();
+ 
+    if (!oid) {
+        showError(
+            "startError",
+            "شناسه سفارش پیدا نشد. اگر پرداخت کرده‌اید، رسید را نگه دارید و به پشتیبانی پیام دهید."
+        );
+        return;
+    }
+ 
+    orderId = oid;
+ 
+    const box =
+        $("rulesError") || $("startError");
+ 
+    if ($("rulesError")) {
+        $("rulesError").innerHTML =
+            `<div class="loading">در حال بررسی وضعیت پرداخت از سرور...</div>`;
+    }
+    if ($("startError")) {
+        clearError("startError");
+        showError("startError", "در حال بررسی وضعیت پرداخت از سرور...");
+    }
+ 
+    const paidOk = await confirmOrderPaidFromServer(oid, 4);
+ 
+    if (paidOk) {
+        hide("startCard");
+        hide("paymentCard");
+        hide("examCard");
+        hide("resultCard");
+        show("rulesCard");
+        $("rulesError").innerHTML = `
+            <div class="success">
+                پرداخت تأیید شد. اکنون می‌توانید آزمون را شروع کنید.
+            </div>
+        `;
+        clearError("startError");
+        return;
+    }
+ 
+    const msg =
+        "هنوز تأیید نهایی پرداخت از سرور گرفته نشد. " +
+        "اگر از حسابتان پول کم شده، لطفاً ۲ تا ۳ دقیقه بعد دکمه «بررسی دوباره پرداخت» را بزنید. " +
+        "نیازی به پرداخت مجدد نیست.";
+ 
+    if ($("rulesCard") && !$("rulesCard").classList.contains("hidden")) {
+        $("rulesError").innerHTML =
+            `<div class="error" style="line-height:2">${escapeHtml(msg)}</div>
+             <button type="button" class="secondary-btn" style="margin-top:10px"
+                onclick="recheckPaymentStatus()">بررسی دوباره پرداخت</button>`;
+    } else {
+        show("startCard");
+        showError("startError", msg);
+        const startErr = $("startError");
+        if (startErr) {
+            startErr.innerHTML +=
+                `<button type="button" class="secondary-btn" style="margin-top:10px"
+                    onclick="recheckPaymentStatus()">بررسی دوباره پرداخت</button>`;
+        }
+    }
+}
+ 
+ 
+async function handlePaymentReturn(query){
  
     if(!query){
         query = getQueryParams();
     }
  
+    const returnedId =
+        query.returnedOrderId ||
+        query.orderId ||
+        null;
  
-    if(query.returnedOrderId){
- 
-        orderId =
-            query.returnedOrderId;
- 
- 
-        localStorage.setItem(
-            "math_exam_order_id",
-            orderId
-        );
- 
+    if(returnedId){
+        orderId = returnedId;
+        try {
+            localStorage.setItem("math_exam_order_id", orderId);
+        } catch (e) {}
     }
  
+    if(query.payment === "success"){
  
-    if(
-        query.payment === "success"
-    ){
+        if(!orderId){
+            try {
+                orderId = localStorage.getItem("math_exam_order_id");
+            } catch (e) {}
+        }
  
-        if(orderId){
- 
-            localStorage.setItem(
-                "math_exam_paid",
-                "1"
+        if(!orderId){
+            show("startCard");
+            showError(
+                "startError",
+                "پرداخت انجام شد ولی شناسه سفارش پیدا نشد. اگر مبلغ کم شده، رسید را نگه دارید و به پشتیبانی پیام دهید. نیازی به پرداخت دوباره نیست تا وقتی وضعیت مشخص شود."
             );
- 
+        } else {
+            /* چند بار از سرور چک می‌کند */
+            const paidOk = await confirmOrderPaidFromServer(orderId, 4);
  
             hide("startCard");
             hide("paymentCard");
- 
+            hide("examCard");
+            hide("resultCard");
             show("rulesCard");
  
+            if(paidOk){
+                try {
+                    localStorage.setItem("math_exam_paid", "1");
+                    localStorage.setItem("math_exam_order_id", orderId);
+                } catch (e) {}
  
-            $("rulesError").innerHTML = `
+                $("rulesError").innerHTML = `
+                    <div class="success">
+                        پرداخت با موفقیت تأیید شد.
+                        اکنون می‌توانید آزمون را شروع کنید.
+                    </div>
+                `;
+            } else {
+                /* سرور لحظه‌ای جواب نداد — بدون پرداخت دوباره */
+                try {
+                    localStorage.setItem("math_exam_paid", "1");
+                    localStorage.setItem("math_exam_order_id", orderId);
+                } catch (e) {}
  
-                <div class="success">
- 
-                    پرداخت با موفقیت تأیید شد.
-                    اکنون می‌توانید آزمون را شروع کنید.
- 
-                </div>
- 
-            `;
- 
+                $("rulesError").innerHTML = `
+                    <div class="error" style="line-height:2">
+                        پرداخت از درگاه موفق بود، اما تأیید نهایی از سرور کمی طول کشید.
+                        <br>
+                        نیازی به پرداخت دوباره نیست.
+                        <br>
+                        لطفاً دکمه زیر را بزنید یا ۱ تا ۲ دقیقه بعد دوباره بررسی کنید.
+                    </div>
+                    <button type="button" class="secondary-btn" style="margin-top:10px"
+                        onclick="recheckPaymentStatus()">بررسی دوباره پرداخت</button>
+                    <button type="button" class="primary-btn" style="margin-top:8px"
+                        onclick="document.getElementById('beginExamButton').click()">
+                        تلاش برای شروع آزمون
+                    </button>
+                `;
+            }
         }
  
     }
-    else if(
-        query.payment === "failed"
-    ){
+    else if(query.payment === "failed"){
  
         show("startCard");
- 
         hide("paymentCard");
         hide("rulesCard");
  
- 
         showError(
             "startError",
-            "پرداخت انجام نشد یا توسط درگاه تأیید نشد."
+            "پرداخت انجام نشد یا توسط درگاه تأیید نشد. اگر مبلغی کم شده، رسید را نگه دارید و به پشتیبانی پیام دهید."
         );
  
     }
  
-    if(
-        query.payment ||
-        query.returnedOrderId
-    ){
- 
+    if(query.payment || returnedId){
         try{
- 
             window.history.replaceState(
                 {},
                 document.title,
                 window.location.pathname
             );
- 
         }
         catch(error){
- 
-            console.warn(
-                "Could not clean payment query:",
-                error
-            );
- 
+            console.warn("Could not clean payment query:", error);
         }
- 
     }
  
 }
+ 
+ 
  
  
 /* =========================
@@ -3728,69 +2840,7 @@ async function startExam(){
         }
  
  
-        attemptId =
-            data.attemptId;
- 
- 
-        if(
-            !examStartedAt &&
-            data.questionStartedAt
-        ){
- 
-            examStartedAt =
-                data.questionStartedAt;
- 
- 
-            localStorage.setItem(
-                "math_exam_started_at",
-                examStartedAt
-            );
- 
-        }
- 
- 
-        examFinishedAt = null;
- 
- 
-        localStorage.removeItem(
-            "math_exam_finished_at"
-        );
- 
- 
-        localStorage.setItem(
-            "math_exam_attempt_id",
-            attemptId
-        );
- 
- 
-        localStorage.setItem(
-            "math_exam_started",
-            "1"
-        );
- 
- 
-        localStorage.setItem(
-            "math_exam_paid",
-            "1"
-        );
- 
- 
-        hide("startCard");
-        hide("paymentCard");
-        hide("rulesCard");
- 
- 
-        show("examCard");
- 
- 
-        renderQuestionSteps();
- 
- 
-        await showQuestion(
-            data.question,
-            data.currentQuestion,
-            data.questionStartedAt
-        );
+        startLocalExamFromData(data);
  
     }
     catch(error){
@@ -3804,7 +2854,10 @@ async function startExam(){
     }
     finally{
  
-        $("beginExamButton").disabled = false;
+        $("beginExamButton").disabled =
+            false;
+ 
+ 
         $("beginExamButton").textContent =
             "شروع آزمون";
  
@@ -3812,45 +2865,12 @@ async function startExam(){
  
 }
  
- function retryQuestionImage(img) {
-    const originalSrc = img.dataset.originalSrc;
  
-    if (!originalSrc) return;
- 
-    const attempts = Number(img.dataset.retryCount || 0);
- 
-    if (attempts >= 3) {
-        img.onerror = null;
-        return;
-    }
- 
-    img.dataset.retryCount = String(attempts + 1);
- 
-    const delays = [500, 1000, 2000];
- 
-    setTimeout(() => {
-        if (!img.isConnected) return;
- 
-        // اول blob ذخیره‌شده، بعد URL اصلی
-        const blobSrc = resolveQuestionImageSrc(originalSrc);
-        if (blobSrc && blobSrc.startsWith("blob:") && attempts === 0) {
-            img.src = blobSrc;
-            return;
-        }
- 
-        const separator = originalSrc.includes("?") ? "&" : "?";
-        img.src =
-            originalSrc +
-            separator +
-            "_retry=" +
-            Date.now();
-    }, delays[attempts]);
-   }
 /* =========================
    نمایش سؤال
 ========================= */
  
-async function showQuestion(
+function showQuestion(
     question,
     index,
     questionStartedAt
@@ -3868,8 +2888,6 @@ async function showQuestion(
  
     }
  
-    const qImages = getQuestionImages(question);
-question = { ...question, images: qImages };
  
     const questionIndex =
         Number(index || 0);
@@ -3965,23 +2983,6 @@ question = { ...question, images: qImages };
  
         </div>
  
-        ${
-            Array.isArray(question.images) &&
-            question.images.length > 0
-            ? `
-                <div class="question-images" id="questionImages">
-                    ${question.images.map((src, imgIndex) => `
-                        <img
-    alt="تصویر سؤال ${imgIndex + 1}"
-    data-index="${imgIndex}"
-    data-original-src="${escapeHtml(src)}"
-    onclick="openImageLightbox(${imgIndex})"
-                        >
-                    `).join("")}
-                </div>
-            `
-            : ""
-        }
  
         <div class="options">
  
@@ -4014,9 +3015,6 @@ question = { ...question, images: qImages };
  
     `;
  
- 
-    // صبر کن تا src از blob ست شود و تصویر واقعاً لود شود (مخصوصاً سؤال اول)
-    applyBlobSrcsToQuestionImages().catch(console.warn);
  
     startTimer(
         questionStartedAt,
@@ -4214,239 +3212,125 @@ function getCurrentQuestionIndex(){
    ارسال پاسخ
 ========================= */
  
-async function submitAnswer(
-    questionIndex,
-    selectedIndex
-){
+async function submitAnswer(questionIndex, selectedIndex){
  
     if(submitting){
- 
         return;
- 
     }
- 
- 
-    if(!attemptId){
- 
-        showError(
-            "examError",
-            "شناسه آزمون پیدا نشد."
-        );
- 
-        return;
- 
-    }
- 
  
     submitting = true;
- 
- 
     stopTimer();
  
+    document.querySelectorAll(".option").forEach(item => {
+        item.style.pointerEvents = "none";
+        item.style.opacity = ".65";
+    });
  
-    document
-        .querySelectorAll(".option")
-        .forEach(item => {
+    try {
+        const qIndex = Number(questionIndex);
+        localAnswersMap[qIndex] =
+            selectedIndex === null || selectedIndex === undefined
+                ? null
+                : Number(selectedIndex);
  
-            item.style.pointerEvents =
-                "none";
+        saveLocalAnswersMap();
+        clearError("examError");
  
-            item.style.opacity =
-                ".65";
+        const next = qIndex + 1;
+        const total = examQuestionsList.length || examQuestionsCount || 0;
  
-        });
- 
- 
-    try{
- 
-        const response =
-            await fetch(
-                `${API}/api/answer`,
-                {
-                    method:"POST",
- 
-                    headers:{
-                        "Content-Type":
-                            "application/json"
-                    },
- 
-                    body:JSON.stringify({
- 
-                        attemptId:
-                            attemptId,
- 
-                        questionIndex:
-                            questionIndex,
- 
-                        selectedIndex:
-                            selectedIndex
- 
-                    })
- 
-                }
-            );
- 
- 
-        const data =
-            await response.json();
- 
- 
-        if(
-            !response.ok ||
-            !data.ok
-        ){
- 
-            throw new Error(
-                data.error ||
-                "ثبت پاسخ انجام نشد."
-            );
- 
-        }
- 
- 
-        if(data.finished){
- 
+        if (next >= total) {
+            currentQIndex = next;
+            saveLocalAnswersMap();
             await finishExam();
- 
             return;
- 
         }
  
+        currentQIndex = next;
+        saveLocalAnswersMap();
+        showLocalQuestion(next);
  
-        await showQuestion(
-            data.question,
-            data.currentQuestion,
-            data.questionStartedAt
-        );
- 
-    }
-    catch(error){
- 
+    } catch (error) {
         showError(
             "examError",
-            error.message ||
-            "ثبت پاسخ انجام نشد."
+            (error && error.message) || "ثبت پاسخ انجام نشد."
         );
- 
- 
-        document
-            .querySelectorAll(".option")
-            .forEach(item => {
- 
-                item.style.pointerEvents =
-                    "auto";
- 
-                item.style.opacity =
-                    "1";
- 
-            });
- 
-    }
-    finally{
- 
+        document.querySelectorAll(".option").forEach(item => {
+            item.style.pointerEvents = "auto";
+            item.style.opacity = "1";
+        });
+    } finally {
         submitting = false;
- 
     }
  
 }
- 
- 
-/* =========================
-   پایان آزمون
-========================= */
  
 async function finishExam(){
  
     stopTimer();
  
- 
     if(!attemptId){
- 
         return;
- 
     }
  
+    examFinishedAt = new Date().toISOString();
+    localStorage.setItem("math_exam_finished_at", examFinishedAt);
  
-    examFinishedAt =
-        new Date().toISOString();
+    const answers = buildAnswersPayload();
  
+    try {
+        const response = await fetch(`${API}/api/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                attemptId: attemptId,
+                answers: answers
+            })
+        });
  
-    localStorage.setItem(
-        "math_exam_finished_at",
-        examFinishedAt
-    );
+        const data = await response.json();
  
- 
-    try{
- 
-        const response =
-            await fetch(
-                `${API}/api/submit`,
-                {
-                    method:"POST",
- 
-                    headers:{
-                        "Content-Type":
-                            "application/json"
-                    },
- 
-                    body:JSON.stringify({
- 
-                        attemptId:
-                            attemptId
- 
-                    })
- 
-                }
-            );
- 
- 
-        const data =
-            await response.json();
- 
- 
-        if(
-            !response.ok ||
-            !data.ok
-        ){
- 
-            throw new Error(
-                data.error ||
-                "دریافت نتیجه انجام نشد."
-            );
- 
+        if (!response.ok || !data.ok) {
+            throw new Error(data.error || "دریافت نتیجه انجام نشد.");
         }
  
- 
         hideQuestionSteps();
- 
- 
         hide("examCard");
         hide("rulesCard");
         hide("paymentCard");
         hide("startCard");
- 
- 
         show("resultCard");
- 
- 
         renderResult(data);
  
+        try {
+            localStorage.removeItem(localAnswersStorageKey());
+            localStorage.removeItem("math_exam_current_q_" + String(attemptId));
+        } catch (e) {}
  
         clearSession();
  
-    }
-    catch(error){
- 
+    } catch (error) {
         showError(
             "examError",
-            error.message ||
-            "دریافت نتیجه انجام نشد."
+            (error && error.message
+                ? error.message
+                : "دریافت نتیجه انجام نشد.") +
+            " پاسخ‌های شما روی گوشی ذخیره شده‌اند. با وصل شدن اینترنت دوباره تلاش کنید یا صفحه را رفرش نکنید."
         );
  
+        // یک دکمه تلاش مجدد ضمنی: با online دوباره finish
+        window.addEventListener(
+            "online",
+            function onceOnline() {
+                window.removeEventListener("online", onceOnline);
+                finishExam();
+            },
+            { once: true }
+        );
     }
  
 }
+ 
  
  
 /* =========================
@@ -5022,48 +3906,7 @@ async function restoreSession(){
             }
  
  
-            attemptId =
-                data.attemptId;
- 
- 
-            localStorage.setItem(
-                "math_exam_attempt_id",
-                attemptId
-            );
- 
- 
-            if(
-                !examStartedAt &&
-                data.questionStartedAt
-            ){
- 
-                examStartedAt =
-                    data.questionStartedAt;
- 
- 
-                localStorage.setItem(
-                    "math_exam_started_at",
-                    examStartedAt
-                );
- 
-            }
- 
- 
-            hide("startCard");
-            hide("paymentCard");
-            hide("rulesCard");
- 
-            show("examCard");
- 
- 
-            renderQuestionSteps();
- 
- 
-            await showQuestion(
-                data.question,
-                data.currentQuestion,
-                data.questionStartedAt
-            );
+            startLocalExamFromData(data);
  
  
             return;
@@ -5250,7 +4093,6 @@ function buildPrintableAnswerSheet(){
                         <br>
                         ${escapeHtml(item.question || "")}
                     </div>
-                    ${renderAnswerQuestionImages(item.images, true)}
                     <div style="font-size:13px;color:#4b5563;line-height:2;">
                         وضعیت: <strong>${status}</strong><br>
                         پاسخ شما: ${escapeHtml(selectedText)}<br>
@@ -5374,78 +4216,13 @@ function printAnswerSheet(){
  
  
  
- 
-/* =========================
-   Lightbox تصاویر سؤال
-========================= */
- 
-let lightboxImages = [];
-let lightboxIndex = 0;
- 
-function openImageLightbox(index){
-    const container = document.getElementById("questionImages");
-    if(!container) return;
- 
-    const imgs = Array.from(container.querySelectorAll("img"));
-    if(!imgs.length) return;
- 
-    lightboxImages = imgs.map(img => img.src);
-    lightboxIndex = Math.max(0, Math.min(Number(index) || 0, lightboxImages.length - 1));
- 
-    updateLightbox();
-    const lb = document.getElementById("imageLightbox");
-    if(lb) lb.classList.add("active");
-    document.body.style.overflow = "hidden";
-}
- 
-function closeImageLightbox(event){
-    // فقط وقتی روی پس‌زمینه یا دکمه بستن کلیک شده باشد
-    if(event && event.target){
-        const t = event.target;
-        if(t.id !== "imageLightbox" && !t.classList.contains("image-lightbox-close")){
-            return;
-        }
-    }
-    const lb = document.getElementById("imageLightbox");
-    if(lb) lb.classList.remove("active");
-    document.body.style.overflow = "";
-}
- 
-function navigateLightbox(direction){
-    if(!lightboxImages.length) return;
-    lightboxIndex = (lightboxIndex + direction + lightboxImages.length) % lightboxImages.length;
-    updateLightbox();
-}
- 
-function updateLightbox(){
-    const img = document.getElementById("lightboxImage");
-    const counter = document.getElementById("lightboxCounter");
-    const prevBtn = document.getElementById("lightboxPrev");
-    const nextBtn = document.getElementById("lightboxNext");
- 
-    if(img) img.src = lightboxImages[lightboxIndex] || "";
-    if(counter){
-        counter.textContent = toPersianNumber(lightboxIndex + 1) + " / " + toPersianNumber(lightboxImages.length);
-    }
-    // دکمه‌ها همیشه فعال (چرخشی)
-    if(prevBtn) prevBtn.disabled = lightboxImages.length <= 1;
-    if(nextBtn) nextBtn.disabled = lightboxImages.length <= 1;
-}
- 
-// بستن با کلید Escape
-document.addEventListener("keydown", function(e){
-    if(e.key === "Escape"){
-        closeImageLightbox();
-    }
-});
- 
- 
 /* =========================
    شروع صفحه
 ========================= */
  
 async function initializePage(){
  
+    hide("startCard");
     hide("paymentCard");
     hide("rulesCard");
     hide("examCard");
@@ -5453,43 +4230,44 @@ async function initializePage(){
  
     hideQuestionSteps();
  
+ 
     /*
      * query را قبل از پاک شدن URL ذخیره می‌کنیم.
+     * این هم یک اصلاح مهم نسبت به نسخه قبلی است.
      */
-    const paymentQuery = getQueryParams();
+ 
+    const paymentQuery =
+        getQueryParams();
  
     /*
-     * در ورود عادی، فرم شروع را بدون انتظار برای API نشان می‌دهیم.
-     * دکمه شروع تا آماده شدن اطلاعات آزمون غیرفعال می‌ماند.
-     * در بازگشت از درگاه، ابتدا مسیر پرداخت بررسی می‌شود تا فرم چشمک نزند.
+     * بهینه‌سازی بارگذاری اولیه:
+     * برای بازدیدکننده جدید، فرم نام و موبایل پیش از پاسخ API نمایش داده می‌شود.
+     * مسیر بازگشت از پرداخت، سفارش‌های قبلی و آزمون نیمه‌کاره تغییر نمی‌کنند.
      */
-    const isPaymentReturn = Boolean(paymentQuery.payment || paymentQuery.orderId);
-    if (!isPaymentReturn) {
+    const hasPaymentQuery = Boolean(
+        paymentQuery.payment ||
+        paymentQuery.returnedOrderId ||
+        paymentQuery.status ||
+        paymentQuery.authority
+    );
+ 
+    const hasSavedFlow = Boolean(
+        localStorage.getItem("math_exam_order_id") ||
+        localStorage.getItem("math_exam_attempt_id") ||
+        localStorage.getItem("math_exam_started") ||
+        localStorage.getItem("math_exam_paid")
+    );
+ 
+    if (!hasPaymentQuery && !hasSavedFlow) {
         show("startCard");
-        hideExamPaperLoader();
         document.body.classList.remove("page-loading");
-    } else {
-        hide("startCard");
     }
  
-    const examLoaded = await loadExam();
  
-if (examLoaded) {
-  setExamLoaderState(
-    "ready",
-    "اطلاعات آزمون با موفقیت دریافت شد."
-  );
-  hideExamPaperLoader();
-} else {
-  setExamLoaderState(
-    "error",
-    "دریافت اطلاعات آزمون انجام نشد. اینترنت را بررسی و دوباره تلاش کنید."
-  );
-}
+    await loadExam();
  
  
- 
-    handlePaymentReturn(
+    await handlePaymentReturn(
         paymentQuery
     );
  
@@ -5555,12 +4333,6 @@ if (examLoaded) {
    اجرای صفحه
 ========================= */
  
-$("examLoaderRetry")?.addEventListener(
-  "click",
-  retryExamPaperLoad
-);
-   
- 
 initializePage().catch(error => {
  
     console.error(
@@ -5598,21 +4370,9 @@ initializePage().catch(error => {
 </script>
   <footer class="site-footer">
    <div class="enamad-logo">
-    <a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=8103286&amp;Code=aMu7FdUgTI3sClZifudXtsyK5n2kO15Y"> <img referrerpolicy="origin" src="/Image/010.png" alt="نماد اعتماد الکترونیکی" width="125" height="136" style="cursor:pointer" code="aMu7FdUgTI3sClZifudXtsyK5n2kO15Y"> </a>
+    <a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=8103286&amp;Code=aMu7FdUgTI3sClZifudXtsyK5n2kO15Y"> <img referrerpolicy="origin" src="/Image/010.png" alt="نماد اعتماد الکترونیکی" style="cursor:pointer" code="aMu7FdUgTI3sClZifudXtsyK5n2kO15Y"> </a>
    </div>
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
-  <!-- Lightbox بزرگ‌نمایی تصاویر سؤال -->
-  <div id="imageLightbox" class="image-lightbox" onclick="closeImageLightbox(event)">
-   <div class="image-lightbox-inner" onclick="event.stopPropagation()">
-    <button type="button" class="image-lightbox-close" onclick="closeImageLightbox()" aria-label="بستن">×</button>
-    <img id="lightboxImage" src="" alt="تصویر بزرگ">
-    <div class="image-lightbox-nav">
-     <button type="button" id="lightboxPrev" onclick="navigateLightbox(-1)" aria-label="قبلی">›</button>
-     <span class="image-lightbox-counter" id="lightboxCounter"></span>
-     <button type="button" id="lightboxNext" onclick="navigateLightbox(1)" aria-label="بعدی">‹</button>
-    </div>
-   </div>
-  </div>
  </body>
-</html>
+      </html>
