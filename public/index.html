@@ -915,7 +915,10 @@ const EXAM_API =
 const WORKER_API =
     "https://azmon.hosseinkhorasani1.workers.dev";
  
-const EXAM_ID = 1;
+const EXAM_ID = (() => {
+    const requested = Number(new URLSearchParams(window.location.search).get("examId"));
+    return Number.isInteger(requested) && requested > 0 ? requested : 1;
+})();
  
 let orderId = null;
 let attemptId = null;
@@ -1995,7 +1998,9 @@ async function loadExam(){
         examQuestionsCount = Number(data.questionCount);
         renderExamInfo();
         button.disabled = false;
-        button.textContent = "پرداخت و شروع آزمون";
+        button.textContent = Number(data.pricing?.finalPrice ?? data.pricing?.final_price ?? data.exam?.finalPrice ?? data.exam?.final_price ?? data.exam?.price ?? 0) === 0
+            ? "ثبت‌نام رایگان و شروع آزمون"
+            : "پرداخت و شروع آزمون";
     } catch (error) {
         console.error("[AZMOON_LOAD_DIAG] all endpoints failed", { failures, error });
         info.innerHTML = `
@@ -2231,17 +2236,40 @@ async function createOrderAndPay(){
         }
  
  
-        if(!data.paymentUrl){
+        orderId =
+            String(data.orderId);
  
+        if (data.freeAccess === true || data.status === "free") {
+            attemptId = null;
+            examStartedAt = null;
+            examFinishedAt = null;
+            localStorage.setItem("math_exam_order_id", orderId);
+            localStorage.setItem("math_exam_name", name);
+            localStorage.setItem("math_exam_phone", phone);
+            localStorage.setItem("math_exam_paid", "1");
+            localStorage.removeItem("math_exam_attempt_id");
+            localStorage.removeItem("math_exam_started");
+            localStorage.removeItem("math_exam_started_at");
+            localStorage.removeItem("math_exam_finished_at");
+            hide("startCard");
+            hide("paymentCard");
+            hide("examCard");
+            hide("resultCard");
+            show("rulesCard");
+            const rulesError = $("rulesError");
+            if (rulesError) {
+                rulesError.innerHTML = `<div class="success">ثبت‌نام رایگان با موفقیت انجام شد. اکنون می‌توانید آزمون را شروع کنید.</div>`;
+            }
+            $("startPaymentButton").disabled = false;
+            $("startPaymentButton").textContent = "ثبت‌نام رایگان و شروع آزمون";
+            return;
+        }
+ 
+        if(!data.paymentUrl){
             throw new Error(
                 "اتصال به درگاه زرین‌پال برقرار نشد. لطفاً دوباره تلاش کنید."
             );
- 
         }
- 
- 
-        orderId =
-            String(data.orderId);
  
  
         attemptId = null;
@@ -2427,7 +2455,7 @@ async function confirmOrderPaidFromServer(id, retries) {
  
             const data = await readApiJson(response);
  
-            if (response.ok && data.ok && (data.paid === true || data.status === "paid")) {
+            if (response.ok && data.ok && (data.paid === true || data.status === "paid" || data.status === "free" || data.accessGranted === true)) {
                 orderId = oid;
                 try {
                     localStorage.setItem("math_exam_order_id", oid);
@@ -2494,7 +2522,7 @@ async function recheckPaymentStatus() {
         show("rulesCard");
         $("rulesError").innerHTML = `
             <div class="success">
-                پرداخت تأیید شد. اکنون می‌توانید آزمون را شروع کنید.
+                دسترسی شما تأیید شد. اکنون می‌توانید آزمون را شروع کنید.
             </div>
         `;
         clearError("startError");
@@ -4375,4 +4403,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
-      </html>
+ </html>
