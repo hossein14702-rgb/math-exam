@@ -223,12 +223,22 @@ tr:hover td{background:#fafafa}
    <div class="container">
     <div class="header">
      <h1>پنل معلم</h1>
-     <p>مدیریت آزمون ریاضی، بانک سؤال، قیمت، تخفیف و شرکت‌کنندگان</p>
-     <div class="controls">
+     <p>مدیریت آزمون‌ها، بانک سؤال، قیمت، تخفیف و شرکت‌کنندگان</p>
+     <div class="controls" style="align-items:end">
+      <div class="form-group" style="min-width:220px;max-width:360px;flex:1">
+       <label for="examSelector">آزمون فعال در پنل</label>
+       <select id="examSelector" onchange="switchExam(this.value)" style="padding:11px;border:1px solid #cbd5e1;border-radius:10px;font-family:inherit"></select>
+      </div>
       <button class="refresh-btn" onclick="loadAll()">🔄 بروزرسانی</button>
       <button class="primary-btn" onclick="openQuestionModal()">➕ افزودن سؤال</button>
+      <button class="success-btn" onclick="createExam()">➕ آزمون جدید</button>
+      <button class="gray-btn" onclick="renameCurrentExam()">✏️ ویرایش مشخصات آزمون</button>
+      <button class="gray-btn" onclick="copyStudentExamLink()">🔗 کپی لینک دانش‌آموز</button>
+      <button class="primary-btn" onclick="downloadBackup()">⬇️ دریافت پشتیبان</button>
+      <label class="gray-btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">↥ بازیابی پشتیبان <input id="restoreBackupFile" type="file" accept="application/json,.json" style="display:none" onchange="restoreBackupFileChanged(event)"></label>
       <button class="logout-btn" onclick="handleLogout()">🚪 خروج</button>
      </div>
+     <div id="examManagerMessage" style="font-size:12px;color:#475569;margin-top:8px"></div>
     </div>
     <div id="errorBox" class="error"></div>
     <!-- تنظیمات قیمت -->
@@ -237,7 +247,7 @@ tr:hover td{background:#fafafa}
      <div class="section-description">قیمت اصلی آزمون و شرایط تخفیف را از این بخش تنظیم کنید.</div>
      <div class="settings-grid">
       <div class="form-group">
-       <label>قیمت اصلی آزمون</label> <input id="basePrice" type="number" min="1" placeholder="مثلاً 50000">
+       <label>قیمت اصلی آزمون</label> <input id="basePrice" type="number" min="0" placeholder="برای آزمون رایگان عدد ۰ وارد کنید">
       </div>
       <div class="form-group">
        <label>وضعیت تخفیف</label>
@@ -496,7 +506,8 @@ tr:hover td{background:#fafafa}
   <!-- end #panelSection -->
   <script>
 const API_BASE = window.location.origin;
-const EXAM_ID = 1;
+let EXAM_ID = Number(new URLSearchParams(location.search).get("examId")) || 1;
+let exams = [];
  
 let folders = [];
 let questions = [];
@@ -510,6 +521,99 @@ let searchTimer = null;
  
  
 /* ===== ورود / خروج ===== */
+ 
+async function loadExams() {
+    const data = await apiRequest(`/api/teacher/exams?_=${Date.now()}`);
+    exams = data.exams || [];
+    if (!exams.some(x => Number(x.id) === Number(EXAM_ID))) EXAM_ID = Number(exams[0]?.id || 1);
+    const selector = document.getElementById("examSelector");
+    selector.innerHTML = exams.map(x => `<option value="${x.id}">${escapeHtml(x.title)}${Number(x.price) === 0 ? " (رایگان)" : " (پولی)"}${x.active ? "" : " (غیرفعال)"}</option>`).join("");
+    selector.value = String(EXAM_ID);
+}
+ 
+async function switchExam(value) {
+    const nextId = Number(value);
+    if (!Number.isInteger(nextId) || !exams.some(x => Number(x.id) === nextId)) return;
+    EXAM_ID = nextId;
+    const url = new URL(location.href);
+    url.searchParams.set("examId", String(EXAM_ID));
+    history.replaceState({}, "", url);
+    selectedFolderFilter = "";
+    await loadAll();
+}
+ 
+async function copyStudentExamLink() {
+    const link = `${location.origin}/?examId=${encodeURIComponent(EXAM_ID)}`;
+    try {
+        await navigator.clipboard.writeText(link);
+        document.getElementById("examManagerMessage").textContent = "لینک اختصاصی این آزمون کپی شد: " + link;
+    } catch (error) {
+        prompt("لینک اختصاصی آزمون را کپی کنید:", link);
+    }
+}
+ 
+async function createExam() {
+    const title = prompt("عنوان آزمون جدید را وارد کنید:");
+    if (!title || !title.trim()) return;
+    const priceText = prompt("قیمت آزمون به تومان (برای آزمون رایگان عدد ۰):", "25000");
+    if (priceText === null) return;
+    if (!priceText.trim()) { alert("قیمت را وارد کنید؛ برای آزمون رایگان عدد ۰ را بنویسید."); return; }
+    const durationText = prompt("مدت آزمون به ثانیه:", "1800");
+    if (durationText === null) return;
+    try {
+        const data = await postJson("/api/teacher/exams", { action:"create", title:title.trim(), price:Number(priceText), durationSeconds:Number(durationText) });
+        await loadExams();
+        await switchExam(data.exam.id);
+        document.getElementById("examManagerMessage").textContent = "آزمون جدید ایجاد شد؛ پوشه‌ها و بانک سؤال آن مستقل و خالی است.";
+    } catch (error) { alert("ایجاد آزمون ناموفق بود: " + error.message); }
+}
+ 
+async function renameCurrentExam() {
+    const current = exams.find(x => Number(x.id) === Number(EXAM_ID));
+    if (!current) return;
+    const title = prompt("عنوان آزمون:", current.title);
+    if (title === null || !title.trim()) return;
+    const price = prompt("قیمت به تومان (برای رایگان عدد ۰):", String(current.price));
+    if (price === null) return;
+    if (!price.trim()) { alert("قیمت را وارد کنید؛ برای آزمون رایگان عدد ۰ را بنویسید."); return; }
+    const duration = prompt("مدت آزمون به ثانیه:", String(current.durationSeconds));
+    if (duration === null) return;
+    try {
+        await postJson("/api/teacher/exams", { action:"update", examId:EXAM_ID, title:title.trim(), price:Number(price), durationSeconds:Number(duration) });
+        await loadExams(); await loadAll();
+        document.getElementById("examManagerMessage").textContent = "مشخصات آزمون ذخیره شد.";
+    } catch (error) { alert("ذخیره مشخصات آزمون ناموفق بود: " + error.message); }
+}
+ 
+async function downloadBackup() {
+    try {
+        const data = await apiRequest(`/api/teacher/backup?_=${Date.now()}`);
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type:"application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = `azmoonmath-backup-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        document.getElementById("examManagerMessage").textContent = `پشتیبان دریافت شد؛ ${faNumber(data.totalRows || 0)} رکورد.`;
+    } catch (error) { alert("تهیه پشتیبان ناموفق بود: " + error.message); }
+}
+ 
+async function restoreBackupFileChanged(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { alert("حجم فایل پشتیبان نباید بیشتر از ۱۰ مگابایت باشد."); return; }
+    let backup;
+    try { backup = JSON.parse(await file.text()); } catch { alert("فایل انتخاب‌شده JSON معتبر نیست."); return; }
+    const warning = "بازیابی، اطلاعات فعلی آزمون‌ها، سؤال‌ها، سفارش‌ها و سوابق آزمون را با محتوای فایل جایگزین می‌کند. ابتدا از وضعیت فعلی پشتیبان بگیرید. ادامه می‌دهید؟";
+    if (!confirm(warning)) return;
+    const confirmText = prompt("برای تأیید نهایی دقیقاً بنویسید: بازیابی کامل");
+    if (confirmText !== "بازیابی کامل") { alert("بازیابی لغو شد."); return; }
+    try {
+        const data = await postJson("/api/teacher/restore", { ...backup, confirmText });
+        alert(data.message + "\nتعداد رکوردهای بازیابی‌شده: " + faNumber(data.restoredRows));
+        await loadExams(); await loadAll();
+    } catch (error) { alert("بازیابی انجام نشد: " + error.message + "\nفایل پشتیبان را نگه دارید."); }
+}
  
 function showLogin() {
     document.getElementById("loginSection").style.display = "flex";
@@ -1174,16 +1278,27 @@ async function loadExamSettings() {
 }
  
 async function saveExamSettings() {
-    const basePrice = Math.round(Number(cleanNumberInput(document.getElementById("basePrice").value)));
-    const discountEnabled = document.getElementById("discountEnabled").checked;
+    const basePriceText = String(document.getElementById("basePrice").value || "").trim();
+    if (!basePriceText) {
+        showSettingsMessage("قیمت را وارد کنید؛ برای آزمون رایگان عدد ۰ را بنویسید.", "error");
+        return;
+    }
+    const basePrice = Math.round(Number(cleanNumberInput(basePriceText)));
+    let discountEnabled = document.getElementById("discountEnabled").checked;
     const discountPercent = Number(cleanNumberInput(document.getElementById("discountPercent").value, { allowDecimal: true }) || 0);
  
     let discountStartAt = null;
     let discountEndAt = null;
  
-    if (!Number.isFinite(basePrice) || basePrice <= 0) {
-        showSettingsMessage("قیمت اصلی باید بیشتر از صفر باشد.", "error");
+    if (!Number.isFinite(basePrice) || basePrice < 0 || !Number.isSafeInteger(basePrice)) {
+        showSettingsMessage("قیمت باید عدد صحیح و صفر یا بیشتر باشد.", "error");
         return;
+    }
+ 
+    // آزمون رایگان تخفیف ندارد.
+    if (basePrice === 0) {
+        discountEnabled = false;
+        document.getElementById("discountEnabled").checked = false;
     }
  
     if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
@@ -2550,6 +2665,7 @@ function getPaymentStatus(paymentStatus) {
     const status = String(paymentStatus || "").toLowerCase();
  
     if (status === "paid") return `<span class="status status-payment-paid">پرداخت شده</span>`;
+    if (status === "free") return `<span class="status status-payment-demo">رایگان</span>`;
     if (status === "pending") return `<span class="status status-pending">در انتظار پرداخت</span>`;
     if (status === "failed") return `<span class="status status-payment-failed">پرداخت ناموفق</span>`;
     if (status === "cancelled") return `<span class="status status-payment-cancelled">لغو شده</span>`;
@@ -2631,7 +2747,7 @@ async function loadStudents() {
  
             const orderId = student.orderId || "";
             const paymentStatus = String(student.paymentStatus || "").toLowerCase();
-            const isPaid = paymentStatus === "paid" || paymentStatus === "demo";
+            const isPaid = paymentStatus === "paid" || paymentStatus === "demo" || paymentStatus === "free";
             const canCopyExamLink =
                 Boolean(orderId) &&
                 isPaid &&
@@ -3029,6 +3145,7 @@ async function deleteAllStudents() {
 /* ===== بروزرسانی همه ===== */
  
 async function loadAll() {
+    await loadExams();
     await Promise.all([
         loadExamSettings(),
         loadStudents(),
@@ -3086,4 +3203,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
-      </html>
+ </html>
