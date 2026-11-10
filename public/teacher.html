@@ -233,6 +233,8 @@ tr:hover td{background:#fafafa}
       <button class="primary-btn" onclick="openQuestionModal()">➕ افزودن سؤال</button>
       <button class="success-btn" onclick="createExam()">➕ آزمون جدید</button>
       <button class="gray-btn" onclick="renameCurrentExam()">✏️ ویرایش مشخصات آزمون</button>
+      <button class="gray-btn" id="toggleCurrentExamBtn" onclick="toggleCurrentExam()">⏸ غیرفعال کردن آزمون</button>
+      <button class="danger-btn" id="deleteCurrentExamBtn" onclick="deleteCurrentExam()">🗑 حذف آزمون</button>
       <button class="gray-btn" onclick="copyStudentExamLink()">🔗 کپی لینک دانش‌آموز</button>
       <button class="primary-btn" onclick="downloadBackup()">⬇️ دریافت پشتیبان</button>
       <label class="gray-btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">↥ بازیابی پشتیبان <input id="restoreBackupFile" type="file" accept="application/json,.json" style="display:none" onchange="restoreBackupFileChanged(event)"></label>
@@ -529,6 +531,15 @@ async function loadExams() {
     const selector = document.getElementById("examSelector");
     selector.innerHTML = exams.map(x => `<option value="${x.id}">${escapeHtml(x.title)}${Number(x.price) === 0 ? " (رایگان)" : " (پولی)"}${x.active ? "" : " (غیرفعال)"}</option>`).join("");
     selector.value = String(EXAM_ID);
+    const current = exams.find(x => Number(x.id) === Number(EXAM_ID));
+    const toggleButton = document.getElementById("toggleCurrentExamBtn");
+    const deleteButton = document.getElementById("deleteCurrentExamBtn");
+    if (toggleButton && current) toggleButton.textContent = current.active ? "⏸ غیرفعال کردن آزمون" : "▶️ فعال کردن آزمون";
+    if (deleteButton) {
+        deleteButton.disabled = Number(EXAM_ID) === 1;
+        deleteButton.title = Number(EXAM_ID) === 1 ? "آزمون شماره ۱ قابل حذف نیست" : "فقط آزمون بدون سفارش و سابقه قابل حذف است";
+        deleteButton.style.opacity = deleteButton.disabled ? ".5" : "1";
+    }
 }
  
 async function switchExam(value) {
@@ -583,6 +594,42 @@ async function renameCurrentExam() {
         await loadExams(); await loadAll();
         document.getElementById("examManagerMessage").textContent = "مشخصات آزمون ذخیره شد.";
     } catch (error) { alert("ذخیره مشخصات آزمون ناموفق بود: " + error.message); }
+}
+ 
+async function toggleCurrentExam() {
+    const current = exams.find(x => Number(x.id) === Number(EXAM_ID));
+    if (!current) return;
+    const nextActive = !current.active;
+    const promptText = nextActive
+        ? `آزمون «${current.title}» برای دانش‌آموزان فعال شود؟`
+        : `آزمون «${current.title}» غیرفعال شود؟ پس از غیرفعال‌سازی در فهرست دانش‌آموزان نمایش داده نمی‌شود.`;
+    if (!confirm(promptText)) return;
+    try {
+        await postJson("/api/teacher/exams", { action:"toggle", examId:EXAM_ID, active:nextActive });
+        await loadExams();
+        document.getElementById("examManagerMessage").textContent = nextActive
+            ? "آزمون فعال شد و در فهرست دانش‌آموزان نمایش داده می‌شود."
+            : "آزمون غیرفعال شد و از فهرست دانش‌آموزان حذف شد.";
+    } catch (error) { alert("تغییر وضعیت آزمون ناموفق بود: " + error.message); }
+}
+ 
+async function deleteCurrentExam() {
+    if (Number(EXAM_ID) === 1) { alert("آزمون شماره ۱ قابل حذف نیست."); return; }
+    const current = exams.find(x => Number(x.id) === Number(EXAM_ID));
+    if (!current) return;
+    const warning = `آزمون «${current.title}» حذف شود؟
+ 
+حذف فقط زمانی انجام می‌شود که هیچ سفارش، پرداخت یا سابقه آزمونی نداشته باشد. در غیر این صورت سرور اجازه حذف نمی‌دهد.`;
+    if (!confirm(warning)) return;
+    try {
+        await postJson("/api/teacher/exams", { action:"delete", examId:EXAM_ID });
+        EXAM_ID = 1;
+        const url = new URL(location.href);
+        url.searchParams.set("examId", "1");
+        history.replaceState({}, "", url);
+        await loadAll();
+        document.getElementById("examManagerMessage").textContent = "آزمون حذف شد.";
+    } catch (error) { alert("حذف آزمون انجام نشد: " + error.message); }
 }
  
 async function downloadBackup() {
@@ -3021,7 +3068,7 @@ function closeModalByBackground(event) {
  
 /* ===== کپی لینک ورود به آزمون برای دانش‌آموز ===== */
  
-const STUDENT_EXAM_PAGE = "https://azmoonmath.ir";
+const STUDENT_EXAM_PAGE = window.location.origin;
  
 function buildExamEntryLink(orderId) {
     const id = String(orderId || "").trim();
