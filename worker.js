@@ -302,6 +302,30 @@ export default {
  
  
       // =========================================================
+      // GET /api/exams - فهرست عمومی آزمون‌های فعال برای دانش‌آموز
+      // =========================================================
+      if (request.method === "GET" && url.pathname === "/api/exams") {
+        const result = await env.DB.prepare(`
+          SELECT id, title, price, duration_seconds, active,
+                 discount_enabled, discount_percent, discount_start_at, discount_end_at
+          FROM exams
+          WHERE active = 1
+          ORDER BY id DESC
+        `).all();
+        const exams = (result.results || []).map(row => {
+          const pricing = getEffectivePrice(row);
+          return {
+            id: Number(row.id),
+            title: row.title,
+            price: Number(row.price || 0),
+            finalPrice: Number(pricing.finalPrice || 0),
+            durationSeconds: Number(row.duration_seconds || 1800)
+          };
+        });
+        return json({ ok:true, exams }, 200, cors);
+      }
+ 
+      // =========================================================
       // GET /api/exam
       // =========================================================
       if (
@@ -354,6 +378,9 @@ export default {
             404,
             cors
           );
+        }
+        if (Number(exam.active || 0) !== 1) {
+          return json({ ok:false, error:"این آزمون در حال حاضر در دسترس نیست." }, 404, cors);
         }
  
         const pricing =
@@ -658,6 +685,30 @@ export default {
             await env.DB.prepare(`UPDATE exams SET title = ?, price = ?, duration_seconds = ? WHERE id = ?`).bind(title, price, duration, examId).run();
           }
           return json({ ok:true, message:"اطلاعات آزمون ذخیره شد" }, 200, cors);
+        }
+        if (action === "delete") {
+          const examId = Number(body.examId);
+          if (!Number.isInteger(examId) || examId <= 0) return json({ ok:false, error:"شناسه آزمون نامعتبر است" }, 400, cors);
+          if (examId === 1) return json({ ok:false, error:"آزمون شماره ۱ قابل حذف نیست؛ در صورت نیاز آن را غیرفعال کنید." }, 400, cors);
+          const current = await env.DB.prepare(`SELECT id FROM exams WHERE id = ?`).bind(examId).first();
+          if (!current) return json({ ok:false, error:"آزمون پیدا نشد" }, 404, cors);
+          const orderCount = await env.DB.prepare(`SELECT COUNT(*) AS count FROM orders WHERE exam_id = ?`).bind(examId).first();
+          const attemptCount = await env.DB.prepare(`
+            SELECT COUNT(*) AS count FROM attempts a
+            INNER JOIN orders o ON o.id = a.order_id
+            WHERE o.exam_id = ?
+          `).bind(examId).first();
+          if (Number(orderCount?.count || 0) > 0 || Number(attemptCount?.count || 0) > 0) {
+            return json({ ok:false, error:"این آزمون سابقه سفارش یا شرکت در آزمون دارد؛ برای حفظ سوابق، حذف مجاز نیست. می‌توانید آن را غیرفعال کنید." }, 409, cors);
+          }
+          await env.DB.batch([
+            env.DB.prepare(`DELETE FROM exam_folder_rules WHERE exam_id = ?`).bind(examId),
+            env.DB.prepare(`DELETE FROM exam_manual_questions WHERE exam_id = ?`).bind(examId),
+            env.DB.prepare(`DELETE FROM questions WHERE exam_id = ?`).bind(examId),
+            env.DB.prepare(`DELETE FROM question_folders WHERE exam_id = ?`).bind(examId),
+            env.DB.prepare(`DELETE FROM exams WHERE id = ?`).bind(examId)
+          ]);
+          return json({ ok:true, message:"آزمون حذف شد." }, 200, cors);
         }
         return json({ ok:false, error:"عملیات آزمون نامعتبر است" }, 400, cors);
       }
