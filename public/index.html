@@ -798,6 +798,16 @@ body.page-loading{
     </div>
     <div class="steps hidden" id="steps"></div>
    </div>
+   <!-- فهرست آزمون‌های فعال -->
+   <div class="card hidden" id="examCatalogCard">
+    <div class="card-title">
+     <div class="card-title-icon">📚</div>
+     <h2>آزمون‌های در دسترس</h2>
+    </div>
+    <p class="subtitle">آزمون موردنظر خود را انتخاب کنید.</p>
+    <div id="examCatalogList"><div class="loading">در حال دریافت فهرست آزمون‌ها...</div></div>
+    <div id="examCatalogError"></div>
+   </div>
    <!-- شروع آزمون -->
    <div class="card" id="startCard">
     <div class="card-title">
@@ -908,16 +918,17 @@ body.page-loading{
    </div>
   </div>
   <script>
-const API =
-    "https://azmoonmath.ir";
-const EXAM_API =
-    "https://api.azmoonmath.ir";
-const WORKER_API =
-    "https://azmon.hosseinkhorasani1.workers.dev";
+// همیشه از همان مبدأیی استفاده می‌کنیم که صفحه از آن باز شده است.
+// بنابراین نسخه staging به هیچ‌وجه به API دامنه production وصل نمی‌شود.
+const API = window.location.origin;
+const EXAM_API = API;
+const WORKER_API = API;
  
 const EXAM_ID = (() => {
     const requested = Number(new URLSearchParams(window.location.search).get("examId"));
-    return Number.isInteger(requested) && requested > 0 ? requested : 1;
+    if (Number.isInteger(requested) && requested > 0) return requested;
+    const saved = Number(localStorage.getItem("math_exam_exam_id") || 0);
+    return Number.isInteger(saved) && saved > 0 ? saved : 1;
 })();
  
 let orderId = null;
@@ -1981,19 +1992,9 @@ async function loadExam(){
     info.innerHTML = `<div class="loading">در حال دریافت اطلاعات آزمون...</div>`;
     button.disabled = true;
     button.textContent = "در حال دریافت اطلاعات آزمون...";
-    const failures = [];
     let data = null;
-    const endpoints = [
-        [API || window.location.origin, "API دامنه اصلی"],
-        [WORKER_API, "API ورکر"],
-        [EXAM_API, "API ایران"]
-    ];
     try {
-        for (const [baseUrl, label] of endpoints) {
-            try { data = await requestExamDataFrom(baseUrl, label); break; }
-            catch (error) { failures.push(error.message); }
-        }
-        if (!data) throw new Error(failures.join(" | ") || "هیچ مسیر API پاسخ معتبر نداد.");
+        data = await requestExamDataFrom(API, "سرور آزمون");
         examData = data;
         examQuestionsCount = Number(data.questionCount);
         renderExamInfo();
@@ -2002,7 +2003,7 @@ async function loadExam(){
             ? "ثبت‌نام رایگان و شروع آزمون"
             : "پرداخت و شروع آزمون";
     } catch (error) {
-        console.error("[AZMOON_LOAD_DIAG] all endpoints failed", { failures, error });
+        console.error("[AZMOON_LOAD_DIAG] exam load failed", error);
         info.innerHTML = `
             <div class="error" style="line-height:2">
                 <strong>صفحه آزمون الان در دسترس نیست.</strong><br>
@@ -2238,6 +2239,7 @@ async function createOrderAndPay(){
  
         orderId =
             String(data.orderId);
+        localStorage.setItem("math_exam_exam_id", String(EXAM_ID));
  
         if (data.freeAccess === true || data.status === "free") {
             attemptId = null;
@@ -4245,6 +4247,55 @@ function printAnswerSheet(){
  
  
 /* =========================
+   فهرست آزمون‌های فعال
+========================= */
+async function loadExamCatalog() {
+    const list = $("examCatalogList");
+    const errorBox = $("examCatalogError");
+    if (list) list.innerHTML = `<div class="loading">در حال دریافت فهرست آزمون‌ها...</div>`;
+    if (errorBox) errorBox.innerHTML = "";
+    try {
+        const response = await fetch(`${API}/api/exams?_=${Date.now()}`, { cache:"no-store", headers:{"Accept":"application/json"} });
+        const data = await readApiJson(response);
+        if (!response.ok || data.ok !== true) throw new Error(data.error || "دریافت فهرست آزمون‌ها ناموفق بود.");
+        const exams = Array.isArray(data.exams) ? data.exams : [];
+        if (!exams.length) {
+            list.innerHTML = `<div class="subtitle">در حال حاضر آزمون فعالی برای ثبت‌نام وجود ندارد.</div>`;
+            return;
+        }
+        list.innerHTML = exams.map(exam => {
+            const id = Number(exam.id);
+            const price = Number(exam.finalPrice ?? exam.price ?? 0);
+            const duration = Math.max(0, Number(exam.durationSeconds || 0));
+            const durationText = duration >= 3600
+                ? `${toPersianNumber(Math.floor(duration / 3600))} ساعت و ${toPersianNumber(Math.floor((duration % 3600) / 60))} دقیقه`
+                : `${toPersianNumber(Math.ceil(duration / 60))} دقیقه`;
+            return `<div class="exam-catalog-item" style="border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin:12px 0;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+                <div style="flex:1;min-width:170px">
+                    <div style="font-weight:800;font-size:16px">${escapeHtml(exam.title || "آزمون ریاضی")}</div>
+                    <div class="subtitle" style="margin:6px 0 0">مدت: ${durationText} · ${price === 0 ? "رایگان" : `هزینه: ${toPersianNumber(price.toLocaleString("en-US"))} تومان`}</div>
+                </div>
+                <button type="button" class="primary-btn" data-exam-id="${id}">انتخاب و ورود</button>
+            </div>`;
+        }).join("");
+        list.querySelectorAll("button[data-exam-id]").forEach(button => {
+            button.addEventListener("click", () => {
+                const id = Number(button.dataset.examId);
+                if (!Number.isInteger(id) || id <= 0) return;
+                localStorage.setItem("math_exam_exam_id", String(id));
+                const target = new URL(window.location.href);
+                target.searchParams.set("examId", String(id));
+                target.searchParams.delete("payment");
+                window.location.href = target.toString();
+            });
+        });
+    } catch (error) {
+        if (list) list.innerHTML = "";
+        if (errorBox) errorBox.innerHTML = `<div class="error">${escapeHtml(error.message)}<br><button type="button" class="secondary-btn" onclick="loadExamCatalog()">تلاش دوباره</button></div>`;
+    }
+}
+ 
+/* =========================
    شروع صفحه
 ========================= */
  
@@ -4285,12 +4336,24 @@ async function initializePage(){
         localStorage.getItem("math_exam_started") ||
         localStorage.getItem("math_exam_paid")
     );
+    const hasExplicitExamId = Number(new URLSearchParams(window.location.search).get("examId")) > 0;
  
+    if (!hasPaymentQuery && !hasSavedFlow && !hasExplicitExamId) {
+        hide("startCard");
+        hide("paymentCard");
+        hide("rulesCard");
+        hide("examCard");
+        hide("resultCard");
+        show("examCatalogCard");
+        await loadExamCatalog();
+        document.body.classList.remove("page-loading");
+        return;
+    }
+    hide("examCatalogCard");
     if (!hasPaymentQuery && !hasSavedFlow) {
         show("startCard");
         document.body.classList.remove("page-loading");
     }
- 
  
     await loadExam();
  
