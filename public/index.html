@@ -812,9 +812,9 @@ body.page-loading{
    <div class="card" id="startCard">
     <div class="card-title">
      <div class="card-title-icon">👤</div>
-     <h2>آزمون ریاضی</h2>
+     <h2 id="startExamTitle">آزمون ریاضی</h2>
     </div>
-    <p class="subtitle">برای شرکت در محصول «آزمون ریاضی»، نام و شماره موبایل خود را وارد کنید. سپس به صفحه پرداخت امن منتقل می‌شوید.</p>
+    <p class="subtitle" id="startExamSubtitle">برای شرکت در آزمون، اطلاعات خود را وارد کنید. سپس به صفحه پرداخت امن منتقل می‌شوید.</p>
     <div id="examInfo">
      <div class="loading">در حال دریافت اطلاعات آزمون...</div>
     </div>
@@ -831,6 +831,18 @@ body.page-loading{
      </div>
      <span class="hint"> شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود. </span>
     </div>
+    <div class="field">
+     <label for="schoolNameInput">نام مدرسه</label>
+     <div class="input-wrap"><span class="input-icon">🏫</span> <input id="schoolNameInput" type="text" placeholder="نام مدرسه" autocomplete="organization" maxlength="120" required></div>
+    </div>
+    <div class="field">
+     <label for="gradeInput">پایه تحصیلی</label>
+     <div class="input-wrap"><span class="input-icon">🎓</span> <input id="gradeInput" type="text" placeholder="مثلاً دهم، یازدهم یا دوازدهم" maxlength="40" required></div>
+    </div>
+    <div class="field">
+     <label for="academicTrackInput">رشته تحصیلی</label>
+     <div class="input-wrap"><span class="input-icon">📚</span> <input id="academicTrackInput" type="text" placeholder="مثلاً ریاضی‌فیزیک، تجربی یا انسانی" maxlength="80" required></div>
+    </div>
     <div id="startError"></div>
     <button id="startPaymentButton" class="primary-btn" disabled>در حال دریافت اطلاعات آزمون...</button>
    </div>
@@ -838,7 +850,7 @@ body.page-loading{
    <div class="card hidden" id="paymentCard">
     <div class="card-title">
      <div class="card-title-icon">💳</div>
-     <h2>پرداخت آزمون ریاضی</h2>
+     <h2 id="paymentExamTitle">پرداخت آزمون ریاضی</h2>
     </div>
     <p class="subtitle">سفارش شما ثبت شده است. برای پرداخت روی دکمه زیر بزنید.</p>
     <div id="paymentPriceBox" class="price-box">
@@ -882,7 +894,7 @@ body.page-loading{
    <div class="card hidden" id="examCard">
     <div class="exam-top">
      <div>
-      <div class="exam-label">آزمون ریاضی</div>
+      <div class="exam-label" id="runningExamTitle">آزمون ریاضی</div>
       <div class="exam-number" id="progress">سؤال ۱</div>
      </div>
      <div class="timer">
@@ -1717,6 +1729,14 @@ function renderExamInfo(){
     const exam =
         examData.exam || {};
  
+    const currentExamTitle = String(exam.title || "آزمون ریاضی").trim();
+    if ($("startExamTitle")) $("startExamTitle").textContent = currentExamTitle;
+    if ($("paymentExamTitle")) $("paymentExamTitle").textContent = "پرداخت " + currentExamTitle;
+    if ($("runningExamTitle")) $("runningExamTitle").textContent = currentExamTitle;
+    if ($("startExamSubtitle")) {
+        $("startExamSubtitle").textContent = `برای شرکت در آزمون «${currentExamTitle}»، اطلاعات خود را وارد کنید. سپس به صفحه پرداخت امن منتقل می‌شوید.`;
+    }
+ 
     const questions =
         Array.isArray(examData.questions)
         ? examData.questions
@@ -2148,6 +2168,10 @@ async function createOrderAndPay(){
             $("phoneInput").value
         );
  
+    const schoolName = $("schoolNameInput").value.trim();
+    const grade = $("gradeInput").value.trim();
+    const academicTrack = $("academicTrackInput").value.trim();
+ 
  
     if(name.length < 2){
  
@@ -2172,6 +2196,11 @@ async function createOrderAndPay(){
  
     }
  
+ 
+    if (!schoolName || !grade || !academicTrack) {
+        showError("startError", "لطفاً نام مدرسه، پایه تحصیلی و رشته تحصیلی را وارد کنید.");
+        return;
+    }
  
     $("startPaymentButton").disabled =
         true;
@@ -2203,7 +2232,16 @@ async function createOrderAndPay(){
                             name,
  
                         phone:
-                            phone
+                            phone,
+ 
+                        schoolName:
+                            schoolName,
+ 
+                        grade:
+                            grade,
+ 
+                        academicTrack:
+                            academicTrack
  
                     })
  
