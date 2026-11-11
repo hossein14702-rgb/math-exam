@@ -747,7 +747,7 @@ export default {
           questions:["id","exam_id","question_text","option_a","option_b","option_c","option_d","correct_index","duration_seconds","folder_id","active","images_json"],
           exam_folder_rules:["id","exam_id","folder_id","selection_count","selection_mode"],
           exam_manual_questions:["exam_id","question_id","sort_order"],
-          orders:["id","exam_id","name","phone","amount","status","created_at","paid_at","email","ref_id","authority"],
+          orders:["id","exam_id","name","phone","school_name","grade","academic_track","amount","status","created_at","paid_at","email","ref_id","authority"],
           attempts:["id","order_id","started_at","finished_at","score","correct_count","wrong_count","empty_count","current_question","question_started_at"],
           attempt_questions:["id","attempt_id","question_id","question_order","question_text_snapshot","option_a_snapshot","option_b_snapshot","option_c_snapshot","option_d_snapshot","correct_index_snapshot","duration_seconds_snapshot","selected_index","started_at","answered_at","elapsed_seconds","is_correct","images_json_snapshot"],
           attempt_answers:["id","attempt_id","question_index","selected_index","answered_at"]
@@ -3039,21 +3039,29 @@ export default {
             body.phone
           );
  
+        const schoolName = String(body.schoolName || "").trim();
+        const grade = String(body.grade || "").trim();
+        const academicTrack = String(body.academicTrack || "").trim();
+ 
         const examId =
           Number(
             body.examId || 1
           );
  
-        if (!name || !phone) {
+        if (!name || !phone || !schoolName || !grade || !academicTrack) {
           return json(
             {
               ok: false,
               error:
-                "نام و شماره موبایل الزامی است",
+                "نام، شماره موبایل، نام مدرسه، پایه تحصیلی و رشته تحصیلی الزامی است",
             },
             400,
             cors
           );
+        }
+ 
+        if (name.length > 120 || schoolName.length > 120 || grade.length > 40 || academicTrack.length > 80) {
+          return json({ ok:false, error:"طول یکی از اطلاعات واردشده بیش از حد مجاز است" }, 400, cors);
         }
  
         if (
@@ -3167,9 +3175,9 @@ export default {
         if (isFreeExam) {
           await env.DB.prepare(`
             INSERT INTO orders (
-              id, exam_id, name, phone, amount, status, created_at
-            ) VALUES (?, ?, ?, ?, 0, 'free', ?)
-          `).bind(orderId, examId, name, phone, createdAt).run();
+              id, exam_id, name, phone, school_name, grade, academic_track, amount, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'free', ?)
+          `).bind(orderId, examId, name, phone, schoolName, grade, academicTrack, createdAt).run();
  
           return json({
             ok: true,
@@ -3203,18 +3211,24 @@ export default {
                 exam_id,
                 name,
                 phone,
+                school_name,
+                grade,
+                academic_track,
                 amount,
                 status,
                 created_at,
                 paid_at
               )
-              VALUES (?, ?, ?, ?, ?, 'paid', ?, ?)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'paid', ?, ?)
             `)
             .bind(
               orderId,
               examId,
               name,
               phone,
+              schoolName,
+              grade,
+              academicTrack,
               amount > 0 ? amount : 0,
               createdAt,
               paidAt
@@ -3259,17 +3273,23 @@ export default {
               exam_id,
               name,
               phone,
+              school_name,
+              grade,
+              academic_track,
               amount,
               status,
               created_at
             )
-            VALUES (?, ?, ?, ?, ?, 'pending', ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
           `)
           .bind(
             orderId,
             examId,
             name,
             phone,
+            schoolName,
+            grade,
+            academicTrack,
             amount,
             createdAt
           )
@@ -4728,6 +4748,9 @@ export default {
                 o.exam_id,
                 o.name,
                 o.phone,
+                o.school_name,
+                o.grade,
+                o.academic_track,
                 o.amount,
                 o.status AS payment_status,
                 o.created_at,
@@ -4843,6 +4866,15 @@ export default {
  
               phone:
                 row.phone,
+ 
+              schoolName:
+                row.school_name || "",
+ 
+              grade:
+                row.grade || "",
+ 
+              academicTrack:
+                row.academic_track || "",
  
               amount:
                 row.amount,
