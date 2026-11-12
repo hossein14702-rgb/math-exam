@@ -140,7 +140,7 @@ tr:hover td{background:#fafafa}
 .stat-title{color:#666;font-size:13px;margin-bottom:8px}
 .stat-value{font-size:25px;font-weight:bold}
 .table-box{overflow-x:auto}
-.students-table{min-width:1850px}
+.students-table{min-width:1800px}
 .status{display:inline-block;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:bold}
 .status-payment-paid,.status-finished{background:#dcfce7;color:#166534}
 .status-pending,.status-not-started{background:#fef3c7;color:#92400e}
@@ -149,6 +149,26 @@ tr:hover td{background:#fafafa}
 .status-payment-demo{background:#ede9fe;color:#6d28d9}
 .status-progress{background:#dbeafe;color:#1e40af}
 .score{font-weight:bold}
+ 
+/* گزارش رضایت دانش‌آموزان */
+.feedback-report{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px;margin:20px 0;box-shadow:0 4px 18px rgba(0,0,0,.04)}
+.feedback-report h3{margin:0 0 14px;font-size:18px}
+.feedback-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.feedback-summary-card{background:#f8fafc;border-radius:12px;padding:14px;text-align:center}
+.feedback-summary-card span{display:block;color:#64748b;font-size:12px;margin-bottom:6px}
+.feedback-summary-card strong{font-size:24px;color:#111827}
+.feedback-bars{display:flex;flex-direction:column;gap:10px;max-width:700px}
+.feedback-bar-row{display:grid;grid-template-columns:70px 1fr 48px;align-items:center;gap:10px;font-size:13px}
+.feedback-bar-track{height:14px;background:#f1f5f9;border-radius:20px;overflow:hidden}
+.feedback-bar-fill{height:100%;background:#f5b52e;border-radius:20px;min-width:0}
+.feedback-comments{margin-top:20px;border-top:1px solid #e5e7eb;padding-top:14px}
+.feedback-comment{padding:12px 0;border-bottom:1px solid #f1f5f9}
+.feedback-comment:last-child{border-bottom:0}
+.feedback-comment-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:#64748b;margin-bottom:5px}
+.feedback-comment-stars{color:#e5a000;letter-spacing:2px}
+.feedback-comment-text{white-space:pre-wrap;line-height:1.8;font-size:13px;color:#1f2937}
+.feedback-empty{padding:14px;color:#64748b;background:#f8fafc;border-radius:10px;font-size:13px}
+@media(max-width:600px){.feedback-summary{grid-template-columns:1fr}.feedback-bar-row{grid-template-columns:62px 1fr 35px;gap:6px}}
  
 /* مودال */
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;padding:20px;overflow-y:auto}
@@ -417,6 +437,23 @@ tr:hover td{background:#fafafa}
       <div class="stat-value" id="unpaidCount">۰</div>
      </div>
     </div>
+    <!-- گزارش رضایت‌سنجی -->
+    <section class="feedback-report">
+     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h3>⭐ گزارش رضایت دانش‌آموزان از آزمون</h3>
+      <button class="refresh-btn" type="button" onclick="loadFeedbackReport()">بروزرسانی گزارش</button>
+     </div>
+     <div class="feedback-summary">
+      <div class="feedback-summary-card"><span>میانگین رضایت</span><strong id="feedbackAverage">—</strong></div>
+      <div class="feedback-summary-card"><span>تعداد ثبت نظر</span><strong id="feedbackTotal">۰</strong></div>
+      <div class="feedback-summary-card"><span>درصد رضایت ۴ و ۵ ستاره</span><strong id="feedbackPositive">—</strong></div>
+     </div>
+     <div id="feedbackChart" class="feedback-bars"><div class="feedback-empty">در حال دریافت گزارش رضایت...</div></div>
+     <div class="feedback-comments">
+      <strong>انتقادها و پیشنهادهای دانش‌آموزان</strong>
+      <div id="feedbackComments" style="margin-top:8px"><div class="feedback-empty">هنوز نظری ثبت نشده است.</div></div>
+     </div>
+    </section>
     <!-- جدول دانش‌آموزان -->
     <div class="table-box">
      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
@@ -428,11 +465,11 @@ tr:hover td{background:#fafafa}
       <thead>
        <tr>
         <th>ردیف</th>
-        <th>نام و نام خانوادگی</th>
+        <th>نام</th>
         <th>موبایل</th>
         <th>مدرسه</th>
-        <th>پایه تحصیلی</th>
-        <th>رشته تحصیلی</th>
+        <th>پایه</th>
+        <th>رشته</th>
         <th>شناسه سفارش</th>
         <th>مبلغ</th>
         <th>ثبت سفارش</th>
@@ -2749,6 +2786,36 @@ function hideError() {
  
 /* ===== دانش‌آموزان ===== */
  
+async function loadFeedbackReport() {
+    const chart = document.getElementById("feedbackChart");
+    const commentsBox = document.getElementById("feedbackComments");
+    try {
+        const data = await apiRequest(`/api/teacher/feedback?examId=${EXAM_ID}&_=${Date.now()}`);
+        const total = Number(data.total || 0);
+        const average = Number(data.average || 0);
+        const distribution = Array.isArray(data.distribution) ? data.distribution : [];
+        const positive = distribution.filter(item => Number(item.rating) >= 4).reduce((sum,item) => sum + Number(item.count || 0), 0);
+        document.getElementById("feedbackAverage").textContent = total ? faNumber(average.toFixed(2)) + " از ۵" : "—";
+        document.getElementById("feedbackTotal").textContent = faNumber(total);
+        document.getElementById("feedbackPositive").textContent = total ? faNumber(Math.round(positive * 100 / total)) + "٪" : "—";
+        chart.innerHTML = distribution.map(item => {
+            const count = Number(item.count || 0);
+            const width = total ? Math.max(0, count * 100 / total) : 0;
+            return `<div class="feedback-bar-row"><span>${faNumber(item.rating)} ستاره</span><div class="feedback-bar-track"><div class="feedback-bar-fill" style="width:${width}%"></div></div><strong>${faNumber(count)}</strong></div>`;
+        }).join("");
+        const comments = Array.isArray(data.comments) ? data.comments : [];
+        commentsBox.innerHTML = comments.length ? comments.map(item => `
+            <div class="feedback-comment">
+             <div class="feedback-comment-head"><strong>${escapeHtml(item.name || "دانش‌آموز")}</strong><span>${faNumber(item.rating)} از ۵ ستاره · ${formatDate(item.createdAt)}</span></div>
+             <div class="feedback-comment-stars">${"★".repeat(Math.max(0,Math.min(5,Number(item.rating)||0)))}</div>
+             <div class="feedback-comment-text">${escapeHtml(item.comment || "")}</div>
+            </div>`).join("") : '<div class="feedback-empty">هنوز انتقاد یا پیشنهادی ثبت نشده است.</div>';
+    } catch (error) {
+        chart.innerHTML = `<div class="feedback-empty">دریافت گزارش رضایت ناموفق بود: ${escapeHtml(error.message || "خطا")}</div>`;
+        commentsBox.innerHTML = '<div class="feedback-empty">گزارش نظرات در دسترس نیست.</div>';
+    }
+}
+ 
 function updateStats(students) {
     let progress = 0;
     let finished = 0;
@@ -3159,6 +3226,7 @@ async function deleteStudent(orderId, studentName) {
         alert("اطلاعات دانش‌آموز با موفقیت حذف شد.");
  
         await loadStudents();
+        await loadFeedbackReport();
  
     } catch (error) {
         alert("خطا در حذف دانش‌آموز:\n\n" + error.message);
@@ -3188,6 +3256,7 @@ async function deleteAllStudents() {
         alert("تمام اطلاعات دانش‌آموزان حذف شد.");
  
         await loadStudents();
+        await loadFeedbackReport();
  
     } catch (error) {
         alert("خطا در حذف همه:\n\n" + error.message);
@@ -3202,7 +3271,8 @@ async function loadAll() {
     await Promise.all([
         loadExamSettings(),
         loadStudents(),
-        loadQuestionBank()
+        loadQuestionBank(),
+        loadFeedbackReport()
     ]);
 }
  
