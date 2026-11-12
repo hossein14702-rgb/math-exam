@@ -369,9 +369,6 @@ export default {
           url.searchParams.get("id") || 1
         );
  
-        if (schoolName.length > 120 || grade.length > 40 || academicTrack.length > 80) {
-          return json({ ok:false, error:"طول نام مدرسه، پایه یا رشته تحصیلی بیش از حد مجاز است." }, 400, cors);
-        }
  
         if (
           !Number.isInteger(examId) ||
