@@ -96,6 +96,27 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .accordion-content{padding:15px;min-width:0}
 .accordion-subtitle{font-size:11px;font-weight:normal;color:#64748b;margin-right:auto}
  
+/* دکمه‌های دسترسی سریع و عملیات آزمون */
+.header .controls{align-items:flex-end;gap:10px}
+.header .controls>button,.header .controls>.restore-backup-btn{min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid transparent;border-radius:11px;padding:10px 14px;font-size:13px;font-weight:700;box-shadow:0 2px 5px rgba(15,23,42,.07);transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
+.header .controls>button:hover,.header .controls>.restore-backup-btn:hover{transform:translateY(-1px);box-shadow:0 5px 12px rgba(15,23,42,.12)}
+.header .controls .edit-exam-btn{background:#eef2ff;color:#3730a3;border-color:#c7d2fe}
+.header .controls .toggle-exam-btn{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
+.header .controls .copy-link-btn{background:#ecfeff;color:#155e75;border-color:#a5f3fc}
+.header .controls .restore-backup-btn{background:#f5f3ff;color:#5b21b6;border-color:#ddd6fe;cursor:pointer}
+.header .controls .restore-backup-btn input{display:none}
+.header .controls .backup-download-btn{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.header .controls .restore-backup-btn:focus-within,.header .controls>button:focus-visible{outline:3px solid rgba(59,130,246,.22);outline-offset:2px}
+.question-bank-outer{margin:14px 0 20px}
+.question-bank-outer>.accordion-content{padding:0}
+.question-bank-outer .question-bank-box{margin:0;border-radius:0;box-shadow:none;padding:18px;background:#fff}
+.question-bank-outer>summary{background:#f8fafc}
+@media(max-width:600px){
+ .header .controls>button,.header .controls>.restore-backup-btn{flex:1 1 calc(50% - 8px);min-width:145px}
+ .header .controls>.form-group{flex:1 1 100%!important;max-width:none!important}
+ .question-bank-outer .question-bank-box{padding:13px}
+}
+ 
 /* بانک سؤال */
 .question-bank-box{overflow:hidden}
 .bank-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:15px}
@@ -262,18 +283,21 @@ tr:hover td{background:#fafafa}
       <button class="refresh-btn" onclick="loadAll()">🔄 بروزرسانی</button>
       <button class="primary-btn" onclick="openQuestionModal()">➕ افزودن سؤال</button>
       <button class="success-btn" onclick="createExam()">➕ آزمون جدید</button>
-      <button class="gray-btn" onclick="renameCurrentExam()">✏️ ویرایش مشخصات آزمون</button>
-      <button class="gray-btn" id="toggleCurrentExamBtn" onclick="toggleCurrentExam()">⏸ غیرفعال کردن آزمون</button>
+      <button class="gray-btn edit-exam-btn" onclick="renameCurrentExam()">✏️ ویرایش مشخصات آزمون</button>
+      <button class="gray-btn toggle-exam-btn" id="toggleCurrentExamBtn" onclick="toggleCurrentExam()">⏸ غیرفعال کردن آزمون</button>
       <button class="danger-btn" id="deleteCurrentExamBtn" onclick="deleteCurrentExam()">🗑 حذف آزمون</button>
-      <button class="gray-btn" onclick="copyStudentExamLink()">🔗 کپی لینک دانش‌آموز</button>
-      <button class="primary-btn" onclick="downloadBackup()">⬇️ دریافت پشتیبان</button>
-      <label class="gray-btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">↥ بازیابی پشتیبان <input id="restoreBackupFile" type="file" accept="application/json,.json" style="display:none" onchange="restoreBackupFileChanged(event)"></label>
+      <button class="gray-btn copy-link-btn" onclick="copyStudentExamLink()">🔗 کپی لینک دانش‌آموز</button>
+      <button class="primary-btn backup-download-btn" onclick="downloadBackup()">⬇️ دریافت پشتیبان</button>
+      <label class="gray-btn restore-backup-btn">↥ بازیابی پشتیبان <input id="restoreBackupFile" type="file" accept="application/json,.json" onchange="restoreBackupFileChanged(event)"></label>
       <button class="logout-btn" onclick="handleLogout()">🚪 خروج</button>
      </div>
      <div id="examManagerMessage" style="font-size:12px;color:#475569;margin-top:8px"></div>
     </div>
     <div id="errorBox" class="error"></div>
     <!-- تنظیمات قیمت -->
+    <details class="accordion-card" style="margin:14px 0">
+     <summary>💰 تنظیمات قیمت آزمون <span class="accordion-subtitle">قیمت اصلی، تخفیف و زمان‌بندی آن</span></summary>
+     <div class="accordion-content">
     <div class="settings-box">
      <h2 class="section-title">تنظیمات قیمت آزمون</h2>
      <div class="section-description">قیمت اصلی آزمون و شرایط تخفیف را از این بخش تنظیم کنید.</div>
@@ -332,7 +356,12 @@ tr:hover td{background:#fafafa}
       <div id="settingsMessage" class="settings-message"></div>
      </div>
     </div>
+     </div>
+    </details>
     <!-- بانک سؤال -->
+    <details class="accordion-card question-bank-outer">
+     <summary>📚 بانک سؤال <span class="accordion-subtitle">آمار، پوشه‌ها، سؤال‌ها و تنظیم انتخاب سؤال‌های آزمون</span></summary>
+     <div class="accordion-content">
     <div class="question-bank-box">
      <h2 class="section-title">📚 بانک سؤال</h2>
      <div class="section-description">در این بخش می‌توانید سؤال‌ها، گزینه‌ها، پاسخ صحیح، زمان پاسخ‌گویی و پوشه هر سؤال را مدیریت کنید.</div>
@@ -438,6 +467,8 @@ tr:hover td{background:#fafafa}
       </div>
      </details>
     </div>
+     </div>
+    </details>
     <!-- گزارش رضایت‌سنجی -->
     <details class="accordion-card" style="margin:14px 0">
      <summary>⭐ نظرات و پیشنهادات دانش‌آموزان <span class="accordion-subtitle">میانگین رضایت، نمودار ستاره‌ها و متن نظرات</span></summary>
@@ -3345,4 +3376,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
- </html>
+       </html>
