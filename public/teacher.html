@@ -3,7 +3,7 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title> پنل معلم نسخه آزمایشی</title>
+  <title> پنل معلم نسخه اصلی</title>
   <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f5f7fb;color:#222}
@@ -86,6 +86,37 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .jalali-picker-footer button{flex:1;padding:8px;background:#f1f5f9}
 .jalali-picker-footer .today-btn{background:#2563eb;color:#fff}
  
+/* بخش‌های باز و بسته‌شونده پنل */
+.accordion-card{background:#fff;border:1px solid #e5e7eb;border-radius:13px;overflow:hidden;min-width:0}
+.accordion-card>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;cursor:pointer;font-weight:bold;font-size:14px;color:#1f2937;background:#f8fafc;user-select:none}
+.accordion-card>summary::-webkit-details-marker{display:none}
+.accordion-card>summary::after{content:'＋';display:flex;align-items:center;justify-content:center;width:27px;height:27px;flex:0 0 27px;border-radius:8px;background:#e5e7eb;color:#334155;font-size:18px;font-weight:normal}
+.accordion-card[open]>summary::after{content:'−';background:#dbeafe;color:#1d4ed8}
+.accordion-card>summary:hover{background:#f1f5f9}
+.accordion-content{padding:15px;min-width:0}
+.accordion-subtitle{font-size:11px;font-weight:normal;color:#64748b;margin-right:auto}
+ 
+/* دکمه‌های دسترسی سریع و عملیات آزمون */
+.header .controls{align-items:flex-end;gap:10px}
+.header .controls>button,.header .controls>.restore-backup-btn{min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid transparent;border-radius:11px;padding:10px 14px;font-size:13px;font-weight:700;box-shadow:0 2px 5px rgba(15,23,42,.07);transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
+.header .controls>button:hover,.header .controls>.restore-backup-btn:hover{transform:translateY(-1px);box-shadow:0 5px 12px rgba(15,23,42,.12)}
+.header .controls .edit-exam-btn{background:#eef2ff;color:#3730a3;border-color:#c7d2fe}
+.header .controls .toggle-exam-btn{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
+.header .controls .copy-link-btn{background:#ecfeff;color:#155e75;border-color:#a5f3fc}
+.header .controls .restore-backup-btn{background:#f5f3ff;color:#5b21b6;border-color:#ddd6fe;cursor:pointer}
+.header .controls .restore-backup-btn input{display:none}
+.header .controls .backup-download-btn{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.header .controls .restore-backup-btn:focus-within,.header .controls>button:focus-visible{outline:3px solid rgba(59,130,246,.22);outline-offset:2px}
+.question-bank-outer{margin:14px 0 20px}
+.question-bank-outer>.accordion-content{padding:0}
+.question-bank-outer .question-bank-box{margin:0;border-radius:0;box-shadow:none;padding:18px;background:#fff}
+.question-bank-outer>summary{background:#f8fafc}
+@media(max-width:600px){
+ .header .controls>button,.header .controls>.restore-backup-btn{flex:1 1 calc(50% - 8px);min-width:145px}
+ .header .controls>.form-group{flex:1 1 100%!important;max-width:none!important}
+ .question-bank-outer .question-bank-box{padding:13px}
+}
+ 
 /* بانک سؤال */
 .question-bank-box{overflow:hidden}
 .bank-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:15px}
@@ -95,8 +126,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .bank-stat{background:#f8fafc;border-radius:12px;padding:13px}
 .bank-stat-title{color:#64748b;font-size:12px;margin-bottom:5px}
 .bank-stat-value{font-size:20px;font-weight:bold}
-.folder-layout{display:grid;grid-template-columns:270px 1fr;gap:15px}
-.folder-panel{background:#f8fafc;border-radius:14px;padding:14px}
+.folder-layout{display:grid;grid-template-columns:1fr 1fr;gap:15px;align-items:start}
+.folder-panel{background:#fff;padding:0}.questions-panel{background:#fff;padding:0}
 .folder-panel h3{margin:0 0 12px;font-size:15px}
 .folder-list{display:flex;flex-direction:column;gap:7px}
 .folder-item{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px;cursor:pointer}
@@ -252,18 +283,21 @@ tr:hover td{background:#fafafa}
       <button class="refresh-btn" onclick="loadAll()">🔄 بروزرسانی</button>
       <button class="primary-btn" onclick="openQuestionModal()">➕ افزودن سؤال</button>
       <button class="success-btn" onclick="createExam()">➕ آزمون جدید</button>
-      <button class="gray-btn" onclick="renameCurrentExam()">✏️ ویرایش مشخصات آزمون</button>
-      <button class="gray-btn" id="toggleCurrentExamBtn" onclick="toggleCurrentExam()">⏸ غیرفعال کردن آزمون</button>
+      <button class="gray-btn edit-exam-btn" onclick="renameCurrentExam()">✏️ ویرایش مشخصات آزمون</button>
+      <button class="gray-btn toggle-exam-btn" id="toggleCurrentExamBtn" onclick="toggleCurrentExam()">⏸ غیرفعال کردن آزمون</button>
       <button class="danger-btn" id="deleteCurrentExamBtn" onclick="deleteCurrentExam()">🗑 حذف آزمون</button>
-      <button class="gray-btn" onclick="copyStudentExamLink()">🔗 کپی لینک دانش‌آموز</button>
-      <button class="primary-btn" onclick="downloadBackup()">⬇️ دریافت پشتیبان</button>
-      <label class="gray-btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">↥ بازیابی پشتیبان <input id="restoreBackupFile" type="file" accept="application/json,.json" style="display:none" onchange="restoreBackupFileChanged(event)"></label>
+      <button class="gray-btn copy-link-btn" onclick="copyStudentExamLink()">🔗 کپی لینک دانش‌آموز</button>
+      <button class="primary-btn backup-download-btn" onclick="downloadBackup()">⬇️ دریافت پشتیبان</button>
+      <label class="gray-btn restore-backup-btn">↥ بازیابی پشتیبان <input id="restoreBackupFile" type="file" accept="application/json,.json" onchange="restoreBackupFileChanged(event)"></label>
       <button class="logout-btn" onclick="handleLogout()">🚪 خروج</button>
      </div>
      <div id="examManagerMessage" style="font-size:12px;color:#475569;margin-top:8px"></div>
     </div>
     <div id="errorBox" class="error"></div>
     <!-- تنظیمات قیمت -->
+    <details class="accordion-card" style="margin:14px 0">
+     <summary>💰 تنظیمات قیمت آزمون <span class="accordion-subtitle">قیمت اصلی، تخفیف و زمان‌بندی آن</span></summary>
+     <div class="accordion-content">
     <div class="settings-box">
      <h2 class="section-title">تنظیمات قیمت آزمون</h2>
      <div class="section-description">قیمت اصلی آزمون و شرایط تخفیف را از این بخش تنظیم کنید.</div>
@@ -322,7 +356,12 @@ tr:hover td{background:#fafafa}
       <div id="settingsMessage" class="settings-message"></div>
      </div>
     </div>
+     </div>
+    </details>
     <!-- بانک سؤال -->
+    <details class="accordion-card question-bank-outer">
+     <summary>📚 بانک سؤال <span class="accordion-subtitle">آمار، پوشه‌ها، سؤال‌ها و تنظیم انتخاب سؤال‌های آزمون</span></summary>
+     <div class="accordion-content">
     <div class="question-bank-box">
      <h2 class="section-title">📚 بانک سؤال</h2>
      <div class="section-description">در این بخش می‌توانید سؤال‌ها، گزینه‌ها، پاسخ صحیح، زمان پاسخ‌گویی و پوشه هر سؤال را مدیریت کنید.</div>
@@ -345,20 +384,24 @@ tr:hover td{background:#fafafa}
        <div id="manualTotalCount" class="bank-stat-value">۰</div>
       </div>
      </div>
+     <div class="folder-layout">
+      <details class="accordion-card folder-panel">
+       <summary>📁 مدیریت پوشه‌ها <span class="accordion-subtitle">ایجاد، ویرایش و فعال‌سازی پوشه‌ها</span></summary>
+       <div class="accordion-content">
+        <button class="success-btn small-btn" onclick="createFolder()" style="width:100%;margin-bottom:10px;">➕ ایجاد پوشه</button>
+        <div id="folderList" class="folder-list">
+         <div class="empty">در حال دریافت...</div>
+        </div>
+       </div>
+      </details>
+      <details class="accordion-card questions-panel">
+       <summary>📝 مدیریت سؤال‌ها <span class="accordion-subtitle">جستجو، ویرایش و تنظیم سؤال‌های آزمون</span></summary>
+       <div class="accordion-content">
      <div class="bank-toolbar">
       <input id="questionSearch" type="text" placeholder="🔎 جستجوی سؤال..." oninput="debouncedLoadQuestions()"> <select id="questionFolderFilter" onchange="loadQuestions()"> <option value="">همه پوشه‌ها</option> </select> <select id="questionActiveFilter" onchange="loadQuestions()"> <option value="">همه وضعیت‌ها</option> <option value="1">فقط فعال</option> <option value="0">فقط غیرفعال</option> </select>
       <button class="primary-btn" onclick="openQuestionModal()">➕ سؤال جدید</button>
       <button class="gray-btn" onclick="loadQuestionBank()">🔄 بروزرسانی بانک</button>
      </div>
-     <div class="folder-layout">
-      <div class="folder-panel">
-       <h3>📁 پوشه‌های سؤال</h3>
-       <button class="success-btn small-btn" onclick="createFolder()" style="width:100%;margin-bottom:10px;">➕ ایجاد پوشه</button>
-       <div id="folderList" class="folder-list">
-        <div class="empty">در حال دریافت...</div>
-       </div>
-      </div>
-      <div class="questions-panel">
        <div class="questions-table">
         <table>
          <thead>
@@ -382,8 +425,12 @@ tr:hover td{background:#fafafa}
          </tbody>
         </table>
        </div>
-      </div>
+       </div>
+      </details>
      </div>
+     <details class="accordion-card" style="margin-top:14px">
+      <summary>🎯 تنظیم سؤال‌های آزمون <span class="accordion-subtitle">تعداد و شیوه انتخاب سؤال‌ها از هر پوشه</span></summary>
+      <div class="accordion-content">
      <div class="rules-box">
       <h3>🎯 تنظیم سؤال‌های آزمون</h3>
       <div class="section-description">مشخص کنید از هر پوشه چند سؤال وارد آزمون شود و انتخاب سؤال تصادفی باشد یا دستی.</div>
@@ -417,49 +464,50 @@ tr:hover td{background:#fafafa}
        </div>
       </div>
      </div>
+      </div>
+     </details>
     </div>
-    <!-- آمار دانش‌آموز -->
-    <div class="stats">
-     <div class="stat">
-      <div class="stat-title">کل شرکت‌کنندگان</div>
-      <div class="stat-value" id="totalCount">۰</div>
      </div>
-     <div class="stat">
-      <div class="stat-title">در حال انجام</div>
-      <div class="stat-value" id="progressCount">۰</div>
-     </div>
-     <div class="stat">
-      <div class="stat-title">تمام شده</div>
-      <div class="stat-value" id="finishedCount">۰</div>
-     </div>
-     <div class="stat">
-      <div class="stat-title">پرداخت نکرده</div>
-      <div class="stat-value" id="unpaidCount">۰</div>
-     </div>
-    </div>
+    </details>
     <!-- گزارش رضایت‌سنجی -->
-    <section class="feedback-report">
-     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-      <h3>⭐ گزارش رضایت دانش‌آموزان از آزمون</h3>
-      <button class="refresh-btn" type="button" onclick="loadFeedbackReport()">بروزرسانی گزارش</button>
+    <details class="accordion-card" style="margin:14px 0">
+     <summary>⭐ نظرات و پیشنهادات دانش‌آموزان <span class="accordion-subtitle">میانگین رضایت، نمودار ستاره‌ها و متن نظرات</span></summary>
+     <div class="accordion-content">
+      <section class="feedback-report" style="margin:0">
+       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <h3>⭐ گزارش رضایت دانش‌آموزان از آزمون</h3>
+        <button class="refresh-btn" type="button" onclick="loadFeedbackReport()">بروزرسانی گزارش</button>
+       </div>
+       <div class="feedback-summary">
+        <div class="feedback-summary-card"><span>میانگین رضایت</span><strong id="feedbackAverage">—</strong></div>
+        <div class="feedback-summary-card"><span>تعداد ثبت نظر</span><strong id="feedbackTotal">۰</strong></div>
+        <div class="feedback-summary-card"><span>درصد رضایت ۴ و ۵ ستاره</span><strong id="feedbackPositive">—</strong></div>
+       </div>
+       <div id="feedbackChart" class="feedback-bars"><div class="feedback-empty">در حال دریافت گزارش رضایت...</div></div>
+       <div class="feedback-comments">
+        <strong>انتقادها و پیشنهادهای دانش‌آموزان</strong>
+        <div id="feedbackComments" style="margin-top:8px"><div class="feedback-empty">هنوز نظری ثبت نشده است.</div></div>
+       </div>
+      </section>
      </div>
-     <div class="feedback-summary">
-      <div class="feedback-summary-card"><span>میانگین رضایت</span><strong id="feedbackAverage">—</strong></div>
-      <div class="feedback-summary-card"><span>تعداد ثبت نظر</span><strong id="feedbackTotal">۰</strong></div>
-      <div class="feedback-summary-card"><span>درصد رضایت ۴ و ۵ ستاره</span><strong id="feedbackPositive">—</strong></div>
-     </div>
-     <div id="feedbackChart" class="feedback-bars"><div class="feedback-empty">در حال دریافت گزارش رضایت...</div></div>
-     <div class="feedback-comments">
-      <strong>انتقادها و پیشنهادهای دانش‌آموزان</strong>
-      <div id="feedbackComments" style="margin-top:8px"><div class="feedback-empty">هنوز نظری ثبت نشده است.</div></div>
-     </div>
-    </section>
-    <!-- جدول دانش‌آموزان -->
-    <div class="table-box">
-     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
-      <button class="refresh-btn" onclick="loadStudents()">🔄 بروزرسانی لیست دانش‌آموزان</button>
-      <button class="delete-all-btn" onclick="deleteAllStudents()">🗑 حذف همه دانش‌آموزان</button>
-     </div>
+    </details>
+    <!-- وضعیت دانش‌آموزان -->
+    <details class="accordion-card" style="margin:14px 0">
+     <summary>👨‍🎓 وضعیت دانش‌آموزان <span class="accordion-subtitle">آمار شرکت‌کنندگان و فهرست کامل دانش‌آموزان</span></summary>
+     <div class="accordion-content">
+      <!-- آمار دانش‌آموز -->
+      <div class="stats">
+       <div class="stat"><div class="stat-title">کل شرکت‌کنندگان</div><div class="stat-value" id="totalCount">۰</div></div>
+       <div class="stat"><div class="stat-title">در حال انجام</div><div class="stat-value" id="progressCount">۰</div></div>
+       <div class="stat"><div class="stat-title">تمام شده</div><div class="stat-value" id="finishedCount">۰</div></div>
+       <div class="stat"><div class="stat-title">پرداخت نکرده</div><div class="stat-value" id="unpaidCount">۰</div></div>
+      </div>
+      <!-- جدول دانش‌آموزان -->
+      <div class="table-box">
+       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+        <button class="refresh-btn" onclick="loadStudents()">🔄 بروزرسانی لیست دانش‌آموزان</button>
+        <button class="delete-all-btn" onclick="deleteAllStudents()">🗑 حذف همه دانش‌آموزان</button>
+       </div>
      <div id="loading" class="loading">در حال دریافت اطلاعات...</div>
      <table id="studentsTable" class="students-table" style="display:none;">
       <thead>
@@ -487,8 +535,10 @@ tr:hover td{background:#fafafa}
       </thead>
       <tbody id="studentsBody"></tbody>
      </table>
-     <div id="emptyBox" class="empty" style="display:none;">هنوز شرکت‌کننده‌ای ثبت نشده است.</div>
-    </div>
+       <div id="emptyBox" class="empty" style="display:none;">هنوز شرکت‌کننده‌ای ثبت نشده است.</div>
+      </div>
+     </div>
+    </details>
    </div>
    <!-- مودال افزودن / ویرایش سؤال -->
    <div id="questionModal" class="modal" onclick="closeQuestionModalByBackground(event)">
@@ -3326,4 +3376,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
- </html>
+       </html>
