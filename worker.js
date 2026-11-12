@@ -156,6 +156,39 @@ export default {
  
  
       // =========================================================
+      // POST /api/feedback - ثبت رضایت‌سنجی پس از پایان آزمون
+      // =========================================================
+      if (request.method === "POST" && url.pathname === "/api/feedback") {
+        const body = await request.json().catch(() => ({}));
+        const feedbackAttemptId = String(body.attemptId || "").trim();
+        const rating = Number(body.rating);
+        const comment = String(body.comment || "").trim();
+        if (!feedbackAttemptId || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+          return json({ ok:false, error:"شناسه آزمون و امتیاز ۱ تا ۵ الزامی است." }, 400, cors);
+        }
+        if (comment.length > 2000) return json({ ok:false, error:"متن انتقاد یا پیشنهاد حداکثر ۲۰۰۰ نویسه باشد." }, 400, cors);
+        const attempt = await env.DB.prepare(`
+          SELECT a.id, a.finished_at, a.order_id, o.exam_id, o.status
+          FROM attempts a JOIN orders o ON o.id = a.order_id
+          WHERE a.id = ?
+        `).bind(feedbackAttemptId).first();
+        if (!attempt) return json({ ok:false, error:"آزمون موردنظر پیدا نشد." }, 404, cors);
+        if (!attempt.finished_at) return json({ ok:false, error:"ثبت رضایت فقط پس از پایان آزمون امکان‌پذیر است." }, 400, cors);
+        if (attempt.status !== "paid" && attempt.status !== "free") return json({ ok:false, error:"وضعیت سفارش برای ثبت رضایت معتبر نیست." }, 403, cors);
+        try {
+          await env.DB.prepare(`
+            INSERT INTO exam_feedback (attempt_id, order_id, exam_id, rating, comment, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).bind(feedbackAttemptId, attempt.order_id, attempt.exam_id, rating, comment, new Date().toISOString()).run();
+        } catch (error) {
+          const existing = await env.DB.prepare(`SELECT id FROM exam_feedback WHERE attempt_id = ?`).bind(feedbackAttemptId).first();
+          if (existing) return json({ ok:false, error:"نظر این آزمون قبلاً ثبت شده است." }, 409, cors);
+          throw error;
+        }
+        return json({ ok:true, message:"نظر شما با موفقیت ثبت شد." }, 201, cors);
+      }
+ 
+      // =========================================================
       // POST /api/teacher/images/upload
       // بارگذاری امن تصاویر سؤال (پروکسی به سرویس VPS)
       // =========================================================
@@ -302,6 +335,30 @@ export default {
  
  
       // =========================================================
+      // GET /api/exams - فهرست عمومی آزمون‌های فعال برای دانش‌آموز
+      // =========================================================
+      if (request.method === "GET" && url.pathname === "/api/exams") {
+        const result = await env.DB.prepare(`
+          SELECT id, title, price, duration_seconds, active,
+                 discount_enabled, discount_percent, discount_start_at, discount_end_at
+          FROM exams
+          WHERE active = 1
+          ORDER BY id DESC
+        `).all();
+        const exams = (result.results || []).map(row => {
+          const pricing = getEffectivePrice(row);
+          return {
+            id: Number(row.id),
+            title: row.title,
+            price: Number(row.price || 0),
+            finalPrice: Number(pricing.finalPrice || 0),
+            durationSeconds: Number(row.duration_seconds || 1800)
+          };
+        });
+        return json({ ok:true, exams }, 200, cors);
+      }
+ 
+      // =========================================================
       // GET /api/exam
       // =========================================================
       if (
@@ -311,6 +368,10 @@ export default {
         const examId = Number(
           url.searchParams.get("id") || 1
         );
+ 
+        if (schoolName.length > 120 || grade.length > 40 || academicTrack.length > 80) {
+          return json({ ok:false, error:"طول نام مدرسه، پایه یا رشته تحصیلی بیش از حد مجاز است." }, 400, cors);
+        }
  
         if (
           !Number.isInteger(examId) ||
@@ -355,6 +416,9 @@ export default {
             cors
           );
         }
+        if (Number(exam.active || 0) !== 1) {
+          return json({ ok:false, error:"این آزمون در حال حاضر در دسترس نیست." }, 404, cors);
+        }
  
         const pricing =
           getEffectivePrice(exam);
@@ -374,7 +438,7 @@ export default {
                 f.active AS folder_active
               FROM exam_folder_rules efr
               LEFT JOIN question_folders f
-                ON f.id = efr.folder_id
+                ON f.id = efr.folder_id AND f.exam_id = efr.exam_id
               WHERE efr.exam_id = ?
               ORDER BY efr.id
             `)
@@ -606,6 +670,158 @@ export default {
  
  
       // =========================================================
+      // مدیریت آزمون‌ها
+      // GET /api/teacher/exams | POST /api/teacher/exams
+      // =========================================================
+      if (url.pathname === "/api/teacher/exams" && request.method === "GET") {
+        const result = await env.DB.prepare(`
+          SELECT e.id, e.title, e.price, e.duration_seconds, e.active,
+                 COUNT(DISTINCT q.id) AS question_count
+          FROM exams e
+          LEFT JOIN questions q ON q.exam_id = e.id
+          GROUP BY e.id, e.title, e.price, e.duration_seconds, e.active
+          ORDER BY e.id
+        `).all();
+        return json({ ok: true, exams: (result.results || []).map(row => ({
+          id: Number(row.id), title: row.title, price: Number(row.price || 0),
+          durationSeconds: Number(row.duration_seconds || 1800),
+          active: Number(row.active || 0) === 1,
+          questionCount: Number(row.question_count || 0)
+        })) }, 200, cors);
+      }
+ 
+      if (url.pathname === "/api/teacher/exams" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const action = String(body.action || "create");
+        if (action === "create") {
+          const title = String(body.title || "").trim();
+          const price = Number(body.price);
+          const duration = Number(body.durationSeconds || 1800);
+          if (!title || title.length > 180) return json({ ok:false, error:"عنوان آزمون الزامی است و حداکثر ۱۸۰ نویسه باشد" }, 400, cors);
+          if (!Number.isSafeInteger(price) || price < 0) return json({ ok:false, error:"قیمت آزمون باید عدد صحیح و صفر یا بیشتر باشد" }, 400, cors);
+          if (!Number.isInteger(duration) || duration < 60 || duration > 86400) return json({ ok:false, error:"مدت آزمون باید بین ۶۰ ثانیه تا ۲۴ ساعت باشد" }, 400, cors);
+          const result = await env.DB.prepare(`INSERT INTO exams (title, price, duration_seconds, active) VALUES (?, ?, ?, 1)`).bind(title, price, duration).run();
+          const exam = await env.DB.prepare(`SELECT id,title,price,duration_seconds,active FROM exams WHERE id = ?`).bind(result.meta.last_row_id).first();
+          return json({ ok:true, message:"آزمون جدید ایجاد شد", exam }, 201, cors);
+        }
+        if (action === "update" || action === "toggle") {
+          const examId = Number(body.examId);
+          if (!Number.isInteger(examId) || examId <= 0) return json({ ok:false, error:"شناسه آزمون نامعتبر است" }, 400, cors);
+          const current = await env.DB.prepare(`SELECT id FROM exams WHERE id = ?`).bind(examId).first();
+          if (!current) return json({ ok:false, error:"آزمون پیدا نشد" }, 404, cors);
+          if (action === "toggle") {
+            const active = body.active === true || body.active === 1 || body.active === "1" ? 1 : 0;
+            await env.DB.prepare(`UPDATE exams SET active = ? WHERE id = ?`).bind(active, examId).run();
+          } else {
+            const title = String(body.title || "").trim();
+            const price = Number(body.price);
+            const duration = Number(body.durationSeconds);
+            if (!title || title.length > 180 || !Number.isSafeInteger(price) || price < 0 || !Number.isInteger(duration) || duration < 60 || duration > 86400) {
+              return json({ ok:false, error:"عنوان، قیمت یا مدت آزمون معتبر نیست" }, 400, cors);
+            }
+            await env.DB.prepare(`UPDATE exams SET title = ?, price = ?, duration_seconds = ? WHERE id = ?`).bind(title, price, duration, examId).run();
+          }
+          return json({ ok:true, message:"اطلاعات آزمون ذخیره شد" }, 200, cors);
+        }
+        if (action === "delete") {
+          const examId = Number(body.examId);
+          if (!Number.isInteger(examId) || examId <= 0) return json({ ok:false, error:"شناسه آزمون نامعتبر است" }, 400, cors);
+          if (examId === 1) return json({ ok:false, error:"آزمون شماره ۱ قابل حذف نیست؛ در صورت نیاز آن را غیرفعال کنید." }, 400, cors);
+          const current = await env.DB.prepare(`SELECT id FROM exams WHERE id = ?`).bind(examId).first();
+          if (!current) return json({ ok:false, error:"آزمون پیدا نشد" }, 404, cors);
+          const orderCount = await env.DB.prepare(`SELECT COUNT(*) AS count FROM orders WHERE exam_id = ?`).bind(examId).first();
+          const attemptCount = await env.DB.prepare(`
+            SELECT COUNT(*) AS count FROM attempts a
+            INNER JOIN orders o ON o.id = a.order_id
+            WHERE o.exam_id = ?
+          `).bind(examId).first();
+          if (Number(orderCount?.count || 0) > 0 || Number(attemptCount?.count || 0) > 0) {
+            return json({ ok:false, error:"این آزمون سابقه سفارش یا شرکت در آزمون دارد؛ برای حفظ سوابق، حذف مجاز نیست. می‌توانید آن را غیرفعال کنید." }, 409, cors);
+          }
+          await env.DB.batch([
+            env.DB.prepare(`DELETE FROM exam_folder_rules WHERE exam_id = ?`).bind(examId),
+            env.DB.prepare(`DELETE FROM exam_manual_questions WHERE exam_id = ?`).bind(examId),
+            env.DB.prepare(`DELETE FROM questions WHERE exam_id = ?`).bind(examId),
+            env.DB.prepare(`DELETE FROM question_folders WHERE exam_id = ?`).bind(examId),
+            env.DB.prepare(`DELETE FROM exams WHERE id = ?`).bind(examId)
+          ]);
+          return json({ ok:true, message:"آزمون حذف شد." }, 200, cors);
+        }
+        return json({ ok:false, error:"عملیات آزمون نامعتبر است" }, 400, cors);
+      }
+ 
+      // =========================================================
+      // پشتیبان‌گیری و بازیابی داده‌های اصلی سامانه
+      // نشست‌ها، OTP و کلیدهای داخلی عمداً در فایل پشتیبان قرار نمی‌گیرند.
+      // =========================================================
+      const BACKUP_TABLES = [
+        "exams", "question_folders", "questions", "exam_folder_rules",
+        "exam_manual_questions", "orders", "attempts", "attempt_questions", "attempt_answers", "exam_feedback"
+      ];
+      if (url.pathname === "/api/teacher/backup" && request.method === "GET") {
+        const tables = {};
+        let totalRows = 0;
+        for (const table of BACKUP_TABLES) {
+          const result = await env.DB.prepare(`SELECT * FROM ${table}`).all();
+          tables[table] = result.results || [];
+          totalRows += tables[table].length;
+        }
+        return json({ ok:true, format:"azmoonmath-backup", version:1,
+          createdAt:new Date().toISOString(), tables, totalRows,
+          excludedTables:["teacher_sessions", "email_otp", "_cf_KV"]
+        }, 200, cors);
+      }
+ 
+      if (url.pathname === "/api/teacher/restore" && request.method === "POST") {
+        const body = await request.json().catch(() => null);
+        if (!body || body.format !== "azmoonmath-backup" || body.version !== 1 || body.confirmText !== "بازیابی کامل") {
+          return json({ ok:false, error:"فایل پشتیبان معتبر نیست یا عبارت تأیید بازیابی کامل وارد نشده است" }, 400, cors);
+        }
+        if (!body.tables || typeof body.tables !== "object") return json({ ok:false, error:"ساختار فایل پشتیبان ناقص است" }, 400, cors);
+        const columns = {
+          exams:["id","title","price","duration_seconds","active","discount_enabled","discount_percent","discount_start_at","discount_end_at"],
+          question_folders:["id","name","active","created_at","exam_id"],
+          questions:["id","exam_id","question_text","option_a","option_b","option_c","option_d","correct_index","duration_seconds","folder_id","active","images_json"],
+          exam_folder_rules:["id","exam_id","folder_id","selection_count","selection_mode"],
+          exam_manual_questions:["exam_id","question_id","sort_order"],
+          orders:["id","exam_id","name","phone","school_name","grade","academic_track","amount","status","created_at","paid_at","email","ref_id","authority"],
+          attempts:["id","order_id","started_at","finished_at","score","correct_count","wrong_count","empty_count","current_question","question_started_at"],
+          attempt_questions:["id","attempt_id","question_id","question_order","question_text_snapshot","option_a_snapshot","option_b_snapshot","option_c_snapshot","option_d_snapshot","correct_index_snapshot","duration_seconds_snapshot","selected_index","started_at","answered_at","elapsed_seconds","is_correct","images_json_snapshot"],
+          attempt_answers:["id","attempt_id","question_index","selected_index","answered_at"],
+          exam_feedback:["id","attempt_id","order_id","exam_id","rating","comment","created_at"]
+        };
+        let rowCount = 0;
+        for (const table of BACKUP_TABLES) {
+          if (table === "exam_feedback" && body.tables[table] === undefined) body.tables[table] = [];
+          if (!Array.isArray(body.tables[table])) return json({ ok:false, error:`بخش ${table} در فایل پشتیبان وجود ندارد` }, 400, cors);
+          rowCount += body.tables[table].length;
+        }
+        if (rowCount > 700) return json({ ok:false, error:"تعداد رکوردهای این فایل از سقف بازیابی امن این نسخه بیشتر است؛ فایل را به پشتیبانی فنی بدهید تا بازیابی مرحله‌ای انجام شود" }, 413, cors);
+        // پاک‌سازی از وابسته‌ترین جدول به اصلی‌ترین جدول
+        const deleteOrder = ["exam_feedback","attempt_answers","attempt_questions","attempts","orders","exam_manual_questions","exam_folder_rules","questions","question_folders","exams"];
+        const statements = [];
+        for (const table of deleteOrder) statements.push(env.DB.prepare(`DELETE FROM ${table}`));
+        // درج از جداول اصلی به وابسته؛ فقط ستون‌های whitelist شده پذیرفته می‌شوند.
+        for (const table of BACKUP_TABLES) {
+          for (const row of body.tables[table]) {
+            if (!row || typeof row !== "object" || Array.isArray(row)) return json({ ok:false, error:`رکورد نامعتبر در ${table}` }, 400, cors);
+            const cols = columns[table].filter(col => Object.prototype.hasOwnProperty.call(row, col));
+            if (!cols.length) continue;
+            const placeholders = cols.map(() => "?").join(",");
+            const values = cols.map(col => row[col] === undefined ? null : row[col]);
+            statements.push(env.DB.prepare(`INSERT INTO ${table} (${cols.join(",")}) VALUES (${placeholders})`).bind(...values));
+          }
+        }
+        try {
+          await env.DB.batch(statements);
+        } catch (error) {
+          console.error("Restore failed", error);
+          return json({ ok:false, error:"بازیابی کامل نشد. دیتابیس را بررسی کنید؛ فایل پشتیبان را حذف نکنید." }, 500, cors);
+        }
+        return json({ ok:true, message:"بازیابی اطلاعات انجام شد", restoredRows:rowCount }, 200, cors);
+      }
+ 
+      // =========================================================
       // GET /api/teacher/exam-settings
       // =========================================================
       if (
@@ -716,7 +932,7 @@ export default {
         const price =
           Number(body.price);
  
-        const discountEnabled =
+        let discountEnabled =
           body.discountEnabled === true ||
           body.discountEnabled === 1 ||
           body.discountEnabled === "1";
@@ -750,13 +966,13 @@ export default {
  
         if (
           !Number.isFinite(price) ||
-          price <= 0
+          price < 0
         ) {
           return json(
             {
               ok: false,
               error:
-                "قیمت اصلی باید بیشتر از صفر باشد",
+                "قیمت اصلی باید صفر یا بیشتر باشد",
             },
             400,
             cors
@@ -773,6 +989,11 @@ export default {
             400,
             cors
           );
+        }
+ 
+        // آزمون رایگان تخفیف ندارد؛ قیمت صفر مستقیماً به‌عنوان رایگان ثبت می‌شود.
+        if (price === 0) {
+          discountEnabled = false;
         }
  
         if (
@@ -955,6 +1176,7 @@ export default {
               LEFT JOIN questions q
                 ON q.folder_id = f.id
                AND q.exam_id = ?
+              WHERE f.exam_id = ?
               GROUP BY
                 f.id,
                 f.name,
@@ -962,7 +1184,7 @@ export default {
                 f.created_at
               ORDER BY f.id
             `)
-            .bind(examId)
+            .bind(examId, examId)
             .all();
  
         return json(
@@ -1005,6 +1227,18 @@ export default {
           String(
             body.action || "create"
           ).trim();
+        const examId = Number(body.examId || 1);
+        if (!Number.isInteger(examId) || examId <= 0) {
+          return json({ ok:false, error:"examId نامعتبر است" }, 400, cors);
+        }
+        const examExists = await env.DB.prepare(`SELECT id FROM exams WHERE id = ?`).bind(examId).first();
+        if (!examExists) return json({ ok:false, error:"آزمون پیدا نشد" }, 404, cors);
+        if (["update", "toggle", "delete"].includes(action)) {
+          const requestedFolderId = Number(body.folderId);
+          if (!Number.isInteger(requestedFolderId) || requestedFolderId <= 0) return json({ ok:false, error:"folderId نامعتبر است" }, 400, cors);
+          const ownedFolder = await env.DB.prepare(`SELECT id FROM question_folders WHERE id = ? AND exam_id = ?`).bind(requestedFolderId, examId).first();
+          if (!ownedFolder) return json({ ok:false, error:"پوشه در این آزمون پیدا نشد" }, 404, cors);
+        }
  
         if (action === "create") {
  
@@ -1030,10 +1264,10 @@ export default {
               .prepare(`
                 SELECT id
                 FROM question_folders
-                WHERE name = ?
+                WHERE name = ? AND exam_id = ?
                 LIMIT 1
               `)
-              .bind(name)
+              .bind(name, examId)
               .first();
  
           if (exists) {
@@ -1053,11 +1287,12 @@ export default {
               .prepare(`
                 INSERT INTO question_folders (
                   name,
-                  active
+                  active,
+                  exam_id
                 )
-                VALUES (?, 1)
+                VALUES (?, 1, ?)
               `)
-              .bind(name)
+              .bind(name, examId)
               .run();
  
           const folder =
@@ -1069,9 +1304,9 @@ export default {
                   active,
                   created_at
                 FROM question_folders
-                WHERE id = ?
+                WHERE id = ? AND exam_id = ?
               `)
-              .bind(result.meta.last_row_id)
+              .bind(result.meta.last_row_id, examId)
               .first();
  
           return json(
@@ -1129,10 +1364,11 @@ export default {
                 SELECT id
                 FROM question_folders
                 WHERE name = ?
+                  AND exam_id = ?
                   AND id != ?
                 LIMIT 1
               `)
-              .bind(name, folderId)
+              .bind(name, examId, folderId)
               .first();
  
           if (exists) {
@@ -1151,9 +1387,9 @@ export default {
             .prepare(`
               UPDATE question_folders
               SET name = ?
-              WHERE id = ?
+              WHERE id = ? AND exam_id = ?
             `)
-            .bind(name, folderId)
+            .bind(name, folderId, examId)
             .run();
  
           return json(
@@ -1198,9 +1434,9 @@ export default {
             .prepare(`
               UPDATE question_folders
               SET active = ?
-              WHERE id = ?
+              WHERE id = ? AND exam_id = ?
             `)
-            .bind(active, folderId)
+            .bind(active, folderId, examId)
             .run();
  
           // وقتی پوشه غیرفعال می‌شود، تعداد انتخاب قانون هم صفر شود
@@ -1209,9 +1445,9 @@ export default {
               .prepare(`
                 UPDATE exam_folder_rules
                 SET selection_count = 0
-                WHERE folder_id = ?
+                WHERE folder_id = ? AND exam_id = ?
               `)
-              .bind(folderId)
+              .bind(folderId, examId)
               .run();
           }
  
@@ -1255,9 +1491,9 @@ export default {
               .prepare(`
                 SELECT COUNT(*) AS count
                 FROM questions
-                WHERE folder_id = ?
+                WHERE folder_id = ? AND exam_id = ?
               `)
-              .bind(folderId)
+              .bind(folderId, examId)
               .first();
  
           if (
@@ -1277,17 +1513,17 @@ export default {
           await env.DB
             .prepare(`
               DELETE FROM exam_folder_rules
-              WHERE folder_id = ?
+              WHERE folder_id = ? AND exam_id = ?
             `)
-            .bind(folderId)
+            .bind(folderId, examId)
             .run();
  
           await env.DB
             .prepare(`
               DELETE FROM question_folders
-              WHERE id = ?
+              WHERE id = ? AND exam_id = ?
             `)
-            .bind(folderId)
+            .bind(folderId, examId)
             .run();
  
           return json(
@@ -1353,7 +1589,7 @@ export default {
             f.name AS folder_name
           FROM questions q
           LEFT JOIN question_folders f
-            ON f.id = q.folder_id
+            ON f.id = q.folder_id AND f.exam_id = q.exam_id
           WHERE q.exam_id = ?
         `;
  
@@ -1609,9 +1845,9 @@ export default {
                 .prepare(`
                   SELECT id
                   FROM question_folders
-                  WHERE id = ?
+                  WHERE id = ? AND exam_id = ?
                 `)
-                .bind(folderId)
+                .bind(folderId, examId)
                 .first();
  
             if (!folder) {
@@ -1681,7 +1917,7 @@ export default {
                     f.name AS folder_name
                   FROM questions q
                   LEFT JOIN question_folders f
-                    ON f.id = q.folder_id
+                    ON f.id = q.folder_id AND f.exam_id = q.exam_id
                   WHERE q.id = ?
                 `)
                 .bind(result.meta.last_row_id)
@@ -1782,7 +2018,7 @@ export default {
                     f.name AS folder_name
                   FROM questions q
                   LEFT JOIN question_folders f
-                    ON f.id = q.folder_id
+                    ON f.id = q.folder_id AND f.exam_id = q.exam_id
                   WHERE q.id = ?
                 `)
                 .bind(questionId)
@@ -1921,9 +2157,9 @@ export default {
                 .prepare(`
                   SELECT id
                   FROM question_folders
-                  WHERE id = ?
+                  WHERE id = ? AND exam_id = ?
                 `)
-                .bind(folderId)
+                .bind(folderId, examId)
                 .first();
  
             if (!folder) {
@@ -2128,7 +2364,7 @@ export default {
                 f.name AS folder_name
               FROM exam_folder_rules efr
               JOIN question_folders f
-                ON f.id = efr.folder_id
+                ON f.id = efr.folder_id AND f.exam_id = efr.exam_id
               WHERE efr.exam_id = ?
               ORDER BY efr.id
             `)
@@ -2266,9 +2502,9 @@ export default {
               .prepare(`
                 SELECT id
                 FROM question_folders
-                WHERE id = ?
+                WHERE id = ? AND exam_id = ?
               `)
-              .bind(folderId)
+              .bind(folderId, examId)
               .first();
  
           if (!folder) {
@@ -2507,7 +2743,7 @@ export default {
           JOIN questions q
             ON q.id = emq.question_id
           LEFT JOIN question_folders f
-            ON f.id = q.folder_id
+            ON f.id = q.folder_id AND f.exam_id = q.exam_id
           WHERE emq.exam_id = ?
         `;
  
@@ -2842,17 +3078,21 @@ export default {
             body.phone
           );
  
+        const schoolName = String(body.schoolName || "").trim();
+        const grade = String(body.grade || "").trim();
+        const academicTrack = String(body.academicTrack || "").trim();
+ 
         const examId =
           Number(
             body.examId || 1
           );
  
-        if (!name || !phone) {
+        if (!name || !phone || !schoolName || !grade || !academicTrack) {
           return json(
             {
               ok: false,
               error:
-                "نام و شماره موبایل الزامی است",
+                "نام، شماره موبایل، نام مدرسه، پایه و رشته تحصیلی الزامی است",
             },
             400,
             cors
@@ -2935,13 +3175,17 @@ export default {
         const amount =
           pricing.finalPrice;
  
-        // کاربر خاص: حسین + 09137400603 → بدون پرداخت، سفارش paid
+        // آزمون رایگان (یا تخفیف صددرصدی): بدون فراخوانی درگاه، با وضعیت مستقل free
+        const isFreeExam = Number.isInteger(amount) && amount === 0;
+ 
+        // کاربر خاص: حسین + 09137400603 → دسترسی ویژه آزمون پولی
         const isPaymentBypass =
+          !isFreeExam &&
           name === "حسین" &&
           phone === "09137400603";
  
         if (
-          !isPaymentBypass &&
+          !isFreeExam && !isPaymentBypass &&
           (
             !Number.isInteger(amount) ||
             amount <= 0
@@ -2950,8 +3194,7 @@ export default {
           return json(
             {
               ok: false,
-              error:
-                "مبلغ پرداخت نامعتبر است",
+              error: "مبلغ پرداخت نامعتبر است",
             },
             400,
             cors
@@ -2963,6 +3206,33 @@ export default {
  
         const createdAt =
           new Date().toISOString();
+ 
+        if (isFreeExam) {
+          await env.DB.prepare(`
+            INSERT INTO orders (
+              id, exam_id, name, phone, school_name, grade, academic_track, amount, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'free', ?)
+          `).bind(orderId, examId, name, phone, schoolName, grade, academicTrack, createdAt).run();
+ 
+          return json({
+            ok: true,
+            paymentReady: false,
+            freeAccess: true,
+            orderId,
+            amount: 0,
+            status: "free",
+            message: "ثبت‌نام رایگان انجام شد. می‌توانید آزمون را شروع کنید.",
+            pricing: {
+              basePrice: pricing.basePrice,
+              finalPrice: 0,
+              discountEnabled: pricing.discountEnabled,
+              discountActive: pricing.discountActive,
+              discountPercent: pricing.discountPercent,
+              discountStartAt: pricing.discountStartAt,
+              discountEndAt: pricing.discountEndAt,
+            },
+          }, 200, cors);
+        }
  
         if (isPaymentBypass) {
  
@@ -2976,18 +3246,24 @@ export default {
                 exam_id,
                 name,
                 phone,
+                school_name,
+                grade,
+                academic_track,
                 amount,
                 status,
                 created_at,
                 paid_at
               )
-              VALUES (?, ?, ?, ?, ?, 'paid', ?, ?)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'paid', ?, ?)
             `)
             .bind(
               orderId,
               examId,
               name,
               phone,
+              schoolName,
+              grade,
+              academicTrack,
               amount > 0 ? amount : 0,
               createdAt,
               paidAt
@@ -3032,17 +3308,23 @@ export default {
               exam_id,
               name,
               phone,
+              school_name,
+              grade,
+              academic_track,
               amount,
               status,
               created_at
             )
-            VALUES (?, ?, ?, ?, ?, 'pending', ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
           `)
           .bind(
             orderId,
             examId,
             name,
             phone,
+            schoolName,
+            grade,
+            academicTrack,
             amount,
             createdAt
           )
@@ -3522,6 +3804,7 @@ export default {
             status: order.status,
             examId: order.exam_id,
             paid: String(order.status || "") === "paid",
+            accessGranted: ["paid", "free"].includes(String(order.status || "")),
           },
           200,
           cors
@@ -3577,7 +3860,7 @@ export default {
           );
         }
  
-        if (order.status !== "paid") {
+        if (order.status !== "paid" && order.status !== "free") {
           return json(
             {
               ok: false,
@@ -3979,7 +4262,8 @@ export default {
         }
  
         if (
-          attempt.order_status !== "paid"
+          attempt.order_status !== "paid" &&
+          attempt.order_status !== "free"
         ) {
           return json(
             {
@@ -4479,6 +4763,29 @@ export default {
  
  
       // =========================================================
+      // GET /api/teacher/feedback - گزارش تجمیعی رضایت آزمون
+      // =========================================================
+      if (request.method === "GET" && url.pathname === "/api/teacher/feedback") {
+        const examId = Number(url.searchParams.get("examId") || 1);
+        if (!Number.isInteger(examId) || examId <= 0) return json({ ok:false, error:"شناسه آزمون نامعتبر است." }, 400, cors);
+        const grouped = await env.DB.prepare(`SELECT rating, COUNT(*) AS count FROM exam_feedback WHERE exam_id = ? GROUP BY rating`).bind(examId).all();
+        const distribution = [1,2,3,4,5].map(rating => {
+          const row = (grouped.results || []).find(item => Number(item.rating) === rating);
+          return { rating, count:Number(row?.count || 0) };
+        });
+        const summary = await env.DB.prepare(`SELECT COUNT(*) AS total, AVG(rating) AS average FROM exam_feedback WHERE exam_id = ?`).bind(examId).first();
+        const comments = await env.DB.prepare(`
+          SELECT f.rating, f.comment, f.created_at, o.name
+          FROM exam_feedback f LEFT JOIN orders o ON o.id = f.order_id
+          WHERE f.exam_id = ? AND TRIM(COALESCE(f.comment, '')) <> ''
+          ORDER BY f.created_at DESC LIMIT 200
+        `).bind(examId).all();
+        return json({ ok:true, examId, total:Number(summary?.total || 0), average:Number(summary?.average || 0), distribution,
+          comments:(comments.results || []).map(row => ({ rating:Number(row.rating), comment:row.comment || "", createdAt:row.created_at || null, name:row.name || "دانش‌آموز" }))
+        }, 200, cors);
+      }
+ 
+      // =========================================================
       // GET /api/teacher/students
       // =========================================================
       if (
@@ -4499,6 +4806,9 @@ export default {
                 o.exam_id,
                 o.name,
                 o.phone,
+                o.school_name,
+                o.grade,
+                o.academic_track,
                 o.amount,
                 o.status AS payment_status,
                 o.created_at,
@@ -4553,7 +4863,7 @@ export default {
             let status;
  
             if (
-              row.payment_status !== "paid"
+              row.payment_status !== "paid" && row.payment_status !== "free"
             ) {
               status = "unpaid";
  
@@ -4614,6 +4924,10 @@ export default {
  
               phone:
                 row.phone,
+ 
+              schoolName: row.school_name || "",
+              grade: row.grade || "",
+              academicTrack: row.academic_track || "",
  
               amount:
                 row.amount,
@@ -5119,6 +5433,8 @@ export default {
  
         await env.DB.batch([
  
+          env.DB.prepare(`DELETE FROM exam_feedback WHERE order_id = ?`).bind(orderId),
+ 
           env.DB
             .prepare(`
               DELETE FROM attempt_answers
@@ -5281,6 +5597,8 @@ export default {
             .first();
  
         await env.DB.batch([
+ 
+          env.DB.prepare(`DELETE FROM exam_feedback WHERE exam_id = ?`).bind(examId),
  
           env.DB
             .prepare(`
@@ -5655,7 +5973,7 @@ async function selectQuestionsForExam(
           f.active AS folder_active
         FROM exam_folder_rules efr
         LEFT JOIN question_folders f
-          ON f.id = efr.folder_id
+          ON f.id = efr.folder_id AND f.exam_id = efr.exam_id
         WHERE efr.exam_id = ?
         ORDER BY efr.id
       `)
