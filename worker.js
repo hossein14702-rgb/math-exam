@@ -156,6 +156,39 @@ export default {
  
  
       // =========================================================
+      // POST /api/feedback - ثبت رضایت‌سنجی پس از پایان آزمون
+      // =========================================================
+      if (request.method === "POST" && url.pathname === "/api/feedback") {
+        const body = await request.json().catch(() => ({}));
+        const feedbackAttemptId = String(body.attemptId || "").trim();
+        const rating = Number(body.rating);
+        const comment = String(body.comment || "").trim();
+        if (!feedbackAttemptId || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+          return json({ ok:false, error:"شناسه آزمون و امتیاز ۱ تا ۵ الزامی است." }, 400, cors);
+        }
+        if (comment.length > 2000) return json({ ok:false, error:"متن انتقاد یا پیشنهاد حداکثر ۲۰۰۰ نویسه باشد." }, 400, cors);
+        const attempt = await env.DB.prepare(`
+          SELECT a.id, a.finished_at, a.order_id, o.exam_id, o.status
+          FROM attempts a JOIN orders o ON o.id = a.order_id
+          WHERE a.id = ?
+        `).bind(feedbackAttemptId).first();
+        if (!attempt) return json({ ok:false, error:"آزمون موردنظر پیدا نشد." }, 404, cors);
+        if (!attempt.finished_at) return json({ ok:false, error:"ثبت رضایت فقط پس از پایان آزمون امکان‌پذیر است." }, 400, cors);
+        if (attempt.status !== "paid" && attempt.status !== "free") return json({ ok:false, error:"وضعیت سفارش برای ثبت رضایت معتبر نیست." }, 403, cors);
+        try {
+          await env.DB.prepare(`
+            INSERT INTO exam_feedback (attempt_id, order_id, exam_id, rating, comment, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).bind(feedbackAttemptId, attempt.order_id, attempt.exam_id, rating, comment, new Date().toISOString()).run();
+        } catch (error) {
+          const existing = await env.DB.prepare(`SELECT id FROM exam_feedback WHERE attempt_id = ?`).bind(feedbackAttemptId).first();
+          if (existing) return json({ ok:false, error:"نظر این آزمون قبلاً ثبت شده است." }, 409, cors);
+          throw error;
+        }
+        return json({ ok:true, message:"نظر شما با موفقیت ثبت شد." }, 201, cors);
+      }
+ 
+      // =========================================================
       // POST /api/teacher/images/upload
       // بارگذاری امن تصاویر سؤال (پروکسی به سرویس VPS)
       // =========================================================
@@ -335,6 +368,10 @@ export default {
         const examId = Number(
           url.searchParams.get("id") || 1
         );
+ 
+        if (schoolName.length > 120 || grade.length > 40 || academicTrack.length > 80) {
+          return json({ ok:false, error:"طول نام مدرسه، پایه یا رشته تحصیلی بیش از حد مجاز است." }, 400, cors);
+        }
  
         if (
           !Number.isInteger(examId) ||
@@ -719,7 +756,7 @@ export default {
       // =========================================================
       const BACKUP_TABLES = [
         "exams", "question_folders", "questions", "exam_folder_rules",
-        "exam_manual_questions", "orders", "attempts", "attempt_questions", "attempt_answers"
+        "exam_manual_questions", "orders", "attempts", "attempt_questions", "attempt_answers", "exam_feedback"
       ];
       if (url.pathname === "/api/teacher/backup" && request.method === "GET") {
         const tables = {};
@@ -750,16 +787,18 @@ export default {
           orders:["id","exam_id","name","phone","school_name","grade","academic_track","amount","status","created_at","paid_at","email","ref_id","authority"],
           attempts:["id","order_id","started_at","finished_at","score","correct_count","wrong_count","empty_count","current_question","question_started_at"],
           attempt_questions:["id","attempt_id","question_id","question_order","question_text_snapshot","option_a_snapshot","option_b_snapshot","option_c_snapshot","option_d_snapshot","correct_index_snapshot","duration_seconds_snapshot","selected_index","started_at","answered_at","elapsed_seconds","is_correct","images_json_snapshot"],
-          attempt_answers:["id","attempt_id","question_index","selected_index","answered_at"]
+          attempt_answers:["id","attempt_id","question_index","selected_index","answered_at"],
+          exam_feedback:["id","attempt_id","order_id","exam_id","rating","comment","created_at"]
         };
         let rowCount = 0;
         for (const table of BACKUP_TABLES) {
+          if (table === "exam_feedback" && body.tables[table] === undefined) body.tables[table] = [];
           if (!Array.isArray(body.tables[table])) return json({ ok:false, error:`بخش ${table} در فایل پشتیبان وجود ندارد` }, 400, cors);
           rowCount += body.tables[table].length;
         }
         if (rowCount > 700) return json({ ok:false, error:"تعداد رکوردهای این فایل از سقف بازیابی امن این نسخه بیشتر است؛ فایل را به پشتیبانی فنی بدهید تا بازیابی مرحله‌ای انجام شود" }, 413, cors);
         // پاک‌سازی از وابسته‌ترین جدول به اصلی‌ترین جدول
-        const deleteOrder = ["attempt_answers","attempt_questions","attempts","orders","exam_manual_questions","exam_folder_rules","questions","question_folders","exams"];
+        const deleteOrder = ["exam_feedback","attempt_answers","attempt_questions","attempts","orders","exam_manual_questions","exam_folder_rules","questions","question_folders","exams"];
         const statements = [];
         for (const table of deleteOrder) statements.push(env.DB.prepare(`DELETE FROM ${table}`));
         // درج از جداول اصلی به وابسته؛ فقط ستون‌های whitelist شده پذیرفته می‌شوند.
@@ -3053,15 +3092,11 @@ export default {
             {
               ok: false,
               error:
-                "نام، شماره موبایل، نام مدرسه، پایه تحصیلی و رشته تحصیلی الزامی است",
+                "نام، شماره موبایل، نام مدرسه، پایه و رشته تحصیلی الزامی است",
             },
             400,
             cors
           );
-        }
- 
-        if (name.length > 120 || schoolName.length > 120 || grade.length > 40 || academicTrack.length > 80) {
-          return json({ ok:false, error:"طول یکی از اطلاعات واردشده بیش از حد مجاز است" }, 400, cors);
         }
  
         if (
@@ -4728,6 +4763,29 @@ export default {
  
  
       // =========================================================
+      // GET /api/teacher/feedback - گزارش تجمیعی رضایت آزمون
+      // =========================================================
+      if (request.method === "GET" && url.pathname === "/api/teacher/feedback") {
+        const examId = Number(url.searchParams.get("examId") || 1);
+        if (!Number.isInteger(examId) || examId <= 0) return json({ ok:false, error:"شناسه آزمون نامعتبر است." }, 400, cors);
+        const grouped = await env.DB.prepare(`SELECT rating, COUNT(*) AS count FROM exam_feedback WHERE exam_id = ? GROUP BY rating`).bind(examId).all();
+        const distribution = [1,2,3,4,5].map(rating => {
+          const row = (grouped.results || []).find(item => Number(item.rating) === rating);
+          return { rating, count:Number(row?.count || 0) };
+        });
+        const summary = await env.DB.prepare(`SELECT COUNT(*) AS total, AVG(rating) AS average FROM exam_feedback WHERE exam_id = ?`).bind(examId).first();
+        const comments = await env.DB.prepare(`
+          SELECT f.rating, f.comment, f.created_at, o.name
+          FROM exam_feedback f LEFT JOIN orders o ON o.id = f.order_id
+          WHERE f.exam_id = ? AND TRIM(COALESCE(f.comment, '')) <> ''
+          ORDER BY f.created_at DESC LIMIT 200
+        `).bind(examId).all();
+        return json({ ok:true, examId, total:Number(summary?.total || 0), average:Number(summary?.average || 0), distribution,
+          comments:(comments.results || []).map(row => ({ rating:Number(row.rating), comment:row.comment || "", createdAt:row.created_at || null, name:row.name || "دانش‌آموز" }))
+        }, 200, cors);
+      }
+ 
+      // =========================================================
       // GET /api/teacher/students
       // =========================================================
       if (
@@ -4867,14 +4925,9 @@ export default {
               phone:
                 row.phone,
  
-              schoolName:
-                row.school_name || "",
- 
-              grade:
-                row.grade || "",
- 
-              academicTrack:
-                row.academic_track || "",
+              schoolName: row.school_name || "",
+              grade: row.grade || "",
+              academicTrack: row.academic_track || "",
  
               amount:
                 row.amount,
@@ -5380,6 +5433,8 @@ export default {
  
         await env.DB.batch([
  
+          env.DB.prepare(`DELETE FROM exam_feedback WHERE order_id = ?`).bind(orderId),
+ 
           env.DB
             .prepare(`
               DELETE FROM attempt_answers
@@ -5542,6 +5597,8 @@ export default {
             .first();
  
         await env.DB.batch([
+ 
+          env.DB.prepare(`DELETE FROM exam_feedback WHERE exam_id = ?`).bind(examId),
  
           env.DB
             .prepare(`
