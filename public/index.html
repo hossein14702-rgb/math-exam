@@ -314,7 +314,8 @@ body.page-loading{
 }
  
 .old-price{
-    color:#9ca3af;
+    color:#000000;
+    font-weight:500;
     text-decoration:line-through;
     font-size:14px;
     margin-left:8px;
@@ -783,7 +784,6 @@ body.page-loading{
     margin:0 auto;
     cursor:pointer;
 }
- 
  
 .exam-feedback-card{margin:22px 0;padding:18px;border:1px solid #e5e7eb;border-radius:16px;background:#fff;text-align:center}
 .exam-feedback-card h3{margin:0 0 7px;font-size:17px;color:#1f2937}
@@ -1424,7 +1424,7 @@ function isDiscountCurrentlyActive(exam){
         getDiscountEndAt(exam);
  
     const now =
-        Date.now();
+        nowMs();
  
  
     /* اگر تاریخ شروع وجود دارد */
@@ -1587,7 +1587,7 @@ function startDiscountCountdown(){
     function updateCountdown(){
  
         const remaining =
-            endTime - Date.now();
+            endTime - nowMs();
  
         if(
             remaining <= 0 ||
@@ -2021,6 +2021,13 @@ async function requestExamDataFrom(baseUrl, label) {
         });
         const elapsed = Math.round(performance.now() - started);
         if (!response.ok) throw new Error(`${label}: HTTP ${response.status} (${elapsed}ms)`);
+        const serverDateHeader = response.headers.get("date");
+        if (serverDateHeader) {
+            const serverDateMs = Date.parse(serverDateHeader);
+            if (!Number.isNaN(serverDateMs)) {
+                clockOffsetMs = serverDateMs - Date.now();
+            }
+        }
         const contentType = response.headers.get("content-type") || "";
         if (!/json/i.test(contentType)) throw new Error(`${label}: پاسخ JSON نیست (Content-Type=${contentType || "نامشخص"})`);
         const data = await response.json();
@@ -4620,4 +4627,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
-                         </html>
+ </html>
