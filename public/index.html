@@ -4,7 +4,7 @@
   <meta name="enamad" content="2623488">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>آزمون ریاضی | آزمون آنلاین</title>
+  <title>آزمون ریاضی نسخه آزمایشی | آزمون آنلاین</title>
   <style>
 *{box-sizing:border-box}
  
@@ -314,7 +314,8 @@ body.page-loading{
 }
  
 .old-price{
-    color:#9ca3af;
+    color:#000000;
+    font-weight:500;
     text-decoration:line-through;
     font-size:14px;
     margin-left:8px;
@@ -784,6 +785,22 @@ body.page-loading{
     cursor:pointer;
 }
  
+.exam-feedback-card{margin:22px 0;padding:18px;border:1px solid #e5e7eb;border-radius:16px;background:#fff;text-align:center}
+.exam-feedback-card h3{margin:0 0 7px;font-size:17px;color:#1f2937}
+.exam-feedback-card p{margin:0 0 12px;color:#6b7280;font-size:13px}
+.feedback-stars{display:flex;justify-content:center;gap:7px;direction:ltr;margin:8px 0}
+.feedback-star{border:0;background:transparent;color:#d1d5db;font-size:38px;line-height:1;cursor:pointer;padding:2px;min-width:42px}
+.feedback-star.active{color:#f5a623}
+.feedback-star:focus-visible{outline:2px solid #2563eb;border-radius:8px}
+.feedback-hint{font-size:12px;color:#64748b;margin:4px 0 14px}
+.exam-feedback-card label{display:block;text-align:right;font-weight:700;font-size:13px;margin:10px 0 6px}
+.exam-feedback-card textarea{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:10px;padding:11px;font:inherit;resize:vertical;min-height:78px}
+.feedback-message{font-size:13px;margin-top:8px;min-height:18px;color:#b45309}
+.feedback-actions{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin-top:10px}
+.feedback-submit-btn,.feedback-skip-btn{border:0;border-radius:10px;padding:10px 22px;font:inherit;font-weight:700;cursor:pointer}
+.feedback-submit-btn{background:#2563eb;color:white}.feedback-skip-btn{background:#f3f4f6;color:#374151}
+.feedback-submit-btn:disabled{opacity:.6;cursor:wait}
+@media(max-width:480px){.exam-feedback-card{padding:14px}.feedback-star{font-size:34px;min-width:36px}}
 </style>
  </head>
  <body class="page-loading">
@@ -798,13 +815,23 @@ body.page-loading{
     </div>
     <div class="steps hidden" id="steps"></div>
    </div>
+   <!-- فهرست آزمون‌های فعال -->
+   <div class="card hidden" id="examCatalogCard">
+    <div class="card-title">
+     <div class="card-title-icon">📚</div>
+     <h2>آزمون‌های در دسترس</h2>
+    </div>
+    <p class="subtitle">آزمون موردنظر خود را انتخاب کنید.</p>
+    <div id="examCatalogList"><div class="loading">در حال دریافت فهرست آزمون‌ها...</div></div>
+    <div id="examCatalogError"></div>
+   </div>
    <!-- شروع آزمون -->
    <div class="card" id="startCard">
     <div class="card-title">
      <div class="card-title-icon">👤</div>
-     <h2>آزمون ریاضی</h2>
+     <h2 id="startExamTitle">آزمون ریاضی</h2>
     </div>
-    <p class="subtitle">برای شرکت در محصول «آزمون ریاضی»، نام و شماره موبایل خود را وارد کنید. سپس به صفحه پرداخت امن منتقل می‌شوید.</p>
+    <p class="subtitle" id="startExamSubtitle">برای شرکت در آزمون، اطلاعات خود را وارد کنید. سپس به صفحه پرداخت امن منتقل می‌شوید.</p>
     <div id="examInfo">
      <div class="loading">در حال دریافت اطلاعات آزمون...</div>
     </div>
@@ -821,6 +848,18 @@ body.page-loading{
      </div>
      <span class="hint"> شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود. </span>
     </div>
+    <div class="field">
+     <label for="schoolNameInput">نام مدرسه</label>
+     <div class="input-wrap"><span class="input-icon">🏫</span> <input id="schoolNameInput" type="text" placeholder="نام مدرسه" autocomplete="organization" maxlength="120" required></div>
+    </div>
+    <div class="field">
+     <label for="gradeInput">پایه تحصیلی</label>
+     <div class="input-wrap"><span class="input-icon">🎓</span> <input id="gradeInput" type="text" placeholder="مثلاً دهم، یازدهم یا دوازدهم" maxlength="40" required></div>
+    </div>
+    <div class="field">
+     <label for="academicTrackInput">رشته تحصیلی</label>
+     <div class="input-wrap"><span class="input-icon">📚</span> <input id="academicTrackInput" type="text" placeholder="مثلاً ریاضی‌فیزیک، تجربی یا انسانی" maxlength="80" required></div>
+    </div>
     <div id="startError"></div>
     <button id="startPaymentButton" class="primary-btn" disabled>در حال دریافت اطلاعات آزمون...</button>
    </div>
@@ -828,7 +867,7 @@ body.page-loading{
    <div class="card hidden" id="paymentCard">
     <div class="card-title">
      <div class="card-title-icon">💳</div>
-     <h2>پرداخت آزمون ریاضی</h2>
+     <h2 id="paymentExamTitle">پرداخت آزمون ریاضی</h2>
     </div>
     <p class="subtitle">سفارش شما ثبت شده است. برای پرداخت روی دکمه زیر بزنید.</p>
     <div id="paymentPriceBox" class="price-box">
@@ -872,7 +911,7 @@ body.page-loading{
    <div class="card hidden" id="examCard">
     <div class="exam-top">
      <div>
-      <div class="exam-label">آزمون ریاضی</div>
+      <div class="exam-label" id="runningExamTitle">آزمون ریاضی</div>
       <div class="exam-number" id="progress">سؤال ۱</div>
      </div>
      <div class="timer">
@@ -898,6 +937,25 @@ body.page-loading{
      <p>نتیجه عملکرد شما در این آزمون</p>
     </div>
     <div id="resultSummary"></div>
+    <section id="examFeedbackCard" class="exam-feedback-card">
+     <h3>⭐ میزان رضایت شما از این آزمون</h3>
+     <p>لطفاً تجربه خود از این آزمون را با ما به اشتراک بگذارید.</p>
+     <div class="feedback-stars" role="radiogroup" aria-label="امتیاز رضایت از آزمون">
+      <button type="button" class="feedback-star" data-rating="1" aria-label="۱ ستاره">★</button>
+      <button type="button" class="feedback-star" data-rating="2" aria-label="۲ ستاره">★</button>
+      <button type="button" class="feedback-star" data-rating="3" aria-label="۳ ستاره">★</button>
+      <button type="button" class="feedback-star" data-rating="4" aria-label="۴ ستاره">★</button>
+      <button type="button" class="feedback-star" data-rating="5" aria-label="۵ ستاره">★</button>
+     </div>
+     <div id="feedbackRatingHint" class="feedback-hint">برای ثبت رضایت، از ۱ تا ۵ ستاره انتخاب کنید.</div>
+     <label for="examFeedbackComment">انتقاد یا پیشنهاد شما (اختیاری)</label>
+     <textarea id="examFeedbackComment" maxlength="2000" rows="3" placeholder="اگر پیشنهاد یا انتقادی دارید، اینجا بنویسید..."></textarea>
+     <div id="examFeedbackMessage" class="feedback-message" aria-live="polite"></div>
+     <div class="feedback-actions">
+      <button type="button" id="submitExamFeedback" class="feedback-submit-btn">ثبت نظر</button>
+      <button type="button" id="skipExamFeedback" class="feedback-skip-btn">فعلاً نه</button>
+     </div>
+    </section>
     <h3 style="font-size:16px;margin-top:25px">پاسخنامه</h3>
     <div id="answerSheet" class="answer-sheet"></div>
     <div class="print-actions no-print">
@@ -908,17 +966,23 @@ body.page-loading{
    </div>
   </div>
   <script>
-const API =
-    "https://azmoonmath.ir";
-const EXAM_API =
-    "https://api.azmoonmath.ir";
-const WORKER_API =
-    "https://azmon.hosseinkhorasani1.workers.dev";
+// همیشه از همان مبدأیی استفاده می‌کنیم که صفحه از آن باز شده است.
+// بنابراین نسخه staging به هیچ‌وجه به API دامنه production وصل نمی‌شود.
+const API = window.location.origin;
+const EXAM_API = API;
+const WORKER_API = API;
  
-const EXAM_ID = 1;
+const EXAM_ID = (() => {
+    const requested = Number(new URLSearchParams(window.location.search).get("examId"));
+    if (Number.isInteger(requested) && requested > 0) return requested;
+    const saved = Number(localStorage.getItem("math_exam_exam_id") || 0);
+    return Number.isInteger(saved) && saved > 0 ? saved : 1;
+})();
  
 let orderId = null;
 let attemptId = null;
+let resultAttemptId = null;
+let selectedFeedbackRating = 0;
  
 let examQuestionsList = [];
 let localAnswersMap = {};
@@ -1360,7 +1424,7 @@ function isDiscountCurrentlyActive(exam){
         getDiscountEndAt(exam);
  
     const now =
-        Date.now();
+        nowMs();
  
  
     /* اگر تاریخ شروع وجود دارد */
@@ -1523,7 +1587,7 @@ function startDiscountCountdown(){
     function updateCountdown(){
  
         const remaining =
-            endTime - Date.now();
+            endTime - nowMs();
  
         if(
             remaining <= 0 ||
@@ -1702,6 +1766,14 @@ function renderExamInfo(){
  
     const exam =
         examData.exam || {};
+ 
+    const currentExamTitle = String(exam.title || "آزمون ریاضی").trim();
+    if ($("startExamTitle")) $("startExamTitle").textContent = currentExamTitle;
+    if ($("paymentExamTitle")) $("paymentExamTitle").textContent = "پرداخت " + currentExamTitle;
+    if ($("runningExamTitle")) $("runningExamTitle").textContent = currentExamTitle;
+    if ($("startExamSubtitle")) {
+        $("startExamSubtitle").textContent = `برای شرکت در آزمون «${currentExamTitle}»، اطلاعات خود را وارد کنید. سپس به صفحه پرداخت امن منتقل می‌شوید.`;
+    }
  
     const questions =
         Array.isArray(examData.questions)
@@ -1949,6 +2021,13 @@ async function requestExamDataFrom(baseUrl, label) {
         });
         const elapsed = Math.round(performance.now() - started);
         if (!response.ok) throw new Error(`${label}: HTTP ${response.status} (${elapsed}ms)`);
+        const serverDateHeader = response.headers.get("date");
+        if (serverDateHeader) {
+            const serverDateMs = Date.parse(serverDateHeader);
+            if (!Number.isNaN(serverDateMs)) {
+                clockOffsetMs = serverDateMs - Date.now();
+            }
+        }
         const contentType = response.headers.get("content-type") || "";
         if (!/json/i.test(contentType)) throw new Error(`${label}: پاسخ JSON نیست (Content-Type=${contentType || "نامشخص"})`);
         const data = await response.json();
@@ -1978,26 +2057,18 @@ async function loadExam(){
     info.innerHTML = `<div class="loading">در حال دریافت اطلاعات آزمون...</div>`;
     button.disabled = true;
     button.textContent = "در حال دریافت اطلاعات آزمون...";
-    const failures = [];
     let data = null;
-    const endpoints = [
-        [API || window.location.origin, "API دامنه اصلی"],
-        [WORKER_API, "API ورکر"],
-        [EXAM_API, "API ایران"]
-    ];
     try {
-        for (const [baseUrl, label] of endpoints) {
-            try { data = await requestExamDataFrom(baseUrl, label); break; }
-            catch (error) { failures.push(error.message); }
-        }
-        if (!data) throw new Error(failures.join(" | ") || "هیچ مسیر API پاسخ معتبر نداد.");
+        data = await requestExamDataFrom(API, "سرور آزمون");
         examData = data;
         examQuestionsCount = Number(data.questionCount);
         renderExamInfo();
         button.disabled = false;
-        button.textContent = "پرداخت و شروع آزمون";
+        button.textContent = Number(data.pricing?.finalPrice ?? data.pricing?.final_price ?? data.exam?.finalPrice ?? data.exam?.final_price ?? data.exam?.price ?? 0) === 0
+            ? "ثبت‌نام رایگان و شروع آزمون"
+            : "پرداخت و شروع آزمون";
     } catch (error) {
-        console.error("[AZMOON_LOAD_DIAG] all endpoints failed", { failures, error });
+        console.error("[AZMOON_LOAD_DIAG] exam load failed", error);
         info.innerHTML = `
             <div class="error" style="line-height:2">
                 <strong>صفحه آزمون الان در دسترس نیست.</strong><br>
@@ -2142,6 +2213,10 @@ async function createOrderAndPay(){
             $("phoneInput").value
         );
  
+    const schoolName = $("schoolNameInput").value.trim();
+    const grade = $("gradeInput").value.trim();
+    const academicTrack = $("academicTrackInput").value.trim();
+ 
  
     if(name.length < 2){
  
@@ -2166,6 +2241,11 @@ async function createOrderAndPay(){
  
     }
  
+ 
+    if (!schoolName || !grade || !academicTrack) {
+        showError("startError", "لطفاً نام مدرسه، پایه تحصیلی و رشته تحصیلی را وارد کنید.");
+        return;
+    }
  
     $("startPaymentButton").disabled =
         true;
@@ -2197,7 +2277,16 @@ async function createOrderAndPay(){
                             name,
  
                         phone:
-                            phone
+                            phone,
+ 
+                        schoolName:
+                            schoolName,
+ 
+                        grade:
+                            grade,
+ 
+                        academicTrack:
+                            academicTrack
  
                     })
  
@@ -2231,17 +2320,41 @@ async function createOrderAndPay(){
         }
  
  
-        if(!data.paymentUrl){
+        orderId =
+            String(data.orderId);
+        localStorage.setItem("math_exam_exam_id", String(EXAM_ID));
  
+        if (data.freeAccess === true || data.status === "free") {
+            attemptId = null;
+            examStartedAt = null;
+            examFinishedAt = null;
+            localStorage.setItem("math_exam_order_id", orderId);
+            localStorage.setItem("math_exam_name", name);
+            localStorage.setItem("math_exam_phone", phone);
+            localStorage.setItem("math_exam_paid", "1");
+            localStorage.removeItem("math_exam_attempt_id");
+            localStorage.removeItem("math_exam_started");
+            localStorage.removeItem("math_exam_started_at");
+            localStorage.removeItem("math_exam_finished_at");
+            hide("startCard");
+            hide("paymentCard");
+            hide("examCard");
+            hide("resultCard");
+            show("rulesCard");
+            const rulesError = $("rulesError");
+            if (rulesError) {
+                rulesError.innerHTML = `<div class="success">ثبت‌نام رایگان با موفقیت انجام شد. اکنون می‌توانید آزمون را شروع کنید.</div>`;
+            }
+            $("startPaymentButton").disabled = false;
+            $("startPaymentButton").textContent = "ثبت‌نام رایگان و شروع آزمون";
+            return;
+        }
+ 
+        if(!data.paymentUrl){
             throw new Error(
                 "اتصال به درگاه زرین‌پال برقرار نشد. لطفاً دوباره تلاش کنید."
             );
- 
         }
- 
- 
-        orderId =
-            String(data.orderId);
  
  
         attemptId = null;
@@ -2427,7 +2540,7 @@ async function confirmOrderPaidFromServer(id, retries) {
  
             const data = await readApiJson(response);
  
-            if (response.ok && data.ok && (data.paid === true || data.status === "paid")) {
+            if (response.ok && data.ok && (data.paid === true || data.status === "paid" || data.status === "free" || data.accessGranted === true)) {
                 orderId = oid;
                 try {
                     localStorage.setItem("math_exam_order_id", oid);
@@ -2494,7 +2607,7 @@ async function recheckPaymentStatus() {
         show("rulesCard");
         $("rulesError").innerHTML = `
             <div class="success">
-                پرداخت تأیید شد. اکنون می‌توانید آزمون را شروع کنید.
+                دسترسی شما تأیید شد. اکنون می‌توانید آزمون را شروع کنید.
             </div>
         `;
         clearError("startError");
@@ -3337,12 +3450,90 @@ async function finishExam(){
    نتیجه
 ========================= */
  
+function setupExamFeedback(currentAttemptId){
+    selectedFeedbackRating = 0;
+    const card = $("examFeedbackCard");
+    if (!card) return;
+    const saved = currentAttemptId ? localStorage.getItem("math_exam_feedback_" + currentAttemptId) : "";
+    if (saved === "submitted" || !currentAttemptId) {
+        card.classList.add("hidden");
+        return;
+    }
+    card.classList.remove("hidden");
+    $("examFeedbackComment").value = "";
+    $("examFeedbackMessage").textContent = "";
+    $("feedbackRatingHint").textContent = "برای ثبت رضایت، از ۱ تا ۵ ستاره انتخاب کنید.";
+    document.querySelectorAll(".feedback-star").forEach(button => {
+        button.classList.remove("active");
+        button.setAttribute("aria-checked", "false");
+    });
+}
+ 
+function chooseFeedbackRating(rating){
+    selectedFeedbackRating = Number(rating) || 0;
+    document.querySelectorAll(".feedback-star").forEach(button => {
+        const active = Number(button.dataset.rating) <= selectedFeedbackRating;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-checked", Number(button.dataset.rating) === selectedFeedbackRating ? "true" : "false");
+    });
+    $("feedbackRatingHint").textContent = toPersianNumber(selectedFeedbackRating) + " از ۵ ستاره";
+    $("examFeedbackMessage").textContent = "";
+}
+ 
+async function submitExamFeedback(){
+    const message = $("examFeedbackMessage");
+    const button = $("submitExamFeedback");
+    if (!resultAttemptId) {
+        message.textContent = "شناسه آزمون پیدا نشد؛ امکان ثبت نظر وجود ندارد.";
+        return;
+    }
+    if (selectedFeedbackRating < 1 || selectedFeedbackRating > 5) {
+        message.textContent = "لطفاً ابتدا تعداد ستاره‌ها را انتخاب کنید.";
+        return;
+    }
+    button.disabled = true;
+    button.textContent = "در حال ثبت...";
+    try {
+        const response = await fetch(`${API}/api/feedback`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                attemptId: resultAttemptId,
+                rating: selectedFeedbackRating,
+                comment: $("examFeedbackComment").value.trim()
+            })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || "ثبت نظر انجام نشد.");
+        localStorage.setItem("math_exam_feedback_" + resultAttemptId, "submitted");
+        $("examFeedbackCard").innerHTML = '<div style="font-size:28px;color:#16a34a">✓</div><strong>از اینکه نظرتان را ثبت کردید، سپاسگزاریم.</strong>';
+    } catch (error) {
+        message.textContent = error.message || "خطا در ثبت نظر؛ دوباره تلاش کنید.";
+        button.disabled = false;
+        button.textContent = "ثبت نظر";
+    }
+}
+ 
+function skipExamFeedback(){
+    const card = $("examFeedbackCard");
+    if (card) card.classList.add("hidden");
+}
+ 
+document.addEventListener("click", event => {
+    const star = event.target.closest(".feedback-star");
+    if (star) chooseFeedbackRating(star.dataset.rating);
+    if (event.target.closest("#submitExamFeedback")) submitExamFeedback();
+    if (event.target.closest("#skipExamFeedback")) skipExamFeedback();
+});
+ 
 function renderResult(data){
  
     const result =
         data || {};
  
     lastResultData = result;
+    resultAttemptId = attemptId || localStorage.getItem("math_exam_attempt_id") || null;
+    setupExamFeedback(resultAttemptId);
  
     lastStudentName =
         localStorage.getItem("math_exam_name") ||
@@ -4217,6 +4408,55 @@ function printAnswerSheet(){
  
  
 /* =========================
+   فهرست آزمون‌های فعال
+========================= */
+async function loadExamCatalog() {
+    const list = $("examCatalogList");
+    const errorBox = $("examCatalogError");
+    if (list) list.innerHTML = `<div class="loading">در حال دریافت فهرست آزمون‌ها...</div>`;
+    if (errorBox) errorBox.innerHTML = "";
+    try {
+        const response = await fetch(`${API}/api/exams?_=${Date.now()}`, { cache:"no-store", headers:{"Accept":"application/json"} });
+        const data = await readApiJson(response);
+        if (!response.ok || data.ok !== true) throw new Error(data.error || "دریافت فهرست آزمون‌ها ناموفق بود.");
+        const exams = Array.isArray(data.exams) ? data.exams : [];
+        if (!exams.length) {
+            list.innerHTML = `<div class="subtitle">در حال حاضر آزمون فعالی برای ثبت‌نام وجود ندارد.</div>`;
+            return;
+        }
+        list.innerHTML = exams.map(exam => {
+            const id = Number(exam.id);
+            const price = Number(exam.finalPrice ?? exam.price ?? 0);
+            const duration = Math.max(0, Number(exam.durationSeconds || 0));
+            const durationText = duration >= 3600
+                ? `${toPersianNumber(Math.floor(duration / 3600))} ساعت و ${toPersianNumber(Math.floor((duration % 3600) / 60))} دقیقه`
+                : `${toPersianNumber(Math.ceil(duration / 60))} دقیقه`;
+            return `<div class="exam-catalog-item" style="border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin:12px 0;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+                <div style="flex:1;min-width:170px">
+                    <div style="font-weight:800;font-size:16px">${escapeHtml(exam.title || "آزمون ریاضی")}</div>
+                    <div class="subtitle" style="margin:6px 0 0">مدت: ${durationText} · ${price === 0 ? "رایگان" : `هزینه: ${toPersianNumber(price.toLocaleString("en-US"))} تومان`}</div>
+                </div>
+                <button type="button" class="primary-btn" data-exam-id="${id}">انتخاب و ورود</button>
+            </div>`;
+        }).join("");
+        list.querySelectorAll("button[data-exam-id]").forEach(button => {
+            button.addEventListener("click", () => {
+                const id = Number(button.dataset.examId);
+                if (!Number.isInteger(id) || id <= 0) return;
+                localStorage.setItem("math_exam_exam_id", String(id));
+                const target = new URL(window.location.href);
+                target.searchParams.set("examId", String(id));
+                target.searchParams.delete("payment");
+                window.location.href = target.toString();
+            });
+        });
+    } catch (error) {
+        if (list) list.innerHTML = "";
+        if (errorBox) errorBox.innerHTML = `<div class="error">${escapeHtml(error.message)}<br><button type="button" class="secondary-btn" onclick="loadExamCatalog()">تلاش دوباره</button></div>`;
+    }
+}
+ 
+/* =========================
    شروع صفحه
 ========================= */
  
@@ -4257,12 +4497,24 @@ async function initializePage(){
         localStorage.getItem("math_exam_started") ||
         localStorage.getItem("math_exam_paid")
     );
+    const hasExplicitExamId = Number(new URLSearchParams(window.location.search).get("examId")) > 0;
  
+    if (!hasPaymentQuery && !hasSavedFlow && !hasExplicitExamId) {
+        hide("startCard");
+        hide("paymentCard");
+        hide("rulesCard");
+        hide("examCard");
+        hide("resultCard");
+        show("examCatalogCard");
+        await loadExamCatalog();
+        document.body.classList.remove("page-loading");
+        return;
+    }
+    hide("examCatalogCard");
     if (!hasPaymentQuery && !hasSavedFlow) {
         show("startCard");
         document.body.classList.remove("page-loading");
     }
- 
  
     await loadExam();
  
