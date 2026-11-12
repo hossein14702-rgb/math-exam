@@ -809,12 +809,60 @@ body.page-loading{
     <div class="brand">
      <div class="logo">∑</div>
      <div class="brand-text">
-      <h1>آزمون آنلاین ریاضی</h1>
-      <span>آزمون هوشمند و زمان‌دار</span>
+      <h1>آزمون آنلاین </h1>
+      <span>یادگیری، سنجش و پیشرفت</span>
      </div>
     </div>
     <div class="steps hidden" id="steps"></div>
    </div>
+   <section id="studentHero" class="student-hero hidden">
+    <div class="hero-content">
+        <div class="hero-badge">
+            مسیر موفقیت از اینجا شروع می‌شود
+        </div>
+ 
+        <h2>آمادگی بیشتر، نتیجه بهتر</h2>
+ 
+        <p>
+            آزمون‌های متنوع را انتخاب کن، دانش خودت را بسنج
+            و با شناخت نقاط قوت و ضعف، پیشرفت کن.
+        </p>
+ 
+        <button type="button" class="hero-cta"
+            onclick="document.getElementById('examCatalogCard').scrollIntoView({behavior:'smooth',block:'start'})">
+            مشاهده آزمون‌ها
+            <span>←</span>
+        </button>
+    </div>
+ 
+    <div class="hero-visual" aria-hidden="true">
+        <div class="hero-circle"></div>
+ 
+        <div class="hero-paper">
+            <div class="paper-top"></div>
+            <div class="paper-line"></div>
+            <div class="paper-line short"></div>
+ 
+            <div class="paper-check">
+                <span>✓</span>
+                <i></i>
+            </div>
+ 
+            <div class="paper-check">
+                <span>✓</span>
+                <i></i>
+            </div>
+ 
+            <div class="paper-check">
+                <span>✓</span>
+                <i></i>
+            </div>
+        </div>
+ 
+        <div class="hero-star">✦</div>
+        <div class="hero-dot"></div>
+    </div>
+   </section>
    <!-- فهرست آزمون‌های فعال -->
    <div class="card hidden" id="examCatalogCard">
     <div class="card-title">
@@ -4627,4 +4675,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
- </html>
+      </html>
