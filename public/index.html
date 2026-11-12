@@ -314,8 +314,7 @@ body.page-loading{
 }
  
 .old-price{
-    color:#000000;
-    font-weight:500;
+    color:#9ca3af;
     text-decoration:line-through;
     font-size:14px;
     margin-left:8px;
@@ -785,6 +784,23 @@ body.page-loading{
     cursor:pointer;
 }
  
+ 
+.exam-feedback-card{margin:22px 0;padding:18px;border:1px solid #e5e7eb;border-radius:16px;background:#fff;text-align:center}
+.exam-feedback-card h3{margin:0 0 7px;font-size:17px;color:#1f2937}
+.exam-feedback-card p{margin:0 0 12px;color:#6b7280;font-size:13px}
+.feedback-stars{display:flex;justify-content:center;gap:7px;direction:ltr;margin:8px 0}
+.feedback-star{border:0;background:transparent;color:#d1d5db;font-size:38px;line-height:1;cursor:pointer;padding:2px;min-width:42px}
+.feedback-star.active{color:#f5a623}
+.feedback-star:focus-visible{outline:2px solid #2563eb;border-radius:8px}
+.feedback-hint{font-size:12px;color:#64748b;margin:4px 0 14px}
+.exam-feedback-card label{display:block;text-align:right;font-weight:700;font-size:13px;margin:10px 0 6px}
+.exam-feedback-card textarea{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:10px;padding:11px;font:inherit;resize:vertical;min-height:78px}
+.feedback-message{font-size:13px;margin-top:8px;min-height:18px;color:#b45309}
+.feedback-actions{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin-top:10px}
+.feedback-submit-btn,.feedback-skip-btn{border:0;border-radius:10px;padding:10px 22px;font:inherit;font-weight:700;cursor:pointer}
+.feedback-submit-btn{background:#2563eb;color:white}.feedback-skip-btn{background:#f3f4f6;color:#374151}
+.feedback-submit-btn:disabled{opacity:.6;cursor:wait}
+@media(max-width:480px){.exam-feedback-card{padding:14px}.feedback-star{font-size:34px;min-width:36px}}
 </style>
  </head>
  <body class="page-loading">
@@ -921,6 +937,25 @@ body.page-loading{
      <p>نتیجه عملکرد شما در این آزمون</p>
     </div>
     <div id="resultSummary"></div>
+    <section id="examFeedbackCard" class="exam-feedback-card">
+     <h3>⭐ میزان رضایت شما از این آزمون</h3>
+     <p>لطفاً تجربه خود از این آزمون را با ما به اشتراک بگذارید.</p>
+     <div class="feedback-stars" role="radiogroup" aria-label="امتیاز رضایت از آزمون">
+      <button type="button" class="feedback-star" data-rating="1" aria-label="۱ ستاره">★</button>
+      <button type="button" class="feedback-star" data-rating="2" aria-label="۲ ستاره">★</button>
+      <button type="button" class="feedback-star" data-rating="3" aria-label="۳ ستاره">★</button>
+      <button type="button" class="feedback-star" data-rating="4" aria-label="۴ ستاره">★</button>
+      <button type="button" class="feedback-star" data-rating="5" aria-label="۵ ستاره">★</button>
+     </div>
+     <div id="feedbackRatingHint" class="feedback-hint">برای ثبت رضایت، از ۱ تا ۵ ستاره انتخاب کنید.</div>
+     <label for="examFeedbackComment">انتقاد یا پیشنهاد شما (اختیاری)</label>
+     <textarea id="examFeedbackComment" maxlength="2000" rows="3" placeholder="اگر پیشنهاد یا انتقادی دارید، اینجا بنویسید..."></textarea>
+     <div id="examFeedbackMessage" class="feedback-message" aria-live="polite"></div>
+     <div class="feedback-actions">
+      <button type="button" id="submitExamFeedback" class="feedback-submit-btn">ثبت نظر</button>
+      <button type="button" id="skipExamFeedback" class="feedback-skip-btn">فعلاً نه</button>
+     </div>
+    </section>
     <h3 style="font-size:16px;margin-top:25px">پاسخنامه</h3>
     <div id="answerSheet" class="answer-sheet"></div>
     <div class="print-actions no-print">
@@ -946,6 +981,8 @@ const EXAM_ID = (() => {
  
 let orderId = null;
 let attemptId = null;
+let resultAttemptId = null;
+let selectedFeedbackRating = 0;
  
 let examQuestionsList = [];
 let localAnswersMap = {};
@@ -1387,7 +1424,7 @@ function isDiscountCurrentlyActive(exam){
         getDiscountEndAt(exam);
  
     const now =
-        nowMs();
+        Date.now();
  
  
     /* اگر تاریخ شروع وجود دارد */
@@ -1550,7 +1587,7 @@ function startDiscountCountdown(){
     function updateCountdown(){
  
         const remaining =
-            endTime - nowMs();
+            endTime - Date.now();
  
         if(
             remaining <= 0 ||
@@ -1984,13 +2021,6 @@ async function requestExamDataFrom(baseUrl, label) {
         });
         const elapsed = Math.round(performance.now() - started);
         if (!response.ok) throw new Error(`${label}: HTTP ${response.status} (${elapsed}ms)`);
-        const serverDateHeader = response.headers.get("date");
-        if (serverDateHeader) {
-            const serverDateMs = Date.parse(serverDateHeader);
-            if (!Number.isNaN(serverDateMs)) {
-                clockOffsetMs = serverDateMs - Date.now();
-            }
-        }
         const contentType = response.headers.get("content-type") || "";
         if (!/json/i.test(contentType)) throw new Error(`${label}: پاسخ JSON نیست (Content-Type=${contentType || "نامشخص"})`);
         const data = await response.json();
@@ -3413,12 +3443,90 @@ async function finishExam(){
    نتیجه
 ========================= */
  
+function setupExamFeedback(currentAttemptId){
+    selectedFeedbackRating = 0;
+    const card = $("examFeedbackCard");
+    if (!card) return;
+    const saved = currentAttemptId ? localStorage.getItem("math_exam_feedback_" + currentAttemptId) : "";
+    if (saved === "submitted" || !currentAttemptId) {
+        card.classList.add("hidden");
+        return;
+    }
+    card.classList.remove("hidden");
+    $("examFeedbackComment").value = "";
+    $("examFeedbackMessage").textContent = "";
+    $("feedbackRatingHint").textContent = "برای ثبت رضایت، از ۱ تا ۵ ستاره انتخاب کنید.";
+    document.querySelectorAll(".feedback-star").forEach(button => {
+        button.classList.remove("active");
+        button.setAttribute("aria-checked", "false");
+    });
+}
+ 
+function chooseFeedbackRating(rating){
+    selectedFeedbackRating = Number(rating) || 0;
+    document.querySelectorAll(".feedback-star").forEach(button => {
+        const active = Number(button.dataset.rating) <= selectedFeedbackRating;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-checked", Number(button.dataset.rating) === selectedFeedbackRating ? "true" : "false");
+    });
+    $("feedbackRatingHint").textContent = toPersianNumber(selectedFeedbackRating) + " از ۵ ستاره";
+    $("examFeedbackMessage").textContent = "";
+}
+ 
+async function submitExamFeedback(){
+    const message = $("examFeedbackMessage");
+    const button = $("submitExamFeedback");
+    if (!resultAttemptId) {
+        message.textContent = "شناسه آزمون پیدا نشد؛ امکان ثبت نظر وجود ندارد.";
+        return;
+    }
+    if (selectedFeedbackRating < 1 || selectedFeedbackRating > 5) {
+        message.textContent = "لطفاً ابتدا تعداد ستاره‌ها را انتخاب کنید.";
+        return;
+    }
+    button.disabled = true;
+    button.textContent = "در حال ثبت...";
+    try {
+        const response = await fetch(`${API}/api/feedback`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                attemptId: resultAttemptId,
+                rating: selectedFeedbackRating,
+                comment: $("examFeedbackComment").value.trim()
+            })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || "ثبت نظر انجام نشد.");
+        localStorage.setItem("math_exam_feedback_" + resultAttemptId, "submitted");
+        $("examFeedbackCard").innerHTML = '<div style="font-size:28px;color:#16a34a">✓</div><strong>از اینکه نظرتان را ثبت کردید، سپاسگزاریم.</strong>';
+    } catch (error) {
+        message.textContent = error.message || "خطا در ثبت نظر؛ دوباره تلاش کنید.";
+        button.disabled = false;
+        button.textContent = "ثبت نظر";
+    }
+}
+ 
+function skipExamFeedback(){
+    const card = $("examFeedbackCard");
+    if (card) card.classList.add("hidden");
+}
+ 
+document.addEventListener("click", event => {
+    const star = event.target.closest(".feedback-star");
+    if (star) chooseFeedbackRating(star.dataset.rating);
+    if (event.target.closest("#submitExamFeedback")) submitExamFeedback();
+    if (event.target.closest("#skipExamFeedback")) skipExamFeedback();
+});
+ 
 function renderResult(data){
  
     const result =
         data || {};
  
     lastResultData = result;
+    resultAttemptId = attemptId || localStorage.getItem("math_exam_attempt_id") || null;
+    setupExamFeedback(resultAttemptId);
  
     lastStudentName =
         localStorage.getItem("math_exam_name") ||
@@ -4512,4 +4620,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
- </html>
+                         </html>
