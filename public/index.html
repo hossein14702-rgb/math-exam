@@ -5,6 +5,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>آزمون ریاضی نسخه آزمایشی | آزمون آنلاین</title>
+ 
+/* Student hero styles */
+.student-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:260px;margin:0 0 18px;padding:28px 30px;overflow:hidden;border:1px solid #dbeafe;border-radius:22px;background:linear-gradient(125deg,#f8fbff 0%,#eaf3ff 58%,#dbeafe 100%);box-shadow:0 10px 28px rgba(37,99,235,.08)}
+.student-hero.hidden{display:none!important}
+.hero-content{position:relative;z-index:2;flex:1;min-width:0}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #bfdbfe;border-radius:30px;background:rgba(255,255,255,.78);color:#1d4ed8;font-size:12px;font-weight:700}
+.hero-badge:before{content:"";width:7px;height:7px;border-radius:50%;background:#3b82f6;box-shadow:0 0 0 4px #dbeafe}
+.student-hero h2{margin:16px 0 9px;color:#172554;font-size:clamp(21px,3vw,29px);line-height:1.6}
+.student-hero p{max-width:520px;margin:0;color:#475569;font-size:14px;line-height:2.1}
+.hero-cta{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:46px;margin-top:18px;padding:0 20px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 7px 16px rgba(37,99,235,.2);transition:transform .2s,background .2s}
+.hero-cta:hover{background:#1d4ed8;transform:translateY(-2px)}
+.hero-cta span{font-size:19px;line-height:1}
+.hero-visual{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 210px;height:205px}
+.hero-circle{position:absolute;width:190px;height:190px;border-radius:50%;background:linear-gradient(145deg,#dbeafe,#bfdbfe);opacity:.85}
+.hero-paper{position:relative;z-index:1;width:130px;height:165px;padding:18px 15px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 15px 30px rgba(30,64,175,.16);transform:rotate(-5deg)}
+.paper-top{height:9px;width:58%;margin-bottom:18px;border-radius:5px;background:#93c5fd}
+.paper-line{height:6px;margin:10px 0;border-radius:5px;background:#e2e8f0}
+.paper-line.short{width:65%}
+.paper-check{display:flex;align-items:center;gap:8px;margin-top:11px}
+.paper-check span{display:flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:5px;background:#dcfce7;color:#16a34a;font-size:12px;font-weight:bold}
+.paper-check i{display:block;width:57px;height:5px;border-radius:5px;background:#dbeafe}
+.hero-star{position:absolute;z-index:2;top:16px;right:16px;color:#f59e0b;font-size:30px;text-shadow:0 3px 8px rgba(245,158,11,.2)}
+.hero-dot{position:absolute;z-index:2;bottom:17px;left:14px;width:17px;height:17px;border:4px solid #fff;border-radius:50%;background:#60a5fa;box-shadow:0 3px 10px rgba(37,99,235,.2)}
+@media(max-width:600px){.student-hero{min-height:0;gap:8px;padding:21px 17px;border-radius:18px}.student-hero h2{font-size:21px;margin-top:13px}.student-hero p{font-size:12px;line-height:2}.hero-badge{font-size:10px;padding:6px 9px}.hero-cta{min-height:42px;margin-top:14px;padding:0 15px;font-size:13px}.hero-visual{flex:0 0 105px;height:145px;margin-left:-8px}.hero-circle{width:112px;height:112px}.hero-paper{width:82px;height:112px;padding:11px 9px;border-radius:9px}.paper-top{height:6px;margin-bottom:12px}.paper-line{height:4px;margin:7px 0}.paper-check{gap:5px;margin-top:8px}.paper-check span{width:13px;height:13px;font-size:9px}.paper-check i{width:34px;height:4px}.hero-star{top:8px;right:2px;font-size:22px}.hero-dot{bottom:8px;left:0;width:13px;height:13px;border-width:3px}}
+@media(max-width:380px){.student-hero{padding:17px 13px}.hero-visual{flex-basis:88px}.student-hero h2{font-size:19px}.student-hero p{font-size:11px}}
+
   <style>
 *{box-sizing:border-box}
  
