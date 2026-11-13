@@ -640,11 +640,103 @@
   <style>
 *{box-sizing:border-box}
  
+/* حرکت نرم هاله‌های پس‌زمینه */
+@keyframes bgFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(4%, 3%) scale(1.08); }
+}
+@keyframes bgFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-5%, 4%) scale(1.1); }
+}
+@keyframes bgFloat3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(3%, -4%) scale(1.06); }
+}
+@keyframes bgFloat4 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-3%, -3%) scale(1.09); }
+}
+@keyframes dotShift {
+    0% { background-position: 0 0; }
+    100% { background-position: 22px 22px; }
+}
+ 
 body{
     margin:0;
     font-family:Tahoma,Arial,sans-serif;
-    background:#f4f7fb;
     color:#1f2937;
+    min-height:100vh;
+    background-color:#eef4fb;
+    position:relative;
+    overflow-x:hidden;
+}
+ 
+/* لایه شبکه نقطه‌ای */
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background-image: radial-gradient(rgba(37,99,235,.07) 1.2px, transparent 1.2px);
+    background-size: 22px 22px;
+    animation: dotShift 18s linear infinite;
+}
+ 
+/* هاله‌های متحرک */
+body::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(59,130,246,.11) 0%, transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(37,99,235,.09) 0%, transparent 38%),
+        radial-gradient(circle at 75% 78%, rgba(96,165,250,.1) 0%, transparent 40%),
+        radial-gradient(circle at 20% 85%, rgba(147,197,253,.12) 0%, transparent 36%);
+    /* انیمیشن با filter روی خود لایه‌ها سخت است؛ از چند لایه جدا استفاده می‌کنیم */
+}
+ 
+/* چهار هاله جدا برای حرکت مستقل */
+.bg-orb{
+    position:fixed;
+    border-radius:50%;
+    pointer-events:none;
+    z-index:0;
+    filter: blur(2px);
+}
+.bg-orb-1{
+    width:340px; height:340px;
+    top:-60px; right:-40px;
+    background: radial-gradient(circle, rgba(59,130,246,.14) 0%, transparent 70%);
+    animation: bgFloat1 14s ease-in-out infinite;
+}
+.bg-orb-2{
+    width:280px; height:280px;
+    bottom:10%; left:-50px;
+    background: radial-gradient(circle, rgba(37,99,235,.12) 0%, transparent 70%);
+    animation: bgFloat2 17s ease-in-out infinite;
+}
+.bg-orb-3{
+    width:220px; height:220px;
+    top:40%; left:55%;
+    background: radial-gradient(circle, rgba(96,165,250,.1) 0%, transparent 70%);
+    animation: bgFloat3 12s ease-in-out infinite;
+}
+.bg-orb-4{
+    width:260px; height:260px;
+    bottom:-40px; right:15%;
+    background: radial-gradient(circle, rgba(147,197,253,.13) 0%, transparent 70%);
+    animation: bgFloat4 15s ease-in-out infinite;
+}
+ 
+@media (prefers-reduced-motion: reduce){
+    body::before,
+    .bg-orb-1, .bg-orb-2, .bg-orb-3, .bg-orb-4{
+        animation: none !important;
+    }
 }
  
 /* عمداً صفحه را مخفی نمی‌کنیم تا خطای احتمالی JavaScript باعث صفحه سفید نشود */
@@ -655,6 +747,8 @@ body.page-loading{
 .container{
     width:min(760px,94%);
     margin:30px auto;
+    position:relative;
+    z-index:1;
 }
  
 .header{
@@ -1440,6 +1534,11 @@ body.page-loading{
 </style>
  </head>
  <body class="page-loading">
+  <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-3" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-4" aria-hidden="true"></div>
+ 
   <div class="container">
    <div class="header">
     <div class="brand">
@@ -5412,4 +5511,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
- </html>
+    </html>
