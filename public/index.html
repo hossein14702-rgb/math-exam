@@ -32,48 +32,364 @@
 @media(max-width:380px){.student-hero{padding:17px 13px}.hero-visual{flex-basis:88px}.student-hero h2{font-size:19px}.student-hero p{font-size:11px}}
 </style>
 <style>
-/* Catalog cards - optimized + design inspired */
-#examCatalogCard{padding:20px 18px;border:1px solid #e0eaf8;border-radius:22px;box-shadow:0 12px 32px rgba(30,64,175,.08);background:#fff}
-#examCatalogCard .card-title{margin-bottom:14px;gap:12px}
-#examCatalogCard .card-title-icon{width:48px;height:48px;border-radius:14px;background:#eff6ff;color:#2563eb;font-size:22px}
-#examCatalogCard .card-title h2{color:#172554;font-size:20px;font-weight:800}
-#examCatalogCard>.subtitle{color:#64748b;font-size:13px;margin:0 0 18px}
-.catalog-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
-.catalog-filter-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #e2e8f0;border-radius:30px;background:#fff;color:#475569;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
-.catalog-filter-btn:hover,.catalog-filter-btn.active{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.25)}
-.catalog-filter-btn .filter-icon{font-size:15px}
-#examCatalogList{display:flex;flex-direction:column;gap:14px}
-#examCatalogList .exam-catalog-item{position:relative;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin:0;padding:16px 14px;border:1px solid #e2eaf5;border-radius:18px;background:linear-gradient(145deg,#fff,#f7faff);box-shadow:0 6px 18px rgba(15,23,42,.05);transition:transform .18s,box-shadow .18s;overflow:hidden}
-#examCatalogList .exam-catalog-item:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(37,99,235,.12)}
-#examCatalogList .exam-catalog-item.has-discount{border-color:#bbf7d0;background:linear-gradient(145deg,#fff 0%,#f0fdf4 55%,#ecfdf5 100%)}
-.exam-item-icon{flex:0 0 72px;width:72px;height:72px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:inset 0 0 0 1px rgba(37,99,235,.08)}
-.exam-item-icon.math{background:linear-gradient(145deg,#dbeafe,#bfdbfe)}
-.exam-item-icon.science{background:linear-gradient(145deg,#d1fae5,#a7f3d0)}
-.exam-item-icon.persian{background:linear-gradient(145deg,#fef3c7,#fde68a)}
-.exam-item-icon.default{background:linear-gradient(145deg,#e0e7ff,#c7d2fe)}
-.exam-item-body{flex:1 1 160px;min-width:0;display:flex;flex-direction:column;gap:6px}
-.exam-item-title{color:#1e293b;font-size:16px;font-weight:800;line-height:1.6;margin:0}
-.exam-item-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
-.exam-meta-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;background:#f1f5f9;color:#475569;font-size:12px;font-weight:600}
-.exam-meta-badge.duration{background:#f8fafc;color:#64748b}
-.exam-price-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:2px}
-.exam-old-price{color:#94a3b8;font-size:13px;text-decoration:line-through;font-weight:500}
-.exam-final-price{color:#059669;font-size:18px;font-weight:800}
-.exam-final-price.no-discount{color:#2563eb;font-size:16px}
-.exam-discount-badge{position:absolute;top:10px;right:10px;display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:11px;font-weight:700;box-shadow:0 3px 8px rgba(22,163,74,.3);z-index:2}
-#examCatalogList .exam-catalog-item button.primary-btn,.exam-start-btn{width:auto;min-width:140px;min-height:46px;margin:0;padding:10px 18px;border-radius:14px;font-size:14px;font-weight:700;background:#2563eb;color:#fff;box-shadow:0 6px 16px rgba(37,99,235,.22);display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .15s,box-shadow .15s}
-#examCatalogList .exam-catalog-item button.primary-btn:hover,.exam-start-btn:hover{background:#1d4ed8;transform:translateY(-1px);box-shadow:0 8px 20px rgba(37,99,235,.3)}
-.exam-start-btn .play-icon{font-size:13px;line-height:1}
+/* ========== Catalog cards - larger, premium, inspired by sample image ========== */
+#examCatalogCard{
+  padding: 22px 20px;
+  border: 1px solid #dbe7f8;
+  border-radius: 24px;
+  box-shadow: 0 14px 40px rgba(30,64,175,.10);
+  background: #fff;
+}
+ 
+#examCatalogCard .card-title{
+  margin-bottom: 8px;
+  gap: 14px;
+}
+ 
+#examCatalogCard .card-title-icon{
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(145deg,#eff6ff,#dbeafe);
+  color: #2563eb;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+ 
+#examCatalogCard .card-title h2{
+  color: #0f172a;
+  font-size: 21px;
+  font-weight: 800;
+}
+ 
+#examCatalogCard > .subtitle{
+  color: #64748b;
+  font-size: 13.5px;
+  margin: 0 0 20px;
+  line-height: 1.9;
+}
+ 
+#examCatalogList{
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+ 
+/* ===== Main exam card ===== */
+#examCatalogList .exam-catalog-item{
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e2eaf5;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15,23,42,.06);
+  overflow: hidden;
+  transition: transform .2s ease, box-shadow .2s ease;
+  min-height: 140px;
+}
+ 
+#examCatalogList .exam-catalog-item:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(37,99,235,.14);
+}
+ 
+#examCatalogList .exam-catalog-item.has-discount{
+  border-color: #86efac;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 70%, #ecfdf5 100%);
+}
+ 
+/* Illustration area - shared public image style for all exams */
+.exam-item-visual{
+  flex: 0 0 120px;
+  min-width: 110px;
+  background: linear-gradient(160deg, #dbeafe 0%, #bfdbfe 45%, #93c5fd 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+ 
+.exam-item-visual::before{
+  content: "";
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.35);
+  top: -20px;
+  right: -25px;
+}
+ 
+.exam-item-visual .visual-emoji{
+  font-size: 48px;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 6px 12px rgba(30,64,175,.2));
+}
+ 
+/* Body of card */
+.exam-item-body{
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 16px 18px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+ 
+.exam-item-title{
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0;
+}
+ 
+/* Price row - larger & more prominent */
+.exam-price-block{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+ 
+.exam-price-row{
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+ 
+.exam-old-price{
+  color: #94a3b8;
+  font-size: 14px;
+  text-decoration: line-through;
+  font-weight: 500;
+}
+ 
+.exam-final-price{
+  color: #059669;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+ 
+.exam-final-price.no-discount{
+  color: #2563eb;
+  font-size: 20px;
+}
+ 
+.exam-item-meta{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+ 
+.exam-meta-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+ 
+.exam-meta-badge.duration{
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+ 
+/* Discount badge - prominent like sample */
+.exam-discount-badge{
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(22,163,74,.35);
+  z-index: 3;
+  letter-spacing: -0.2px;
+}
+/* Countdown timer box - like sample image */
+.exam-discount-timer{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+  border: 1px solid #fecdd3;
+  color: #be123c;
+  font-size: 11px;
+  font-weight: 600;
+  width: fit-content;
+  max-width: 100%;
+}
+.exam-discount-timer .timer-label{
+  font-size: 11px;
+  color: #9f1239;
+  font-weight: 700;
+}
+.exam-discount-timer .timer-digits{
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #e11d48;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+}
+.exam-discount-timer .timer-sub{
+  font-size: 10px;
+  color: #be123c;
+  opacity: .9;
+}
+ 
+ 
+/* Action area */
+.exam-item-action{
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 16px 18px 16px 8px;
+}
+ 
+/* ===== Shiny attractive button ===== */
+#examCatalogList .exam-catalog-item button.primary-btn,
+.exam-start-btn{
+  position: relative;
+  width: auto;
+  min-width: 150px;
+  min-height: 50px;
+  margin: 0;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 55%, #1d4ed8 100%);
+  color: #fff;
+  box-shadow:
+    0 4px 0 #1e40af,
+    0 8px 20px rgba(37,99,235,.35),
+    inset 0 1px 0 rgba(255,255,255,.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, filter .15s;
+  overflow: hidden;
+}
+ 
+#examCatalogList .exam-catalog-item button.primary-btn::before,
+.exam-start-btn::before{
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+  transform: skewX(-20deg);
+  transition: left .45s ease;
+}
+ 
+#examCatalogList .exam-catalog-item button.primary-btn:hover,
+.exam-start-btn:hover{
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow:
+    0 5px 0 #1e40af,
+    0 12px 26px rgba(37,99,235,.42),
+    inset 0 1px 0 rgba(255,255,255,.4);
+}
+ 
+#examCatalogList .exam-catalog-item button.primary-btn:hover::before,
+.exam-start-btn:hover::before{
+  left: 120%;
+}
+ 
+#examCatalogList .exam-catalog-item button.primary-btn:active,
+.exam-start-btn:active{
+  transform: translateY(1px);
+  box-shadow:
+    0 2px 0 #1e40af,
+    0 4px 12px rgba(37,99,235,.3);
+}
+ 
+.exam-start-btn .play-icon{
+  font-size: 14px;
+  line-height: 1;
+  opacity: .95;
+}
+ 
+/* Mobile */
 @media(max-width:600px){
-#examCatalogCard{padding:16px 14px}
-#examCatalogCard .card-title h2{font-size:18px}
-.catalog-filters{gap:6px;margin-bottom:14px}
-.catalog-filter-btn{padding:7px 12px;font-size:12px}
-#examCatalogList .exam-catalog-item{padding:14px;gap:12px}
-.exam-item-icon{flex-basis:58px;width:58px;height:58px;font-size:28px;border-radius:14px}
-.exam-item-title{font-size:15px}
-#examCatalogList .exam-catalog-item button.primary-btn,.exam-start-btn{width:100%;min-width:0;min-height:48px;margin-top:4px}
-.exam-discount-badge{top:8px;right:8px;font-size:10px;padding:3px 8px}
+  #examCatalogCard{
+    padding: 16px 14px;
+  }
+  #examCatalogCard .card-title h2{
+    font-size: 18px;
+  }
+  #examCatalogList .exam-catalog-item{
+    flex-direction: column;
+    min-height: 0;
+  }
+  .exam-item-visual{
+    flex: 0 0 90px;
+    width: 100%;
+    min-height: 90px;
+  }
+  .exam-item-visual .visual-emoji{
+    font-size: 40px;
+  }
+  .exam-item-body{
+    padding: 14px 16px 8px;
+  }
+  .exam-item-title{
+    font-size: 16px;
+  }
+  .exam-final-price{
+    font-size: 20px;
+  }
+  .exam-item-action{
+    width: 100%;
+    padding: 8px 16px 16px;
+  }
+  #examCatalogList .exam-catalog-item button.primary-btn,
+  .exam-start-btn{
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+  }
+  .exam-discount-badge{
+    top: 10px;
+    left: 10px;
+    font-size: 11px;
+    padding: 5px 10px;
+  }
 }
 </style>
 <style>
@@ -98,10 +414,11 @@ body.page-loading{
  
 .header{
     background:white;
-    border-radius:20px;
-    padding:20px;
-    box-shadow:0 8px 30px rgba(0,0,0,.06);
+    border-radius:22px;
+    padding:22px 24px;
+    box-shadow:0 10px 32px rgba(15,23,42,.07);
     margin-bottom:18px;
+    border:1px solid #eef2f7;
 }
  
 .brand{
@@ -111,15 +428,16 @@ body.page-loading{
 }
  
 .logo{
-    width:52px;
-    height:52px;
-    border-radius:15px;
-    background:#2563eb;
+    width:54px;
+    height:54px;
+    border-radius:16px;
+    background:linear-gradient(145deg,#3b82f6,#2563eb);
     color:white;
     display:flex;
     align-items:center;
     justify-content:center;
     font-size:26px;
+    box-shadow:0 4px 12px rgba(37,99,235,.3);
 }
  
 .brand-text h1{
@@ -189,10 +507,11 @@ body.page-loading{
  
 .card{
     background:white;
-    border-radius:20px;
-    padding:25px;
-    box-shadow:0 8px 30px rgba(0,0,0,.06);
+    border-radius:22px;
+    padding:26px;
+    box-shadow:0 10px 32px rgba(15,23,42,.07);
     margin-bottom:18px;
+    border:1px solid #eef2f7;
 }
  
 .hidden{
@@ -280,24 +599,29 @@ body.page-loading{
     border-radius:14px;
     padding:14px;
     margin-top:22px;
-    background:#2563eb;
+    background:linear-gradient(180deg,#3b82f6 0%,#2563eb 55%,#1d4ed8 100%);
     color:white;
     font-family:inherit;
     font-size:15px;
-    font-weight:700;
+    font-weight:800;
     cursor:pointer;
-    box-shadow:0 6px 16px rgba(37,99,235,.2);
-    transition:background .15s,transform .15s,box-shadow .15s;
+    box-shadow:0 4px 0 #1e40af,0 8px 20px rgba(37,99,235,.32),inset 0 1px 0 rgba(255,255,255,.3);
+    transition:transform .15s,box-shadow .15s,filter .15s;
 }
 .primary-btn:hover:not(:disabled){
-    background:#1d4ed8;
-    transform:translateY(-1px);
-    box-shadow:0 8px 20px rgba(37,99,235,.28);
+    transform:translateY(-2px);
+    filter:brightness(1.06);
+    box-shadow:0 5px 0 #1e40af,0 12px 26px rgba(37,99,235,.4),inset 0 1px 0 rgba(255,255,255,.35);
+}
+.primary-btn:active:not(:disabled){
+    transform:translateY(1px);
+    box-shadow:0 2px 0 #1e40af,0 4px 12px rgba(37,99,235,.28);
 }
 .primary-btn:disabled{
     opacity:.6;
     cursor:not-allowed;
     box-shadow:none;
+    filter:none;
 }
  
 .secondary-btn{
@@ -386,9 +710,10 @@ body.page-loading{
 }
  
 .price{
-    font-size:22px;
-    font-weight:bold;
+    font-size:24px;
+    font-weight:800;
     color:#059669;
+    letter-spacing:-0.3px;
 }
  
 .old-price{
@@ -405,12 +730,12 @@ body.page-loading{
     gap:4px;
     background:linear-gradient(135deg,#22c55e,#16a34a);
     color:#fff;
-    padding:5px 12px;
-    border-radius:20px;
-    font-size:12px;
-    font-weight:700;
-    margin-top:8px;
-    box-shadow:0 3px 8px rgba(22,163,74,.25);
+    padding:6px 14px;
+    border-radius:22px;
+    font-size:13px;
+    font-weight:800;
+    margin-top:10px;
+    box-shadow:0 4px 12px rgba(22,163,74,.3);
 }
  
 /* شمارش معکوس تخفیف */
@@ -4553,31 +4878,6 @@ async function loadExamCatalog() {
             return;
         }
  
-        const filtersHtml = `
-            <div class="catalog-filters" id="catalogFilters">
-                <button type="button" class="catalog-filter-btn active" data-filter="all">
-                    <span class="filter-icon">🏆</span> همه آزمون‌ها
-                </button>
-                <button type="button" class="catalog-filter-btn" data-filter="ریاضی">
-                    <span class="filter-icon">🧮</span> ریاضی
-                </button>
-                <button type="button" class="catalog-filter-btn" data-filter="علوم">
-                    <span class="filter-icon">🔬</span> علوم
-                </button>
-                <button type="button" class="catalog-filter-btn" data-filter="فارسی">
-                    <span class="filter-icon">📖</span> فارسی
-                </button>
-            </div>
-        `;
- 
-        function getExamIcon(title) {
-            const t = String(title || "").toLowerCase();
-            if (/ریاضی|math|حساب|هندسه|جبر/.test(t)) return { emoji: "🧮", cls: "math" };
-            if (/علوم|تجربی|شیمی|فیزیک|زیست|science/.test(t)) return { emoji: "🧪", cls: "science" };
-            if (/فارسی|ادبیات|زبان/.test(t)) return { emoji: "📖", cls: "persian" };
-            return { emoji: "📝", cls: "default" };
-        }
- 
         function isDiscountActive(exam) {
             const discountEnabled = exam.discountEnabled === true || Number(exam.discountEnabled || 0) === 1 ||
                 exam.discount_enabled === true || Number(exam.discount_enabled || 0) === 1;
@@ -4593,46 +4893,73 @@ async function loadExamCatalog() {
             return true;
         }
  
-        list.innerHTML = filtersHtml + exams.map(exam => {
+        function getDiscountEndAt(exam) {
+            return exam.discountEndAt ?? exam.discount_end_at ?? exam.discountEnd ?? exam.discount_end ?? null;
+        }
+ 
+        list.innerHTML = exams.map(exam => {
             const id = Number(exam.id);
             const title = exam.title || "آزمون ریاضی";
             const basePrice = Number(exam.basePrice ?? exam.base_price ?? exam.price ?? 0);
             const finalPrice = Number(exam.finalPrice ?? exam.final_price ?? exam.price ?? basePrice);
             const discountPercent = Number(exam.discountPercent ?? exam.discount_percent ?? 0);
             const hasDiscount = isDiscountActive(exam) && discountPercent > 0 && basePrice > finalPrice;
+            const endAt = getDiscountEndAt(exam);
             const duration = Math.max(0, Number(exam.durationSeconds || exam.duration_seconds || 0));
             const durationText = duration >= 3600
                 ? `${toPersianNumber(Math.floor(duration / 3600))} ساعت و ${toPersianNumber(Math.floor((duration % 3600) / 60))} دقیقه`
                 : `${toPersianNumber(Math.ceil(duration / 60) || 1)} دقیقه`;
  
-            const icon = getExamIcon(title);
+            const visualEmoji = "📚";
+ 
             const priceHtml = hasDiscount
-                ? `<div class="exam-price-row">
-                        <span class="exam-old-price">${basePrice.toLocaleString("fa-IR")} تومان</span>
-                        <span class="exam-final-price">${finalPrice.toLocaleString("fa-IR")} تومان</span>
+                ? `<div class="exam-price-block">
+                        <div class="exam-price-row">
+                            <span class="exam-old-price">${basePrice.toLocaleString("fa-IR")} تومان</span>
+                            <span class="exam-final-price">${finalPrice.toLocaleString("fa-IR")} تومان</span>
+                        </div>
                    </div>`
                 : (finalPrice === 0
-                    ? `<div class="exam-price-row"><span class="exam-final-price no-discount">رایگان</span></div>`
-                    : `<div class="exam-price-row"><span class="exam-final-price no-discount">${finalPrice.toLocaleString("fa-IR")} تومان</span></div>`);
+                    ? `<div class="exam-price-block"><div class="exam-price-row"><span class="exam-final-price no-discount">رایگان</span></div></div>`
+                    : `<div class="exam-price-block"><div class="exam-price-row"><span class="exam-final-price no-discount">${finalPrice.toLocaleString("fa-IR")} تومان</span></div></div>`);
  
             const discountBadge = hasDiscount
                 ? `<div class="exam-discount-badge">٪${toPersianNumber(discountPercent)} تخفیف ویژه</div>`
                 : "";
  
+            // Countdown box like the sample image
+            let timerHtml = "";
+            if (hasDiscount && endAt) {
+                const endMs = Date.parse(endAt);
+                if (!Number.isNaN(endMs) && endMs > Date.now()) {
+                    timerHtml = `
+                    <div class="exam-discount-timer" data-discount-end="${endMs}">
+                        <div class="timer-label">⏱ زمان باقی‌مانده تخفیف</div>
+                        <div class="timer-digits" data-timer-digits>--</div>
+                        <div class="timer-sub" data-timer-sub></div>
+                    </div>`;
+                }
+            }
+ 
             return `
-            <div class="exam-catalog-item ${hasDiscount ? "has-discount" : ""}" data-title="${escapeHtml(title)}" data-exam-id="${id}">
+            <div class="exam-catalog-item ${hasDiscount ? "has-discount" : ""}" data-exam-id="${id}">
                 ${discountBadge}
-                <div class="exam-item-icon ${icon.cls}">${icon.emoji}</div>
+                <div class="exam-item-visual">
+                    <span class="visual-emoji">${visualEmoji}</span>
+                </div>
                 <div class="exam-item-body">
                     <div class="exam-item-title">${escapeHtml(title)}</div>
                     ${priceHtml}
+                    ${timerHtml}
                     <div class="exam-item-meta">
                         <span class="exam-meta-badge duration">⏱ ${durationText}</span>
                     </div>
                 </div>
-                <button type="button" class="primary-btn exam-start-btn" data-exam-id="${id}">
-                    شروع آزمون <span class="play-icon">▶</span>
-                </button>
+                <div class="exam-item-action">
+                    <button type="button" class="primary-btn exam-start-btn" data-exam-id="${id}">
+                        شروع آزمون <span class="play-icon">▶</span>
+                    </button>
+                </div>
             </div>`;
         }).join("");
  
@@ -4648,26 +4975,59 @@ async function loadExamCatalog() {
             });
         });
  
-        const filterBtns = list.querySelectorAll(".catalog-filter-btn");
-        filterBtns.forEach(btn => {
-            btn.addEventListener("click", () => {
-                filterBtns.forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                const filter = btn.dataset.filter || "all";
-                list.querySelectorAll(".exam-catalog-item").forEach(item => {
-                    const title = (item.dataset.title || "").toLowerCase();
-                    if (filter === "all") {
-                        item.style.display = "";
-                    } else {
-                        item.style.display = title.includes(filter) ? "" : "none";
-                    }
-                });
-            });
-        });
+        // Start live countdown for catalog discount timers (like sample image)
+        startCatalogDiscountTimers();
+ 
     } catch (error) {
         if (list) list.innerHTML = "";
         if (errorBox) errorBox.innerHTML = `<div class="error">${escapeHtml(error.message)}<br><button type="button" class="secondary-btn" onclick="loadExamCatalog()">تلاش دوباره</button></div>`;
     }
+}
+ 
+let catalogDiscountTimerInterval = null;
+ 
+function startCatalogDiscountTimers() {
+    if (catalogDiscountTimerInterval) {
+        clearInterval(catalogDiscountTimerInterval);
+        catalogDiscountTimerInterval = null;
+    }
+ 
+    function tick() {
+        const now = Date.now();
+        document.querySelectorAll(".exam-discount-timer[data-discount-end]").forEach(box => {
+            const endMs = Number(box.dataset.discountEnd);
+            if (!endMs || Number.isNaN(endMs)) return;
+            const remaining = endMs - now;
+            const digitsEl = box.querySelector("[data-timer-digits]");
+            const subEl = box.querySelector("[data-timer-sub]");
+            if (remaining <= 0) {
+                if (digitsEl) digitsEl.textContent = "۰۰:۰۰:۰۰";
+                if (subEl) subEl.textContent = "تخفیف به پایان رسید";
+                box.style.opacity = "0.7";
+                return;
+            }
+            const totalSec = Math.floor(remaining / 1000);
+            const hours = Math.floor(totalSec / 3600);
+            const minutes = Math.floor((totalSec % 3600) / 60);
+            const seconds = totalSec % 60;
+            const h = String(hours).padStart(2, "0");
+            const m = String(minutes).padStart(2, "0");
+            const s = String(seconds).padStart(2, "0");
+            if (digitsEl) {
+                digitsEl.textContent = toPersianNumber(`${h} : ${m} : ${s}`);
+            }
+            if (subEl) {
+                let parts = [];
+                if (hours > 0) parts.push(toPersianNumber(hours) + " ساعت");
+                if (minutes > 0 || hours > 0) parts.push(toPersianNumber(minutes) + " دقیقه");
+                parts.push(toPersianNumber(seconds) + " ثانیه");
+                subEl.textContent = parts.join(" و ");
+            }
+        });
+    }
+ 
+    tick();
+    catalogDiscountTimerInterval = setInterval(tick, 1000);
 }
  
  
@@ -4844,4 +5204,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
- </html>
+      </html>
