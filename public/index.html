@@ -1833,12 +1833,6 @@ function isDiscountCurrentlyActive(exam){
         return false;
     }
  
-    const discountEnabled =
-        exam.discountEnabled === true ||
-        Number(exam.discountEnabled || 0) === 1 ||
-        exam.discount_enabled === true ||
-        Number(exam.discount_enabled || 0) === 1;
- 
     const discountPercent =
         Number(
             exam.discountPercent ??
@@ -1862,14 +1856,12 @@ function isDiscountCurrentlyActive(exam){
             0
         );
  
-    if(
-        !discountEnabled ||
-        discountPercent <= 0 ||
-        basePrice <= finalPrice
-    ){
+    // اگر قیمت پایه از قیمت نهایی بیشتر باشد یا درصد تخفیف وجود داشته باشد → تخفیف فعال
+    const priceDiffers = basePrice > 0 && finalPrice > 0 && basePrice > finalPrice;
+    const hasPercent = discountPercent > 0;
  
+    if( !priceDiffers && !hasPercent ){
         return false;
- 
     }
  
     const startAt =
@@ -2068,16 +2060,15 @@ function startDiscountCountdown(){
             )
             .forEach(element => {
  
+                const hasDays = Number(countdown.days.replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))) > 0;
                 element.innerHTML = `
-                    مهلت استفاده از تخفیف:
-                    <strong>${countdown.days}</strong>
-                    روز
-                    <strong>${countdown.hours}</strong>
-                    ساعت
-                    <strong>${countdown.minutes}</strong>
-                    دقیقه
-                    <strong>${countdown.seconds}</strong>
-                    ثانیه
+                    <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:#9f1239">⏱ زمان باقی‌مانده تخفیف</div>
+                    <div style="font-size:20px;font-weight:800;letter-spacing:1px;color:#e11d48;direction:ltr;margin:4px 0">
+                        ${hasDays ? countdown.days + " روز و " : ""}${countdown.hours} : ${countdown.minutes} : ${countdown.seconds}
+                    </div>
+                    <div style="font-size:11px;opacity:.9">
+                        ${hasDays ? countdown.days + " روز و " : ""}${countdown.hours} ساعت و ${countdown.minutes} دقیقه و ${countdown.seconds} ثانیه
+                    </div>
                 `;
  
             });
@@ -4879,12 +4870,13 @@ async function loadExamCatalog() {
         }
  
         function isDiscountActive(exam) {
-            const discountEnabled = exam.discountEnabled === true || Number(exam.discountEnabled || 0) === 1 ||
-                exam.discount_enabled === true || Number(exam.discount_enabled || 0) === 1;
             const percent = Number(exam.discountPercent ?? exam.discount_percent ?? 0);
-            const base = Number(exam.basePrice ?? exam.base_price ?? exam.price ?? 0);
+            const base = Number(exam.basePrice ?? exam.base_price ?? 0);
             const finalP = Number(exam.finalPrice ?? exam.final_price ?? exam.price ?? 0);
-            if (!discountEnabled || percent <= 0 || base <= finalP) return false;
+            // اگر قیمت پایه و نهایی فرق داشته باشد یا درصد تخفیف > 0 باشد، تخفیف را نشان بده
+            const priceDiffers = base > 0 && finalP > 0 && base > finalP;
+            const hasPercent = percent > 0;
+            if (!priceDiffers && !hasPercent) return false;
             const endAt = exam.discountEndAt ?? exam.discount_end_at ?? exam.discountEnd ?? exam.discount_end ?? null;
             if (endAt) {
                 const endTime = Date.parse(endAt);
@@ -4903,7 +4895,12 @@ async function loadExamCatalog() {
             const basePrice = Number(exam.basePrice ?? exam.base_price ?? exam.price ?? 0);
             const finalPrice = Number(exam.finalPrice ?? exam.final_price ?? exam.price ?? basePrice);
             const discountPercent = Number(exam.discountPercent ?? exam.discount_percent ?? 0);
-            const hasDiscount = isDiscountActive(exam) && discountPercent > 0 && basePrice > finalPrice;
+            let hasDiscount = isDiscountActive(exam);
+            // اگر درصد از API نیامده ولی قیمت‌ها فرق دارند، درصد را محاسبه کن
+            if (hasDiscount && discountPercent <= 0 && basePrice > finalPrice && basePrice > 0) {
+                discountPercent = Math.round(((basePrice - finalPrice) / basePrice) * 100);
+            }
+            if (hasDiscount && basePrice <= finalPrice && discountPercent <= 0) hasDiscount = false;
             const endAt = getDiscountEndAt(exam);
             const duration = Math.max(0, Number(exam.durationSeconds || exam.duration_seconds || 0));
             const durationText = duration >= 3600
