@@ -69,6 +69,30 @@
     gap: 14px;
 }
  
+/* انیمیشن ورود کارت‌ها */
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+ 
+/* درخشش ملایم برچسب تخفیف */
+@keyframes badgeShine {
+    0%, 100% { box-shadow: 0 3px 10px rgba(22,163,74,.28); }
+    50% { box-shadow: 0 3px 16px rgba(22,163,74,.5), 0 0 0 4px rgba(34,197,94,.15); }
+}
+ 
+/* پالس خیلی ملایم برای تایمر */
+@keyframes softPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+}
+ 
 /* کارت پایه */
 .exam-catalog-item{
     position: relative;
@@ -79,15 +103,26 @@
     gap: 14px;
     margin: 0;
     padding: 18px 18px;
-    border: 1.5px solid #93c5fd;          /* حاشیه آبی مات */
+    border: 1.5px solid #93c5fd;
     border-radius: 18px;
     background: linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%);
     box-shadow: 0 4px 14px rgba(37,99,235,.06);
-    transition: transform .2s, box-shadow .2s;
+    transition: transform .28s cubic-bezier(.22,1,.36,1),
+                box-shadow .28s cubic-bezier(.22,1,.36,1),
+                border-color .25s ease;
+    animation: cardFadeIn .45s cubic-bezier(.22,1,.36,1) both;
 }
+.exam-catalog-item:nth-child(1) { animation-delay: 0.05s; }
+.exam-catalog-item:nth-child(2) { animation-delay: 0.12s; }
+.exam-catalog-item:nth-child(3) { animation-delay: 0.19s; }
+.exam-catalog-item:nth-child(4) { animation-delay: 0.26s; }
+.exam-catalog-item:nth-child(5) { animation-delay: 0.33s; }
+.exam-catalog-item:nth-child(n+6) { animation-delay: 0.38s; }
+ 
 .exam-catalog-item:hover{
-    transform: translateY(-2px);
-    box-shadow: 0 8px 22px rgba(37,99,235,.12);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(37,99,235,.14);
+    border-color: #60a5fa;
 }
 .exam-catalog-item .exam-info-side{
     flex: 1 1 170px;
@@ -99,6 +134,10 @@
     font-weight: 800;
     line-height: 1.7;
     margin-bottom: 8px;
+    transition: color .2s;
+}
+.exam-catalog-item:hover .exam-title{
+    color: #1e40af;
 }
 .exam-catalog-item .exam-meta{
     display: flex;
@@ -116,6 +155,11 @@
     color: #0369a1;
     font-size: 13px;
     font-weight: 600;
+    transition: background .2s, transform .2s;
+}
+.exam-catalog-item:hover .price-tag{
+    background: #bae6fd;
+    transform: scale(1.03);
 }
 .exam-catalog-item .start-btn{
     flex-shrink: 0;
@@ -131,18 +175,26 @@
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(37,99,235,.22);
-    transition: background .2s, transform .15s;
+    transition: background .25s, transform .2s cubic-bezier(.22,1,.36,1), box-shadow .25s;
 }
 .exam-catalog-item .start-btn:hover{
     background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 18px rgba(37,99,235,.32);
+}
+.exam-catalog-item .start-btn:active{
+    transform: translateY(0) scale(0.98);
 }
  
 /* کارت تخفیف‌دار */
 .exam-catalog-item.has-discount{
     border: 1.5px solid #60a5fa;
     background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 45%, #f8fbff 100%);
-    padding: 28px 18px 18px;   /* فضای بیشتر از بالا برای برچسب */
+    padding: 28px 18px 18px;
+}
+.exam-catalog-item.has-discount:hover{
+    border-color: #3b82f6;
+    box-shadow: 0 12px 30px rgba(37,99,235,.16);
 }
 .exam-catalog-item .discount-badge{
     position: absolute;
@@ -156,10 +208,11 @@
     border-radius: 0 0 0 14px;
     box-shadow: 0 3px 10px rgba(22,163,74,.28);
     z-index: 2;
+    animation: badgeShine 2.4s ease-in-out infinite;
 }
 .exam-catalog-item.has-discount .exam-title{
     font-size: 17px;
-    margin-top: 10px;   /* اسم آزمون کمی پایین‌تر */
+    margin-top: 10px;
 }
 .exam-catalog-item .price-row{
     display: flex;
@@ -178,6 +231,10 @@
     font-size: 13.5px;
     font-weight: 600;
     text-decoration: line-through;
+    transition: transform .2s;
+}
+.exam-catalog-item:hover .old-price-box{
+    transform: scale(1.02);
 }
 .exam-catalog-item .final-price-box{
     display: inline-flex;
@@ -188,6 +245,11 @@
     color: #15803d;
     font-size: 15.5px;
     font-weight: 800;
+    transition: transform .2s, box-shadow .2s;
+}
+.exam-catalog-item:hover .final-price-box{
+    transform: scale(1.04);
+    box-shadow: 0 2px 8px rgba(22,163,74,.2);
 }
 .exam-catalog-item .countdown-box{
     display: inline-flex;
@@ -203,6 +265,7 @@
     font-weight: 600;
     line-height: 1.45;
     margin-top: 4px;
+    animation: softPulse 2s ease-in-out infinite;
 }
 .exam-catalog-item .countdown-box strong{
     font-size: 14.5px;
@@ -224,6 +287,9 @@
         padding: 15px;
         gap: 12px;
     }
+    .exam-catalog-item.has-discount{
+        padding: 26px 15px 15px;
+    }
     .exam-catalog-item .start-btn{
         width: 100%;
         min-width: 0;
@@ -234,6 +300,21 @@
         padding: 5px 10px;
     }
     .exam-catalog-item .final-price-box{ font-size: 14.5px; }
+}
+ 
+/* کاهش حرکت برای کاربرانی که انیمیشن نمی‌خواهند */
+@media (prefers-reduced-motion: reduce){
+    .exam-catalog-item,
+    .exam-catalog-item .discount-badge,
+    .exam-catalog-item .countdown-box{
+        animation: none !important;
+    }
+    .exam-catalog-item,
+    .exam-catalog-item .start-btn,
+    .exam-catalog-item .price-tag,
+    .exam-catalog-item .final-price-box{
+        transition: none !important;
+    }
 }
 </style>
  
@@ -4992,4 +5073,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
-      </html>
+ </html>
