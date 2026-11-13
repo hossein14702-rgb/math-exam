@@ -105,46 +105,113 @@
     margin-top:8px!important;
     font-size:14px;
     box-shadow:0 5px 12px rgba(37,99,235,.14);
-    transition:background .2s,transform .2s;
+
+<style>
+/* طراحی جدید کارت‌های آزمون */
+
+#examCatalogCard{
+    padding:22px !important;
+    border:1px solid #e2eaf5 !important;
+    border-radius:22px !important;
+    box-shadow:0 12px 30px rgba(30,64,175,.07) !important;
+    background:#fff !important;
 }
 
-#examCatalogList .exam-catalog-item .primary-btn:hover{
-    background:#1d4ed8;
-    transform:translateY(-1px);
+#examCatalogCard .card-title{
+    margin-bottom:18px !important;
 }
 
-@media(min-width:600px){
-    #examCatalogList .exam-catalog-item{
-        flex-wrap:nowrap!important;
-    }
+#examCatalogCard .card-title-icon{
+    width:50px !important;
+    height:50px !important;
+    border-radius:15px !important;
+    background:#eff6ff !important;
+}
 
-    #examCatalogList .exam-catalog-item .primary-btn{
-        width:auto!important;
-        min-width:145px;
-        margin-top:0!important;
-    }
+#examCatalogCard .card-title h2{
+    color:#172554 !important;
+    font-size:20px !important;
+    font-weight:800 !important;
+}
+
+#examCatalogCard > .subtitle{
+    color:#64748b !important;
+    font-size:13px !important;
+    margin-bottom:20px !important;
+}
+
+#examCatalogList{
+    display:flex !important;
+    flex-direction:column !important;
+    gap:14px !important;
+}
+
+#examCatalogList .exam-catalog-item{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    flex-wrap:wrap !important;
+    gap:12px !important;
+    margin:0 !important;
+    padding:18px !important;
+    border:1px solid #dce6f2 !important;
+    border-radius:17px !important;
+    background:linear-gradient(135deg,#ffffff,#f7faff) !important;
+    box-shadow:0 4px 13px rgba(15,23,42,.045) !important;
+}
+
+#examCatalogList .exam-catalog-item > div:first-child{
+    flex:1 1 160px !important;
+    min-width:0 !important;
+}
+
+#examCatalogList .exam-catalog-item > div:first-child > div:first-child{
+    color:#1e293b !important;
+    font-size:17px !important;
+    font-weight:800 !important;
+    line-height:1.8 !important;
+}
+
+#examCatalogList .exam-catalog-item .subtitle{
+    color:#64748b !important;
+    font-size:13px !important;
+    line-height:2 !important;
+}
+
+#examCatalogList .exam-catalog-item button.primary-btn{
+    width:auto !important;
+    min-width:145px !important;
+    min-height:45px !important;
+    margin:0 !important;
+    padding:10px 18px !important;
+    border-radius:12px !important;
+    font-size:14px !important;
+    box-shadow:0 5px 13px rgba(37,99,235,.16) !important;
 }
 
 @media(max-width:600px){
     #examCatalogCard{
-        padding:17px;
-        border-radius:19px;
+        padding:17px !important;
     }
 
     #examCatalogCard .card-title h2{
-        font-size:18px;
+        font-size:18px !important;
     }
 
     #examCatalogList .exam-catalog-item{
-        padding:15px!important;
+        padding:16px !important;
+        gap:10px !important;
     }
 
-    #examCatalogList .exam-catalog-item .primary-btn{
-        width:100%;
-        min-height:46px;
+    #examCatalogList .exam-catalog-item button.primary-btn{
+        width:100% !important;
+        min-width:0 !important;
+        min-height:48px !important;
+        margin-top:5px !important;
     }
 }
 </style>
+
 
   <style>
 *{box-sizing:border-box}
