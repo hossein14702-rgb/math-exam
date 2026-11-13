@@ -417,6 +417,226 @@
 }
 </style>
  
+ 
+<style>
+/* ========== صفحه ورود اطلاعات (جذاب و هم‌سبک صفحه اول) ========== */
+.start-card-modern{
+    border: 1.5px solid #93c5fd !important;
+    border-radius: 22px !important;
+    background: linear-gradient(165deg, #ffffff 0%, #f0f7ff 55%, #e8f2ff 100%) !important;
+    box-shadow: 0 12px 32px rgba(37,99,235,.08) !important;
+    padding: 0 !important;
+    overflow: hidden;
+    animation: cardReveal .5s cubic-bezier(.22,1,.36,1) both;
+}
+ 
+.start-hero-banner{
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 22px 18px;
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.start-hero-banner::after{
+    content: "";
+    position: absolute;
+    top: -40%;
+    left: -20%;
+    width: 60%;
+    height: 180%;
+    background: radial-gradient(circle, rgba(255,255,255,.18) 0%, transparent 70%);
+    pointer-events: none;
+}
+.start-hero-icon{
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.2);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+}
+.start-hero-text{
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+}
+.start-hero-text h2{
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.5;
+}
+.start-hero-text .subtitle{
+    margin: 0;
+    color: rgba(255,255,255,.9);
+    font-size: 13px;
+    line-height: 1.9;
+}
+ 
+.exam-info-modern{
+    margin: 16px 18px 0;
+}
+.exam-info-modern .exam-info{
+    background: linear-gradient(145deg, #ffffff, #f8fbff);
+    border: 1px solid #dbeafe;
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 4px 14px rgba(37,99,235,.05);
+}
+.exam-info-modern .info-row{
+    border-bottom-color: #e2e8f0;
+    padding: 8px 0;
+}
+.exam-info-modern .info-label{
+    color: #64748b;
+    font-size: 13px;
+}
+.exam-info-modern .info-value{
+    color: #1e293b;
+    font-weight: 700;
+}
+.exam-info-modern .discount-badge{
+    display: inline-block;
+    margin-top: 10px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 3px 10px rgba(22,163,74,.25);
+}
+.exam-info-modern .discount-countdown{
+    margin-top: 10px;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #be123c;
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 12px;
+}
+ 
+.form-section{
+    margin: 18px 18px 8px;
+    padding: 18px 16px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px rgba(15,23,42,.04);
+}
+.form-section-title{
+    font-size: 15px;
+    font-weight: 800;
+    color: #1e3a8a;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.start-card-modern .field{
+    margin-top: 14px;
+}
+.start-card-modern .field:first-of-type{
+    margin-top: 0;
+}
+.start-card-modern .field label{
+    color: #334155;
+    font-size: 13.5px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.start-card-modern .input-wrap{
+    border: 1.5px solid #dbeafe;
+    border-radius: 12px;
+    background: #f8fafc;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.start-card-modern .input-wrap:focus-within{
+    border-color: #3b82f6;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(59,130,246,.12);
+}
+.start-card-modern .input-icon{
+    color: #3b82f6;
+}
+.start-card-modern .input-wrap input{
+    background: transparent;
+    font-size: 14.5px;
+    padding: 13px 10px;
+}
+.start-card-modern .hint{
+    color: #94a3b8;
+    font-size: 11.5px;
+    margin-top: 5px;
+}
+ 
+.field-row{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.field-row .field{
+    margin-top: 14px;
+}
+ 
+.start-cta-btn{
+    margin: 8px 18px 6px !important;
+    width: calc(100% - 36px) !important;
+    min-height: 50px !important;
+    border-radius: 14px !important;
+    font-size: 15.5px !important;
+    font-weight: 800 !important;
+    background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+    box-shadow: 0 8px 20px rgba(37,99,235,.28) !important;
+    transition: transform .2s, box-shadow .2s !important;
+}
+.start-cta-btn:hover:not(:disabled){
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(37,99,235,.35) !important;
+}
+.start-cta-btn:disabled{
+    opacity: .65;
+}
+ 
+.start-secure-note{
+    text-align: center;
+    color: #64748b;
+    font-size: 12px;
+    margin: 4px 18px 18px;
+    line-height: 1.8;
+}
+ 
+@media (max-width: 600px){
+    .start-hero-banner{
+        padding: 18px 16px 16px;
+        gap: 12px;
+    }
+    .start-hero-icon{
+        width: 48px;
+        height: 48px;
+        font-size: 24px;
+        border-radius: 14px;
+    }
+    .start-hero-text h2{ font-size: 18px; }
+    .form-section{ margin: 14px 14px 6px; padding: 14px 12px; }
+    .field-row{ grid-template-columns: 1fr; gap: 0; }
+    .start-cta-btn{
+        margin: 8px 14px 6px !important;
+        width: calc(100% - 28px) !important;
+    }
+    .start-secure-note{ margin: 4px 14px 16px; }
+}
+</style>
+ 
   <style>
 *{box-sizing:border-box}
  
@@ -1288,43 +1508,65 @@ body.page-loading{
     <div id="examCatalogList"><div class="loading">در حال دریافت فهرست آزمون‌ها...</div></div>
     <div id="examCatalogError"></div>
    </div>
-   <!-- شروع آزمون -->
-   <div class="card" id="startCard">
-    <div class="card-title">
-     <div class="card-title-icon">👤</div>
-     <h2 id="startExamTitle">آزمون ریاضی</h2>
+   <!-- ورود -->
+   <div class="card start-card-modern" id="startCard">
+    <div class="start-hero-banner">
+      <div class="start-hero-icon">📝</div>
+      <div class="start-hero-text">
+        <h2 id="startExamTitle">آزمون ریاضی</h2>
+        <p class="subtitle" id="startExamSubtitle">برای شرکت در آزمون، اطلاعات خود را وارد کنید. سپس به صفحه پرداخت امن منتقل می‌شوید.</p>
+      </div>
     </div>
-    <p class="subtitle" id="startExamSubtitle">برای شرکت در آزمون، اطلاعات خود را وارد کنید. سپس به صفحه پرداخت امن منتقل می‌شوید.</p>
-    <div id="examInfo">
+ 
+    <div id="examInfo" class="exam-info-modern">
      <div class="loading">در حال دریافت اطلاعات آزمون...</div>
     </div>
-    <div class="field">
-     <label>نام و نام خانوادگی</label>
-     <div class="input-wrap">
-      <span class="input-icon">👤</span> <input id="nameInput" type="text" placeholder="مثلاً حسین خراسانی" autocomplete="name">
-     </div>
+ 
+    <div class="form-section">
+      <div class="form-section-title">📋 اطلاعات دانش‌آموز</div>
+      <div class="field">
+       <label>نام و نام خانوادگی</label>
+       <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input id="nameInput" type="text" placeholder="مثلاً حسین خراسانی" autocomplete="name">
+       </div>
+      </div>
+      <div class="field">
+       <label>شماره موبایل</label>
+       <div class="input-wrap">
+        <span class="input-icon">📱</span>
+        <input id="phoneInput" type="tel" placeholder="مثلاً ۰۹۱۲۱۲۳۴۵۶۷" autocomplete="tel" inputmode="tel" dir="ltr" maxlength="11">
+       </div>
+       <span class="hint">شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود.</span>
+      </div>
+      <div class="field-row">
+        <div class="field">
+         <label for="schoolNameInput">نام مدرسه</label>
+         <div class="input-wrap">
+          <span class="input-icon">🏫</span>
+          <input id="schoolNameInput" type="text" placeholder="نام مدرسه" autocomplete="organization" maxlength="120" required>
+         </div>
+        </div>
+        <div class="field">
+         <label for="gradeInput">پایه تحصیلی</label>
+         <div class="input-wrap">
+          <span class="input-icon">🎓</span>
+          <input id="gradeInput" type="text" placeholder="مثلاً دهم" maxlength="40" required>
+         </div>
+        </div>
+      </div>
+      <div class="field">
+       <label for="academicTrackInput">رشته تحصیلی</label>
+       <div class="input-wrap">
+        <span class="input-icon">📚</span>
+        <input id="academicTrackInput" type="text" placeholder="مثلاً ریاضی‌فیزیک، تجربی یا انسانی" maxlength="80" required>
+       </div>
+      </div>
     </div>
-    <div class="field">
-     <label>شماره موبایل</label>
-     <div class="input-wrap">
-      <span class="input-icon">📱</span> <input id="phoneInput" type="tel" placeholder="مثلاً ۰۹۱۲۱۲۳۴۵۶۷" autocomplete="tel" inputmode="tel" dir="ltr" maxlength="11">
-     </div>
-     <span class="hint"> شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود. </span>
-    </div>
-    <div class="field">
-     <label for="schoolNameInput">نام مدرسه</label>
-     <div class="input-wrap"><span class="input-icon">🏫</span> <input id="schoolNameInput" type="text" placeholder="نام مدرسه" autocomplete="organization" maxlength="120" required></div>
-    </div>
-    <div class="field">
-     <label for="gradeInput">پایه تحصیلی</label>
-     <div class="input-wrap"><span class="input-icon">🎓</span> <input id="gradeInput" type="text" placeholder="مثلاً دهم، یازدهم یا دوازدهم" maxlength="40" required></div>
-    </div>
-    <div class="field">
-     <label for="academicTrackInput">رشته تحصیلی</label>
-     <div class="input-wrap"><span class="input-icon">📚</span> <input id="academicTrackInput" type="text" placeholder="مثلاً ریاضی‌فیزیک، تجربی یا انسانی" maxlength="80" required></div>
-    </div>
+ 
     <div id="startError"></div>
-    <button id="startPaymentButton" class="primary-btn" disabled>در حال دریافت اطلاعات آزمون...</button>
+    <button id="startPaymentButton" class="primary-btn start-cta-btn" disabled>در حال دریافت اطلاعات آزمون...</button>
+    <p class="start-secure-note">🔒 اطلاعات شما محفوظ است و فقط برای برگزاری آزمون استفاده می‌شود</p>
    </div>
    <!-- پرداخت -->
    <div class="card hidden" id="paymentCard">
@@ -2528,8 +2770,8 @@ async function loadExam(){
         renderExamInfo();
         button.disabled = false;
         button.textContent = Number(data.pricing?.finalPrice ?? data.pricing?.final_price ?? data.exam?.finalPrice ?? data.exam?.final_price ?? data.exam?.price ?? 0) === 0
-            ? "ثبت‌نام رایگان و شروع آزمون"
-            : "پرداخت و شروع آزمون";
+            ? "ثبت‌نام رایگان و ورود"
+            : "پرداخت و ورود";
     } catch (error) {
         console.error("[AZMOON_LOAD_DIAG] exam load failed", error);
         info.innerHTML = `
@@ -2809,7 +3051,7 @@ async function createOrderAndPay(){
                 rulesError.innerHTML = `<div class="success">ثبت‌نام رایگان با موفقیت انجام شد. اکنون می‌توانید آزمون را شروع کنید.</div>`;
             }
             $("startPaymentButton").disabled = false;
-            $("startPaymentButton").textContent = "ثبت‌نام رایگان و شروع آزمون";
+            $("startPaymentButton").textContent = "ثبت‌نام رایگان و ورود";
             return;
         }
  
@@ -2891,7 +3133,7 @@ async function createOrderAndPay(){
  
  
         $("startPaymentButton").textContent =
-            "پرداخت و شروع آزمون";
+            "پرداخت و ورود";
  
     }
  
@@ -3173,8 +3415,7 @@ async function handlePaymentReturn(query){
                         onclick="recheckPaymentStatus()">بررسی دوباره پرداخت</button>
                     <button type="button" class="primary-btn" style="margin-top:8px"
                         onclick="document.getElementById('beginExamButton').click()">
-                        تلاش برای شروع آزمون
-                    </button>
+                        تلاش برای شروع آزمون</button>
                 `;
             }
         }
@@ -4136,8 +4377,7 @@ function renderResult(data){
             <div class="result-time">
  
                 <span>
-                    زمان شروع آزمون
-                </span>
+                    زمان شروع آزمون</span>
  
                 <strong>
                     ${escapeHtml(
@@ -4937,7 +5177,7 @@ async function loadExamCatalog() {
                         ${countdownHtml}
                         <div class="discount-hint">⚡ فقط تا پایان فرصت تخفیف</div>
                     </div>
-                    <button type="button" class="start-btn" data-exam-id="${id}">شروع آزمون ▶</button>
+                    <button type="button" class="start-btn" data-exam-id="${id}">ورود</button>
                 </div>`;
             }
  
@@ -4953,7 +5193,7 @@ async function loadExamCatalog() {
                             <span class="price-tag">💰 ${priceText}</span>
                         </div>
                     </div>
-                    <button type="button" class="start-btn" data-exam-id="${id}">شروع آزمون ▶</button>
+                    <button type="button" class="start-btn" data-exam-id="${id}">ورود</button>
                 </div>`;
         }).join("");
  
@@ -5172,4 +5412,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
-                                                  </html>
+ </html>
