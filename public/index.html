@@ -31,6 +31,121 @@
 @media(max-width:600px){.student-hero{min-height:0;gap:8px;padding:21px 17px;border-radius:18px}.student-hero h2{font-size:21px;margin-top:13px}.student-hero p{font-size:12px;line-height:2}.hero-badge{font-size:10px;padding:6px 9px}.hero-cta{min-height:42px;margin-top:14px;padding:0 15px;font-size:13px}.hero-visual{flex:0 0 105px;height:145px;margin-left:-8px}.hero-circle{width:112px;height:112px}.hero-paper{width:82px;height:112px;padding:11px 9px;border-radius:9px}.paper-top{height:6px;margin-bottom:12px}.paper-line{height:4px;margin:7px 0}.paper-check{gap:5px;margin-top:8px}.paper-check span{width:13px;height:13px;font-size:9px}.paper-check i{width:34px;height:4px}.hero-star{top:8px;right:2px;font-size:22px}.hero-dot{bottom:8px;left:0;width:13px;height:13px;border-width:3px}}
 @media(max-width:380px){.student-hero{padding:17px 13px}.hero-visual{flex-basis:88px}.student-hero h2{font-size:19px}.student-hero p{font-size:11px}}
 </style>
+  
+<style>
+/* بهبود ظاهر فهرست آزمون‌ها */
+
+#examCatalogCard{
+    border:1px solid #e5edf8;
+    border-radius:22px;
+    padding:23px;
+    box-shadow:0 10px 30px rgba(30,64,175,.06);
+}
+
+#examCatalogCard .card-title{
+    gap:12px;
+    margin-bottom:12px;
+}
+
+#examCatalogCard .card-title-icon{
+    width:48px;
+    height:48px;
+    border-radius:15px;
+    background:#eff6ff;
+    color:#2563eb;
+}
+
+#examCatalogCard .card-title h2{
+    font-size:21px;
+    color:#172554;
+}
+
+#examCatalogCard > .subtitle{
+    margin:12px 0 18px;
+    color:#64748b;
+    font-size:13px;
+}
+
+#examCatalogList{
+    display:flex;
+    flex-direction:column;
+    gap:13px;
+}
+
+#examCatalogList .exam-catalog-item{
+    background:linear-gradient(145deg,#ffffff,#f8fbff)!important;
+    border:1px solid #e2e8f0!important;
+    border-radius:18px!important;
+    padding:17px!important;
+    margin:0!important;
+    box-shadow:0 4px 14px rgba(15,23,42,.035);
+    transition:all .2s ease;
+}
+
+#examCatalogList .exam-catalog-item > div{
+    min-width:0!important;
+}
+
+#examCatalogList .exam-catalog-item > div > div:first-child{
+    color:#1e293b;
+    font-size:17px!important;
+    font-weight:800;
+}
+
+#examCatalogList .exam-catalog-item .subtitle{
+    color:#64748b;
+    font-size:13px;
+    line-height:2;
+}
+
+#examCatalogList .exam-catalog-item .primary-btn{
+    border-radius:12px;
+    min-height:46px;
+    padding:11px 17px;
+    margin-top:8px!important;
+    font-size:14px;
+    box-shadow:0 5px 12px rgba(37,99,235,.14);
+    transition:background .2s,transform .2s;
+}
+
+#examCatalogList .exam-catalog-item .primary-btn:hover{
+    background:#1d4ed8;
+    transform:translateY(-1px);
+}
+
+@media(min-width:600px){
+    #examCatalogList .exam-catalog-item{
+        flex-wrap:nowrap!important;
+    }
+
+    #examCatalogList .exam-catalog-item .primary-btn{
+        width:auto!important;
+        min-width:145px;
+        margin-top:0!important;
+    }
+}
+
+@media(max-width:600px){
+    #examCatalogCard{
+        padding:17px;
+        border-radius:19px;
+    }
+
+    #examCatalogCard .card-title h2{
+        font-size:18px;
+    }
+
+    #examCatalogList .exam-catalog-item{
+        padding:15px!important;
+    }
+
+    #examCatalogList .exam-catalog-item .primary-btn{
+        width:100%;
+        min-height:46px;
+    }
+}
+</style>
+
   <style>
 *{box-sizing:border-box}
  
