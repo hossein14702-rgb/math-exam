@@ -4709,19 +4709,35 @@ async function loadExamCatalog() {
         }
         list.innerHTML = exams.map(exam => {
             const id = Number(exam.id);
-            const basePrice = Number(exam.basePrice ?? exam.base_price ?? exam.price ?? 0);
-            const finalPrice = Number(exam.finalPrice ?? exam.final_price ?? exam.price ?? basePrice);
-            const discountPercent = Number(exam.discountPercent ?? exam.discount_percent ?? 0);
-            const hasDiscount = (typeof isDiscountCurrentlyActive === "function" ? isDiscountCurrentlyActive(exam) : false) && discountPercent > 0 && basePrice > finalPrice;
+            const basePrice = Number(
+                exam.basePrice ?? exam.base_price ?? exam.originalPrice ?? exam.original_price ?? exam.price ?? 0
+            );
+            const finalPrice = Number(
+                exam.finalPrice ?? exam.final_price ?? exam.discountedPrice ?? exam.discounted_price ?? exam.price ?? basePrice
+            );
+            let discountPercent = Number(
+                exam.discountPercent ?? exam.discount_percent ?? exam.discount ?? 0
+            );
+            // اگر درصد نیامده ولی قیمت‌ها متفاوت است، درصد را حساب کن
+            if (discountPercent <= 0 && basePrice > finalPrice && basePrice > 0) {
+                discountPercent = Math.round(((basePrice - finalPrice) / basePrice) * 100);
+            }
+            // شرط بازتر: اگر قیمت نهایی کمتر از قیمت اصلی باشد یا درصد تخفیف وجود داشته باشد
+            const hasDiscount = (basePrice > finalPrice) || (discountPercent > 0);
             const title = escapeHtml(exam.title || "آزمون ریاضی");
  
             if (hasDiscount) {
-                const endAt = (typeof getDiscountEndAt === "function") ? getDiscountEndAt(exam) : null;
+                const endAt = (typeof getDiscountEndAt === "function")
+                    ? getDiscountEndAt(exam)
+                    : (exam.discountEndAt ?? exam.discount_end_at ?? exam.discountEnd ?? exam.discount_end ?? null);
                 let countdownHtml = "";
                 if (endAt) {
                     const endTime = Date.parse(endAt);
-                    if (!Number.isNaN(endTime) && endTime > (typeof nowMs === "function" ? nowMs() : Date.now())) {
-                        const rem = (typeof formatCountdown === "function") ? formatCountdown(endTime - (typeof nowMs === "function" ? nowMs() : Date.now())) : {hours:"۰۰",minutes:"۰۰",seconds:"۰۰"};
+                    const now = (typeof nowMs === "function" ? nowMs() : Date.now());
+                    if (!Number.isNaN(endTime) && endTime > now) {
+                        const rem = (typeof formatCountdown === "function")
+                            ? formatCountdown(endTime - now)
+                            : {hours:"۰۰",minutes:"۰۰",seconds:"۰۰"};
                         countdownHtml = `
                             <div class="countdown-box" data-catalog-countdown="${id}" data-end="${endAt}">
                                 <span>زمان باقی‌مانده تخفیف</span>
@@ -4731,7 +4747,7 @@ async function loadExamCatalog() {
                 }
                 return `
                 <div class="exam-catalog-item has-discount">
-                    <div class="discount-badge">${toPersianNumber(discountPercent)}٪ تخفیف ویژه</div>
+                    <div class="discount-badge">${toPersianNumber(discountPercent || 0)}٪ تخفیف ویژه</div>
                     <div class="exam-info-side">
                         <div class="exam-title">${title}</div>
                         <div class="price-row">
@@ -4976,4 +4992,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
-      </html>
+   </html>
