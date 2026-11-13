@@ -4,7 +4,7 @@
   <meta name="enamad" content="2623488">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>آزمون ریاضی نسخه آزمایشی | آزمون آنلاین</title>
+  <title>آزمون آنلاین | نسخه به‌روز شده</title>
  <style>
 /* Student hero styles */
 .student-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:260px;margin:0 0 18px;padding:28px 30px;overflow:hidden;border:1px solid #dbeafe;border-radius:22px;background:linear-gradient(125deg,#f8fbff 0%,#eaf3ff 58%,#dbeafe 100%);box-shadow:0 10px 28px rgba(37,99,235,.08)}
@@ -106,9 +106,9 @@
  
 /* Illustration area - shared public image style for all exams */
 .exam-item-visual{
-  flex: 0 0 120px;
-  min-width: 110px;
-  background: linear-gradient(160deg, #dbeafe 0%, #bfdbfe 45%, #93c5fd 100%);
+  flex: 0 0 130px;
+  min-width: 120px;
+  background: linear-gradient(160deg, #dbeafe 0%, #93c5fd 50%, #60a5fa 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,10 +128,10 @@
 }
  
 .exam-item-visual .visual-emoji{
-  font-size: 48px;
+  font-size: 52px;
   position: relative;
   z-index: 1;
-  filter: drop-shadow(0 6px 12px rgba(30,64,175,.2));
+  filter: drop-shadow(0 8px 16px rgba(30,64,175,.25));
 }
  
 /* Body of card */
@@ -710,7 +710,7 @@ body.page-loading{
 }
  
 .price{
-    font-size:24px;
+    font-size:26px;
     font-weight:800;
     color:#059669;
     letter-spacing:-0.3px;
@@ -2455,7 +2455,7 @@ function renderExamInfo(){
  
 async function requestExamDataFrom(baseUrl, label) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 15000);
     const started = performance.now();
     try {
         const url = `${baseUrl.replace(/\/$/, "")}/api/exam?id=${EXAM_ID}&_=${Date.now()}`;
@@ -2495,7 +2495,7 @@ async function requestExamDataFrom(baseUrl, label) {
     } finally { clearTimeout(timeout); }
 }
  
-async function loadExam(){
+async function loadExam(isRetry){
     const info = $("examInfo");
     const button = $("startPaymentButton");
     info.innerHTML = `<div class="loading">در حال دریافت اطلاعات آزمون...</div>`;
@@ -2512,6 +2512,12 @@ async function loadExam(){
             ? "ثبت‌نام رایگان و شروع آزمون"
             : "پرداخت و شروع آزمون";
     } catch (error) {
+        if (!isRetry) {
+            // یک بار به صورت خودکار بعد از ۱.۵ ثانیه تلاش مجدد
+            info.innerHTML = `<div class="loading">اتصال برقرار نشد، در حال تلاش دوباره...</div>`;
+            await new Promise(r => setTimeout(r, 1500));
+            return loadExam(true);
+        }
         console.error("[AZMOON_LOAD_DIAG] exam load failed", error);
         info.innerHTML = `
             <div class="error" style="line-height:2">
