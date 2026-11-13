@@ -4,7 +4,7 @@
   <meta name="enamad" content="2623488">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>آزمون ریاضی نسخه آزمایشی | آزمون آنلاین</title>
+  <title>آزمون مَث | آزمون‌های آنلاین</title>
  <style>
 /* Student hero styles */
 .student-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:260px;margin:0 0 18px;padding:28px 30px;overflow:hidden;border:1px solid #dbeafe;border-radius:22px;background:linear-gradient(125deg,#f8fbff 0%,#eaf3ff 58%,#dbeafe 100%);box-shadow:0 10px 28px rgba(37,99,235,.08)}
@@ -31,187 +31,211 @@
 @media(max-width:600px){.student-hero{min-height:0;gap:8px;padding:21px 17px;border-radius:18px}.student-hero h2{font-size:21px;margin-top:13px}.student-hero p{font-size:12px;line-height:2}.hero-badge{font-size:10px;padding:6px 9px}.hero-cta{min-height:42px;margin-top:14px;padding:0 15px;font-size:13px}.hero-visual{flex:0 0 105px;height:145px;margin-left:-8px}.hero-circle{width:112px;height:112px}.hero-paper{width:82px;height:112px;padding:11px 9px;border-radius:9px}.paper-top{height:6px;margin-bottom:12px}.paper-line{height:4px;margin:7px 0}.paper-check{gap:5px;margin-top:8px}.paper-check span{width:13px;height:13px;font-size:9px}.paper-check i{width:34px;height:4px}.hero-star{top:8px;right:2px;font-size:22px}.hero-dot{bottom:8px;left:0;width:13px;height:13px;border-width:3px}}
 @media(max-width:380px){.student-hero{padding:17px 13px}.hero-visual{flex-basis:88px}.student-hero h2{font-size:19px}.student-hero p{font-size:11px}}
 </style>
-  
-<style>
-/* بهبود ظاهر فهرست آزمون‌ها */
- 
-#examCatalogCard{
-    border:1px solid #e5edf8;
-    border-radius:22px;
-    padding:23px;
-    box-shadow:0 10px 30px rgba(30,64,175,.06);
-}
- 
-#examCatalogCard .card-title{
-    gap:12px;
-    margin-bottom:12px;
-}
- 
-#examCatalogCard .card-title-icon{
-    width:48px;
-    height:48px;
-    border-radius:15px;
-    background:#eff6ff;
-    color:#2563eb;
-}
- 
-#examCatalogCard .card-title h2{
-    font-size:21px;
-    color:#172554;
-}
- 
-#examCatalogCard > .subtitle{
-    margin:12px 0 18px;
-    color:#64748b;
-    font-size:13px;
-}
- 
-#examCatalogList{
-    display:flex;
-    flex-direction:column;
-    gap:13px;
-}
- 
-#examCatalogList .exam-catalog-item{
-    background:linear-gradient(145deg,#ffffff,#f8fbff)!important;
-    border:1px solid #e2e8f0!important;
-    border-radius:18px!important;
-    padding:17px!important;
-    margin:0!important;
-    box-shadow:0 4px 14px rgba(15,23,42,.035);
-    transition:all .2s ease;
-}
- 
-#examCatalogList .exam-catalog-item > div{
-    min-width:0!important;
-}
- 
-#examCatalogList .exam-catalog-item > div > div:first-child{
-    color:#1e293b;
-    font-size:17px!important;
-    font-weight:800;
-}
- 
-#examCatalogList .exam-catalog-item .subtitle{
-    color:#64748b;
-    font-size:13px;
-    line-height:2;
-}
- 
-#examCatalogList .exam-catalog-item .primary-btn{
-    border-radius:12px;
-    min-height:46px;
-    padding:11px 17px;
-    margin-top:8px!important;
-    font-size:14px;
-    box-shadow:0 5px 12px rgba(37,99,235,.14);
  
 <style>
-/* طراحی جدید کارت‌های آزمون */
- 
+/* کاتالوگ آزمون‌ها - طراحی نزدیک به عکس (بهینه) */
 #examCatalogCard{
-    padding:22px !important;
-    border:1px solid #e2eaf5 !important;
-    border-radius:22px !important;
-    box-shadow:0 12px 30px rgba(30,64,175,.07) !important;
-    background:#fff !important;
+    padding: 20px;
+    border: 1px solid #c7d7f0;
+    border-radius: 22px;
+    box-shadow: 0 10px 28px rgba(37,99,235,.07);
+    background: #fff;
 }
- 
 #examCatalogCard .card-title{
-    margin-bottom:18px !important;
+    margin-bottom: 14px;
+    gap: 12px;
 }
- 
 #examCatalogCard .card-title-icon{
-    width:50px !important;
-    height:50px !important;
-    border-radius:15px !important;
-    background:#eff6ff !important;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: #eff6ff;
+    color: #2563eb;
 }
- 
 #examCatalogCard .card-title h2{
-    color:#172554 !important;
-    font-size:20px !important;
-    font-weight:800 !important;
+    color: #1e3a8a;
+    font-size: 20px;
+    font-weight: 800;
 }
- 
 #examCatalogCard > .subtitle{
-    color:#64748b !important;
-    font-size:13px !important;
-    margin-bottom:20px !important;
+    color: #64748b;
+    font-size: 13px;
+    margin: 0 0 18px;
+    line-height: 1.9;
 }
- 
 #examCatalogList{
-    display:flex !important;
-    flex-direction:column !important;
-    gap:14px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
  
-#examCatalogList .exam-catalog-item{
-    display:flex !important;
-    align-items:center !important;
-    justify-content:space-between !important;
-    flex-wrap:wrap !important;
-    gap:12px !important;
-    margin:0 !important;
-    padding:18px !important;
-    border:1px solid #dce6f2 !important;
-    border-radius:17px !important;
-    background:linear-gradient(135deg,#ffffff,#f7faff) !important;
-    box-shadow:0 4px 13px rgba(15,23,42,.045) !important;
+/* کارت پایه */
+.exam-catalog-item{
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: 0;
+    padding: 18px 18px;
+    border: 1.5px solid #93c5fd;          /* حاشیه آبی مات */
+    border-radius: 18px;
+    background: linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%);
+    box-shadow: 0 4px 14px rgba(37,99,235,.06);
+    transition: transform .2s, box-shadow .2s;
+}
+.exam-catalog-item:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(37,99,235,.12);
+}
+.exam-catalog-item .exam-info-side{
+    flex: 1 1 170px;
+    min-width: 0;
+}
+.exam-catalog-item .exam-title{
+    color: #1e293b;
+    font-size: 16.5px;
+    font-weight: 800;
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+.exam-catalog-item .exam-meta{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.exam-catalog-item .price-tag{
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 13px;
+    font-weight: 600;
+}
+.exam-catalog-item .start-btn{
+    flex-shrink: 0;
+    min-width: 138px;
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(37,99,235,.22);
+    transition: background .2s, transform .15s;
+}
+.exam-catalog-item .start-btn:hover{
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    transform: translateY(-1px);
 }
  
-#examCatalogList .exam-catalog-item > div:first-child{
-    flex:1 1 160px !important;
-    min-width:0 !important;
+/* کارت تخفیف‌دار */
+.exam-catalog-item.has-discount{
+    border: 1.5px solid #60a5fa;
+    background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 45%, #f8fbff 100%);
+    padding: 20px 18px;
+}
+.exam-catalog-item .discount-badge{
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 12px 7px 14px;
+    border-radius: 0 0 0 14px;
+    box-shadow: 0 3px 10px rgba(22,163,74,.28);
+    z-index: 2;
+}
+.exam-catalog-item.has-discount .exam-title{
+    font-size: 17px;
+    margin-top: 2px;
+}
+.exam-catalog-item .price-row{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 6px;
+}
+.exam-catalog-item .old-price-box{
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 11px;
+    border-radius: 10px;
+    background: #fce7f3;
+    color: #be123c;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-decoration: line-through;
+}
+.exam-catalog-item .final-price-box{
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 13px;
+    border-radius: 10px;
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 15.5px;
+    font-weight: 800;
+}
+.exam-catalog-item .countdown-box{
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 7px 12px;
+    border-radius: 11px;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #be123c;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.45;
+    margin-top: 4px;
+}
+.exam-catalog-item .countdown-box strong{
+    font-size: 14.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    color: #e11d48;
+}
+.exam-catalog-item .discount-hint{
+    font-size: 12px;
+    color: #ea580c;
+    font-weight: 600;
+    margin-top: 5px;
 }
  
-#examCatalogList .exam-catalog-item > div:first-child > div:first-child{
-    color:#1e293b !important;
-    font-size:17px !important;
-    font-weight:800 !important;
-    line-height:1.8 !important;
-}
- 
-#examCatalogList .exam-catalog-item .subtitle{
-    color:#64748b !important;
-    font-size:13px !important;
-    line-height:2 !important;
-}
- 
-#examCatalogList .exam-catalog-item button.primary-btn{
-    width:auto !important;
-    min-width:145px !important;
-    min-height:45px !important;
-    margin:0 !important;
-    padding:10px 18px !important;
-    border-radius:12px !important;
-    font-size:14px !important;
-    box-shadow:0 5px 13px rgba(37,99,235,.16) !important;
-}
- 
-@media(max-width:600px){
-    #examCatalogCard{
-        padding:17px !important;
+@media (max-width: 600px){
+    #examCatalogCard{ padding: 15px; }
+    #examCatalogCard .card-title h2{ font-size: 18px; }
+    .exam-catalog-item{
+        padding: 15px;
+        gap: 12px;
     }
- 
-    #examCatalogCard .card-title h2{
-        font-size:18px !important;
+    .exam-catalog-item .start-btn{
+        width: 100%;
+        min-width: 0;
+        min-height: 46px;
     }
- 
-    #examCatalogList .exam-catalog-item{
-        padding:16px !important;
-        gap:10px !important;
+    .exam-catalog-item .discount-badge{
+        font-size: 11px;
+        padding: 5px 10px;
     }
- 
-    #examCatalogList .exam-catalog-item button.primary-btn{
-        width:100% !important;
-        min-width:0 !important;
-        min-height:48px !important;
-        margin-top:5px !important;
-    }
+    .exam-catalog-item .final-price-box{ font-size: 14.5px; }
 }
 </style>
- 
  
   <style>
 *{box-sizing:border-box}
@@ -234,41 +258,45 @@ body.page-loading{
 }
  
 .header{
-    background:white;
-    border-radius:20px;
-    padding:20px;
-    box-shadow:0 8px 30px rgba(0,0,0,.06);
-    margin-bottom:18px;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: 20px;
+    padding: 16px 20px;
+    box-shadow: 0 8px 26px rgba(37,99,235,.08);
+    margin-bottom: 16px;
 }
  
 .brand{
-    display:flex;
-    align-items:center;
-    gap:14px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
 }
  
 .logo{
-    width:52px;
-    height:52px;
-    border-radius:15px;
-    background:#2563eb;
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:26px;
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+    background: linear-gradient(145deg, #3b82f6, #2563eb);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(37,99,235,.25);
 }
  
 .brand-text h1{
-    margin:0;
-    font-size:21px;
+    margin: 0;
+    font-size: 21px;
+    font-weight: 800;
+    color: #1e3a8a;
 }
  
 .brand-text span{
-    display:block;
-    color:#6b7280;
-    font-size:13px;
-    margin-top:5px;
+    display: block;
+    color: #64748b;
+    font-size: 12.5px;
+    margin-top: 3px;
 }
  
 .steps{
@@ -1015,10 +1043,10 @@ body.page-loading{
   <div class="container">
    <div class="header">
     <div class="brand">
-     <div class="logo">∑</div>
+     <div class="logo">🎓</div>
      <div class="brand-text">
-      <h1>آزمون آنلاین </h1>
-      <span>یادگیری، سنجش و پیشرفت</span>
+      <h1>آزمون مَث</h1>
+      <span>آمادگی بیشتر، موفقیت بزرگ‌تر...</span>
      </div>
     </div>
     <div class="steps hidden" id="steps"></div>
@@ -1029,11 +1057,10 @@ body.page-loading{
             مسیر موفقیت از اینجا شروع می‌شود
         </div>
  
-        <h2>آمادگی بیشتر، نتیجه بهتر</h2>
+        <h2>آزمون‌های آنلاین</h2>
  
         <p>
-            آزمون‌های متنوع را انتخاب کن، دانش خودت را بسنج
-            و با شناخت نقاط قوت و ضعف، پیشرفت کن.
+            آمادگی بیشتر، موفقیت بزرگ‌تر... آزمون موردنظر خود را انتخاب کن و دانش خودت را بسنج.
         </p>
  
         <button type="button" class="hero-cta"
@@ -1075,9 +1102,9 @@ body.page-loading{
    <div class="card hidden" id="examCatalogCard">
     <div class="card-title">
      <div class="card-title-icon">📚</div>
-     <h2>آزمون‌های در دسترس</h2>
+     <h2>آزمون‌های آنلاین</h2>
     </div>
-    <p class="subtitle">آزمون موردنظر خود را انتخاب کنید.</p>
+    <p class="subtitle">آمادگی بیشتر، موفقیت بزرگ‌تر... آزمون موردنظر خود را انتخاب کنید.</p>
     <div id="examCatalogList"><div class="loading">در حال دریافت فهرست آزمون‌ها...</div></div>
     <div id="examCatalogError"></div>
    </div>
@@ -4682,19 +4709,58 @@ async function loadExamCatalog() {
         }
         list.innerHTML = exams.map(exam => {
             const id = Number(exam.id);
-            const price = Number(exam.finalPrice ?? exam.price ?? 0);
-            const duration = Math.max(0, Number(exam.durationSeconds || 0));
-            const durationText = duration >= 3600
-                ? `${toPersianNumber(Math.floor(duration / 3600))} ساعت و ${toPersianNumber(Math.floor((duration % 3600) / 60))} دقیقه`
-                : `${toPersianNumber(Math.ceil(duration / 60))} دقیقه`;
-            return `<div class="exam-catalog-item" style="border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin:12px 0;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
-                <div style="flex:1;min-width:170px">
-                    <div style="font-weight:800;font-size:16px">${escapeHtml(exam.title || "آزمون ریاضی")}</div>
-                    <div class="subtitle" style="margin:6px 0 0">مدت: ${durationText} · ${price === 0 ? "رایگان" : `هزینه: ${toPersianNumber(price.toLocaleString("en-US"))} تومان`}</div>
-                </div>
-                <button type="button" class="primary-btn" data-exam-id="${id}">انتخاب و ورود</button>
-            </div>`;
+            const basePrice = Number(exam.basePrice ?? exam.base_price ?? exam.price ?? 0);
+            const finalPrice = Number(exam.finalPrice ?? exam.final_price ?? exam.price ?? basePrice);
+            const discountPercent = Number(exam.discountPercent ?? exam.discount_percent ?? 0);
+            const hasDiscount = (typeof isDiscountCurrentlyActive === "function" ? isDiscountCurrentlyActive(exam) : false) && discountPercent > 0 && basePrice > finalPrice;
+            const title = escapeHtml(exam.title || "آزمون ریاضی");
+ 
+            if (hasDiscount) {
+                const endAt = (typeof getDiscountEndAt === "function") ? getDiscountEndAt(exam) : null;
+                let countdownHtml = "";
+                if (endAt) {
+                    const endTime = Date.parse(endAt);
+                    if (!Number.isNaN(endTime) && endTime > (typeof nowMs === "function" ? nowMs() : Date.now())) {
+                        const rem = (typeof formatCountdown === "function") ? formatCountdown(endTime - (typeof nowMs === "function" ? nowMs() : Date.now())) : {hours:"۰۰",minutes:"۰۰",seconds:"۰۰"};
+                        countdownHtml = `
+                            <div class="countdown-box" data-catalog-countdown="${id}" data-end="${endAt}">
+                                <span>زمان باقی‌مانده تخفیف</span>
+                                <strong>${rem.hours}:${rem.minutes}:${rem.seconds}</strong>
+                            </div>`;
+                    }
+                }
+                return `
+                <div class="exam-catalog-item has-discount">
+                    <div class="discount-badge">${toPersianNumber(discountPercent)}٪ تخفیف ویژه</div>
+                    <div class="exam-info-side">
+                        <div class="exam-title">${title}</div>
+                        <div class="price-row">
+                            <span class="old-price-box">${basePrice.toLocaleString("fa-IR")} تومان</span>
+                            <span class="final-price-box">${finalPrice.toLocaleString("fa-IR")} تومان</span>
+                        </div>
+                        ${countdownHtml}
+                        <div class="discount-hint">⚡ فقط تا پایان فرصت تخفیف</div>
+                    </div>
+                    <button type="button" class="start-btn" data-exam-id="${id}">شروع آزمون ▶</button>
+                </div>`;
+            }
+ 
+            // کارت عادی
+            const priceText = finalPrice === 0
+                ? "رایگان"
+                : `${finalPrice.toLocaleString("fa-IR")} تومان`;
+            return `
+                <div class="exam-catalog-item">
+                    <div class="exam-info-side">
+                        <div class="exam-title">${title}</div>
+                        <div class="exam-meta">
+                            <span class="price-tag">💰 ${priceText}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="start-btn" data-exam-id="${id}">شروع آزمون ▶</button>
+                </div>`;
         }).join("");
+ 
         list.querySelectorAll("button[data-exam-id]").forEach(button => {
             button.addEventListener("click", () => {
                 const id = Number(button.dataset.examId);
@@ -4706,10 +4772,35 @@ async function loadExamCatalog() {
                 window.location.href = target.toString();
             });
         });
+ 
+        startCatalogCountdowns();
     } catch (error) {
         if (list) list.innerHTML = "";
         if (errorBox) errorBox.innerHTML = `<div class="error">${escapeHtml(error.message)}<br><button type="button" class="secondary-btn" onclick="loadExamCatalog()">تلاش دوباره</button></div>`;
     }
+}
+ 
+/* شمارنده تخفیف در لیست کاتالوگ */
+let catalogCountdownInterval = null;
+function startCatalogCountdowns() {
+    if (catalogCountdownInterval) clearInterval(catalogCountdownInterval);
+    function tick() {
+        document.querySelectorAll("[data-catalog-countdown]").forEach(el => {
+            const endAt = el.getAttribute("data-end");
+            if (!endAt) return;
+            const endTime = Date.parse(endAt);
+            if (Number.isNaN(endTime)) return;
+            const remaining = endTime - (typeof nowMs === "function" ? nowMs() : Date.now());
+            if (remaining <= 0) {
+                el.innerHTML = "<span>تخفیف به پایان رسید</span>";
+                return;
+            }
+            const c = (typeof formatCountdown === "function") ? formatCountdown(remaining) : {hours:"۰۰",minutes:"۰۰",seconds:"۰۰"};
+            el.innerHTML = `<span>زمان باقی‌مانده تخفیف</span><strong>${c.hours}:${c.minutes}:${c.seconds}</strong>`;
+        });
+    }
+    tick();
+    catalogCountdownInterval = setInterval(tick, 1000);
 }
  
 /* =========================
@@ -4885,4 +4976,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
- </html>
+      </html>
