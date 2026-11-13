@@ -4585,6 +4585,7 @@ async function initializePage(){
         document.body.classList.remove("page-loading");
         return;
     }
+    hide("studentHero");
     hide("examCatalogCard");
     if (!hasPaymentQuery && !hasSavedFlow) {
         show("startCard");
