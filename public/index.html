@@ -4,15 +4,739 @@
   <meta name="enamad" content="2623488">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>آزمون ریاضی نسخه آزمایشی | آزمون آنلاین</title>
+  <title>آزمون مَث | آزمون‌های آنلاین</title>
+ <style>
+/* Student hero styles */
+.student-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:260px;margin:0 0 18px;padding:28px 30px;overflow:hidden;border:1px solid #dbeafe;border-radius:22px;background:linear-gradient(125deg,#f8fbff 0%,#eaf3ff 58%,#dbeafe 100%);box-shadow:0 10px 28px rgba(37,99,235,.08)}
+.student-hero.hidden{display:none!important}
+.hero-content{position:relative;z-index:2;flex:1;min-width:0}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #bfdbfe;border-radius:30px;background:rgba(255,255,255,.78);color:#1d4ed8;font-size:12px;font-weight:700}
+.hero-badge:before{content:"";width:7px;height:7px;border-radius:50%;background:#3b82f6;box-shadow:0 0 0 4px #dbeafe}
+.student-hero h2{margin:16px 0 9px;color:#172554;font-size:clamp(21px,3vw,29px);line-height:1.6}
+.student-hero p{max-width:520px;margin:0;color:#475569;font-size:14px;line-height:2.1}
+.hero-cta{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:46px;margin-top:18px;padding:0 20px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 7px 16px rgba(37,99,235,.2);transition:transform .2s,background .2s}
+.hero-cta:hover{background:#1d4ed8;transform:translateY(-2px)}
+.hero-cta span{font-size:19px;line-height:1}
+.hero-visual{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 210px;height:205px}
+.hero-circle{position:absolute;width:190px;height:190px;border-radius:50%;background:linear-gradient(145deg,#dbeafe,#bfdbfe);opacity:.85}
+.hero-paper{position:relative;z-index:1;width:130px;height:165px;padding:18px 15px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 15px 30px rgba(30,64,175,.16);transform:rotate(-5deg)}
+.paper-top{height:9px;width:58%;margin-bottom:18px;border-radius:5px;background:#93c5fd}
+.paper-line{height:6px;margin:10px 0;border-radius:5px;background:#e2e8f0}
+.paper-line.short{width:65%}
+.paper-check{display:flex;align-items:center;gap:8px;margin-top:11px}
+.paper-check span{display:flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:5px;background:#dcfce7;color:#16a34a;font-size:12px;font-weight:bold}
+.paper-check i{display:block;width:57px;height:5px;border-radius:5px;background:#dbeafe}
+.hero-star{position:absolute;z-index:2;top:16px;right:16px;color:#f59e0b;font-size:30px;text-shadow:0 3px 8px rgba(245,158,11,.2)}
+.hero-dot{position:absolute;z-index:2;bottom:17px;left:14px;width:17px;height:17px;border:4px solid #fff;border-radius:50%;background:#60a5fa;box-shadow:0 3px 10px rgba(37,99,235,.2)}
+@media(max-width:600px){.student-hero{min-height:0;gap:8px;padding:21px 17px;border-radius:18px}.student-hero h2{font-size:21px;margin-top:13px}.student-hero p{font-size:12px;line-height:2}.hero-badge{font-size:10px;padding:6px 9px}.hero-cta{min-height:42px;margin-top:14px;padding:0 15px;font-size:13px}.hero-visual{flex:0 0 105px;height:145px;margin-left:-8px}.hero-circle{width:112px;height:112px}.hero-paper{width:82px;height:112px;padding:11px 9px;border-radius:9px}.paper-top{height:6px;margin-bottom:12px}.paper-line{height:4px;margin:7px 0}.paper-check{gap:5px;margin-top:8px}.paper-check span{width:13px;height:13px;font-size:9px}.paper-check i{width:34px;height:4px}.hero-star{top:8px;right:2px;font-size:22px}.hero-dot{bottom:8px;left:0;width:13px;height:13px;border-width:3px}}
+@media(max-width:380px){.student-hero{padding:17px 13px}.hero-visual{flex-basis:88px}.student-hero h2{font-size:19px}.student-hero p{font-size:11px}}
+</style>
+ 
+<style>
+/* کاتالوگ آزمون‌ها - طراحی نزدیک به عکس (بهینه) */
+#examCatalogCard{
+    padding: 20px;
+    border: 1px solid #c7d7f0;
+    border-radius: 22px;
+    box-shadow: 0 10px 28px rgba(37,99,235,.07);
+    background: #fff;
+}
+#examCatalogCard .card-title{
+    margin-bottom: 14px;
+    gap: 12px;
+}
+#examCatalogCard .card-title-icon{
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: #eff6ff;
+    color: #2563eb;
+}
+#examCatalogCard .card-title h2{
+    color: #1e3a8a;
+    font-size: 20px;
+    font-weight: 800;
+}
+#examCatalogCard > .subtitle{
+    color: #64748b;
+    font-size: 13px;
+    margin: 0 0 18px;
+    line-height: 1.9;
+}
+#examCatalogList{
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+ 
+/* ========== انیمیشن‌های پیشرفته کارت آزمون ========== */
+ 
+/* ورود نرم با اسپرینگ */
+@keyframes cardReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(28px) scale(0.94);
+        filter: blur(4px);
+    }
+    60% {
+        opacity: 1;
+        filter: blur(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+ 
+/* درخشش مورب روی برچسب تخفیف */
+@keyframes badgeShimmer {
+    0% { background-position: -120% 0; }
+    100% { background-position: 220% 0; }
+}
+ 
+/* هاله نرم دور برچسب */
+@keyframes badgeGlow {
+    0%, 100% {
+        box-shadow: 0 3px 12px rgba(22,163,74,.3);
+    }
+    50% {
+        box-shadow: 0 4px 18px rgba(22,163,74,.55), 0 0 0 5px rgba(34,197,94,.12);
+    }
+}
+ 
+/* پالس تایمر */
+@keyframes timerPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.035); }
+}
+ 
+/* خط درخشان روی حاشیه کارت (هاور) */
+@keyframes borderGlow {
+    0% { box-shadow: 0 12px 32px rgba(37,99,235,.16), 0 0 0 0 rgba(59,130,246,.35); }
+    50% { box-shadow: 0 12px 32px rgba(37,99,235,.16), 0 0 0 4px rgba(59,130,246,.18); }
+    100% { box-shadow: 0 12px 32px rgba(37,99,235,.16), 0 0 0 0 rgba(59,130,246,.35); }
+}
+ 
+/* دکمه - موج ملایم */
+@keyframes btnShine {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+ 
+/* کارت پایه */
+.exam-catalog-item{
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: 0;
+    padding: 18px 18px;
+    border: 1.5px solid #93c5fd;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%);
+    box-shadow: 0 4px 14px rgba(37,99,235,.06);
+    overflow: hidden;
+    transition: transform .35s cubic-bezier(.22,1,.36,1),
+                box-shadow .35s cubic-bezier(.22,1,.36,1),
+                border-color .3s ease,
+                background .35s ease;
+    animation: cardReveal .55s cubic-bezier(.22,1,.36,1) both;
+}
+.exam-catalog-item:nth-child(1) { animation-delay: 0.04s; }
+.exam-catalog-item:nth-child(2) { animation-delay: 0.10s; }
+.exam-catalog-item:nth-child(3) { animation-delay: 0.16s; }
+.exam-catalog-item:nth-child(4) { animation-delay: 0.22s; }
+.exam-catalog-item:nth-child(5) { animation-delay: 0.28s; }
+.exam-catalog-item:nth-child(n+6) { animation-delay: 0.32s; }
+ 
+/* لایه درخشش هنگام هاور */
+.exam-catalog-item::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%);
+    background-size: 200% 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .4s ease;
+    z-index: 1;
+}
+.exam-catalog-item:hover::before{
+    opacity: 1;
+    animation: badgeShimmer 1.1s ease forwards;
+}
+ 
+.exam-catalog-item:hover{
+    transform: translateY(-6px) scale(1.012);
+    border-color: #60a5fa;
+    box-shadow: 0 14px 34px rgba(37,99,235,.16);
+    background: linear-gradient(145deg, #ffffff 0%, #e8f2ff 100%);
+}
+ 
+.exam-catalog-item .exam-info-side{
+    flex: 1 1 170px;
+    min-width: 0;
+    position: relative;
+    z-index: 2;
+}
+.exam-catalog-item .exam-title{
+    color: #1e293b;
+    font-size: 16.5px;
+    font-weight: 800;
+    line-height: 1.7;
+    margin-bottom: 8px;
+    transition: color .25s ease, letter-spacing .25s ease;
+}
+.exam-catalog-item:hover .exam-title{
+    color: #1e40af;
+    letter-spacing: 0.2px;
+}
+.exam-catalog-item .exam-meta{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.exam-catalog-item .price-tag{
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background .25s, transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s;
+}
+.exam-catalog-item:hover .price-tag{
+    background: #bae6fd;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(3,105,161,.15);
+}
+ 
+/* دکمه پیشرفته */
+.exam-catalog-item .start-btn{
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
+    min-width: 138px;
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8);
+    background-size: 200% 200%;
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(37,99,235,.25);
+    overflow: hidden;
+    transition: transform .25s cubic-bezier(.22,1,.36,1),
+                box-shadow .25s ease;
+}
+.exam-catalog-item .start-btn::after{
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -80%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+    transform: skewX(-20deg);
+    transition: left .5s ease;
+}
+.exam-catalog-item:hover .start-btn{
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 10px 22px rgba(37,99,235,.38);
+    animation: btnShine 2.5s ease infinite;
+}
+.exam-catalog-item:hover .start-btn::after{
+    left: 140%;
+}
+.exam-catalog-item .start-btn:active{
+    transform: translateY(0) scale(0.97);
+    box-shadow: 0 3px 10px rgba(37,99,235,.25);
+}
+ 
+/* کارت تخفیف‌دار */
+.exam-catalog-item.has-discount{
+    border: 1.5px solid #60a5fa;
+    background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 45%, #f8fbff 100%);
+    padding: 28px 18px 18px;
+}
+.exam-catalog-item.has-discount:hover{
+    border-color: #3b82f6;
+    box-shadow: 0 14px 36px rgba(37,99,235,.18);
+    animation: borderGlow 2s ease infinite;
+}
+ 
+/* برچسب سبز با شimmer */
+.exam-catalog-item .discount-badge{
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: linear-gradient(110deg, #16a34a 0%, #22c55e 40%, #4ade80 50%, #22c55e 60%, #16a34a 100%);
+    background-size: 220% 100%;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 12px 7px 14px;
+    border-radius: 0 0 0 14px;
+    z-index: 3;
+    animation: badgeShimmer 2.8s linear infinite, badgeGlow 2.4s ease-in-out infinite;
+}
+.exam-catalog-item.has-discount .exam-title{
+    font-size: 17px;
+    margin-top: 10px;
+}
+.exam-catalog-item .price-row{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 6px;
+}
+.exam-catalog-item .old-price-box{
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 11px;
+    border-radius: 10px;
+    background: #fce7f3;
+    color: #be123c;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-decoration: line-through;
+    transition: transform .25s cubic-bezier(.22,1,.36,1);
+}
+.exam-catalog-item:hover .old-price-box{
+    transform: scale(1.03);
+}
+.exam-catalog-item .final-price-box{
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 13px;
+    border-radius: 10px;
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 15.5px;
+    font-weight: 800;
+    transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s;
+}
+.exam-catalog-item:hover .final-price-box{
+    transform: scale(1.06);
+    box-shadow: 0 3px 12px rgba(22,163,74,.25);
+}
+ 
+/* تایمر */
+.exam-catalog-item .countdown-box{
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 7px 12px;
+    border-radius: 11px;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #be123c;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.45;
+    margin-top: 4px;
+    animation: timerPulse 2.2s ease-in-out infinite;
+    transition: border-color .25s, box-shadow .25s;
+}
+.exam-catalog-item:hover .countdown-box{
+    border-color: #fda4af;
+    box-shadow: 0 2px 10px rgba(225,29,72,.12);
+}
+.exam-catalog-item .countdown-box strong{
+    font-size: 14.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    color: #e11d48;
+}
+.exam-catalog-item .discount-hint{
+    font-size: 12px;
+    color: #ea580c;
+    font-weight: 600;
+    margin-top: 5px;
+}
+ 
+@media (max-width: 600px){
+    #examCatalogCard{ padding: 15px; }
+    #examCatalogCard .card-title h2{ font-size: 18px; }
+    .exam-catalog-item{
+        padding: 15px;
+        gap: 12px;
+    }
+    .exam-catalog-item.has-discount{
+        padding: 26px 15px 15px;
+    }
+    .exam-catalog-item .start-btn{
+        width: 100%;
+        min-width: 0;
+        min-height: 46px;
+    }
+    .exam-catalog-item .discount-badge{
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+    .exam-catalog-item .final-price-box{ font-size: 14.5px; }
+    .exam-catalog-item:hover{
+        transform: translateY(-3px) scale(1.008);
+    }
+}
+ 
+/* احترام به تنظیمات دسترس‌پذیری */
+@media (prefers-reduced-motion: reduce){
+    .exam-catalog-item,
+    .exam-catalog-item .discount-badge,
+    .exam-catalog-item .countdown-box,
+    .exam-catalog-item .start-btn{
+        animation: none !important;
+    }
+    .exam-catalog-item,
+    .exam-catalog-item .start-btn,
+    .exam-catalog-item .price-tag,
+    .exam-catalog-item .final-price-box,
+    .exam-catalog-item .old-price-box{
+        transition: none !important;
+    }
+    .exam-catalog-item::before,
+    .exam-catalog-item .start-btn::after{
+        display: none !important;
+    }
+}
+</style>
+ 
+ 
+<style>
+/* ========== صفحه ورود اطلاعات (جذاب و هم‌سبک صفحه اول) ========== */
+.start-card-modern{
+    border: 1.5px solid #93c5fd !important;
+    border-radius: 22px !important;
+    background: linear-gradient(165deg, #ffffff 0%, #f0f7ff 55%, #e8f2ff 100%) !important;
+    box-shadow: 0 12px 32px rgba(37,99,235,.08) !important;
+    padding: 0 !important;
+    overflow: hidden;
+    animation: cardReveal .5s cubic-bezier(.22,1,.36,1) both;
+}
+ 
+.start-hero-banner{
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 22px 18px;
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.start-hero-banner::after{
+    content: "";
+    position: absolute;
+    top: -40%;
+    left: -20%;
+    width: 60%;
+    height: 180%;
+    background: radial-gradient(circle, rgba(255,255,255,.18) 0%, transparent 70%);
+    pointer-events: none;
+}
+.start-hero-icon{
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.2);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+}
+.start-hero-text{
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+}
+.start-hero-text h2{
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.5;
+}
+.start-hero-text .subtitle{
+    margin: 0;
+    color: rgba(255,255,255,.9);
+    font-size: 13px;
+    line-height: 1.9;
+}
+ 
+.exam-info-modern{
+    margin: 16px 18px 0;
+}
+.exam-info-modern .exam-info{
+    background: linear-gradient(145deg, #ffffff, #f8fbff);
+    border: 1px solid #dbeafe;
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 4px 14px rgba(37,99,235,.05);
+}
+.exam-info-modern .info-row{
+    border-bottom-color: #e2e8f0;
+    padding: 8px 0;
+}
+.exam-info-modern .info-label{
+    color: #64748b;
+    font-size: 13px;
+}
+.exam-info-modern .info-value{
+    color: #1e293b;
+    font-weight: 700;
+}
+.exam-info-modern .discount-badge{
+    display: inline-block;
+    margin-top: 10px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 3px 10px rgba(22,163,74,.25);
+}
+.exam-info-modern .discount-countdown{
+    margin-top: 10px;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #be123c;
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 12px;
+}
+ 
+.form-section{
+    margin: 18px 18px 8px;
+    padding: 18px 16px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px rgba(15,23,42,.04);
+}
+.form-section-title{
+    font-size: 15px;
+    font-weight: 800;
+    color: #1e3a8a;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.start-card-modern .field{
+    margin-top: 14px;
+}
+.start-card-modern .field:first-of-type{
+    margin-top: 0;
+}
+.start-card-modern .field label{
+    color: #334155;
+    font-size: 13.5px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.start-card-modern .input-wrap{
+    border: 1.5px solid #dbeafe;
+    border-radius: 12px;
+    background: #f8fafc;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.start-card-modern .input-wrap:focus-within{
+    border-color: #3b82f6;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(59,130,246,.12);
+}
+.start-card-modern .input-icon{
+    color: #3b82f6;
+}
+.start-card-modern .input-wrap input{
+    background: transparent;
+    font-size: 14.5px;
+    padding: 13px 10px;
+}
+.start-card-modern .hint{
+    color: #94a3b8;
+    font-size: 11.5px;
+    margin-top: 5px;
+}
+ 
+.field-row{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.field-row .field{
+    margin-top: 14px;
+}
+ 
+.start-cta-btn{
+    margin: 8px 18px 6px !important;
+    width: calc(100% - 36px) !important;
+    min-height: 50px !important;
+    border-radius: 14px !important;
+    font-size: 15.5px !important;
+    font-weight: 800 !important;
+    background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+    box-shadow: 0 8px 20px rgba(37,99,235,.28) !important;
+    transition: transform .2s, box-shadow .2s !important;
+}
+.start-cta-btn:hover:not(:disabled){
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(37,99,235,.35) !important;
+}
+.start-cta-btn:disabled{
+    opacity: .65;
+}
+ 
+.start-secure-note{
+    text-align: center;
+    color: #64748b;
+    font-size: 12px;
+    margin: 4px 18px 18px;
+    line-height: 1.8;
+}
+ 
+@media (max-width: 600px){
+    .start-hero-banner{
+        padding: 18px 16px 16px;
+        gap: 12px;
+    }
+    .start-hero-icon{
+        width: 48px;
+        height: 48px;
+        font-size: 24px;
+        border-radius: 14px;
+    }
+    .start-hero-text h2{ font-size: 18px; }
+    .form-section{ margin: 14px 14px 6px; padding: 14px 12px; }
+    .field-row{ grid-template-columns: 1fr; gap: 0; }
+    .start-cta-btn{
+        margin: 8px 14px 6px !important;
+        width: calc(100% - 28px) !important;
+    }
+    .start-secure-note{ margin: 4px 14px 16px; }
+}
+</style>
+ 
   <style>
 *{box-sizing:border-box}
+ 
+/* حرکت نرم هاله‌های پس‌زمینه */
+@keyframes bgFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(4%, 3%) scale(1.08); }
+}
+@keyframes bgFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-5%, 4%) scale(1.1); }
+}
+@keyframes bgFloat3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(3%, -4%) scale(1.06); }
+}
+@keyframes bgFloat4 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-3%, -3%) scale(1.09); }
+}
+@keyframes dotShift {
+    0% { background-position: 0 0; }
+    100% { background-position: 22px 22px; }
+}
  
 body{
     margin:0;
     font-family:Tahoma,Arial,sans-serif;
-    background:#f4f7fb;
     color:#1f2937;
+    min-height:100vh;
+    background-color:#eef4fb;
+    position:relative;
+    overflow-x:hidden;
+}
+ 
+/* لایه شبکه نقطه‌ای */
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background-image: radial-gradient(rgba(37,99,235,.07) 1.2px, transparent 1.2px);
+    background-size: 22px 22px;
+    animation: dotShift 18s linear infinite;
+}
+ 
+/* هاله‌های متحرک */
+body::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(59,130,246,.11) 0%, transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(37,99,235,.09) 0%, transparent 38%),
+        radial-gradient(circle at 75% 78%, rgba(96,165,250,.1) 0%, transparent 40%),
+        radial-gradient(circle at 20% 85%, rgba(147,197,253,.12) 0%, transparent 36%);
+    /* انیمیشن با filter روی خود لایه‌ها سخت است؛ از چند لایه جدا استفاده می‌کنیم */
+}
+ 
+/* چهار هاله جدا برای حرکت مستقل */
+.bg-orb{
+    position:fixed;
+    border-radius:50%;
+    pointer-events:none;
+    z-index:0;
+    filter: blur(2px);
+}
+.bg-orb-1{
+    width:340px; height:340px;
+    top:-60px; right:-40px;
+    background: radial-gradient(circle, rgba(59,130,246,.14) 0%, transparent 70%);
+    animation: bgFloat1 14s ease-in-out infinite;
+}
+.bg-orb-2{
+    width:280px; height:280px;
+    bottom:10%; left:-50px;
+    background: radial-gradient(circle, rgba(37,99,235,.12) 0%, transparent 70%);
+    animation: bgFloat2 17s ease-in-out infinite;
+}
+.bg-orb-3{
+    width:220px; height:220px;
+    top:40%; left:55%;
+    background: radial-gradient(circle, rgba(96,165,250,.1) 0%, transparent 70%);
+    animation: bgFloat3 12s ease-in-out infinite;
+}
+.bg-orb-4{
+    width:260px; height:260px;
+    bottom:-40px; right:15%;
+    background: radial-gradient(circle, rgba(147,197,253,.13) 0%, transparent 70%);
+    animation: bgFloat4 15s ease-in-out infinite;
+}
+ 
+@media (prefers-reduced-motion: reduce){
+    body::before,
+    .bg-orb-1, .bg-orb-2, .bg-orb-3, .bg-orb-4{
+        animation: none !important;
+    }
 }
  
 /* عمداً صفحه را مخفی نمی‌کنیم تا خطای احتمالی JavaScript باعث صفحه سفید نشود */
@@ -23,44 +747,50 @@ body.page-loading{
 .container{
     width:min(760px,94%);
     margin:30px auto;
+    position:relative;
+    z-index:1;
 }
  
 .header{
-    background:white;
-    border-radius:20px;
-    padding:20px;
-    box-shadow:0 8px 30px rgba(0,0,0,.06);
-    margin-bottom:18px;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: 20px;
+    padding: 16px 20px;
+    box-shadow: 0 8px 26px rgba(37,99,235,.08);
+    margin-bottom: 16px;
 }
  
 .brand{
-    display:flex;
-    align-items:center;
-    gap:14px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
 }
  
 .logo{
-    width:52px;
-    height:52px;
-    border-radius:15px;
-    background:#2563eb;
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:26px;
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+    background: linear-gradient(145deg, #3b82f6, #2563eb);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(37,99,235,.25);
 }
  
 .brand-text h1{
-    margin:0;
-    font-size:21px;
+    margin: 0;
+    font-size: 21px;
+    font-weight: 800;
+    color: #1e3a8a;
 }
  
 .brand-text span{
-    display:block;
-    color:#6b7280;
-    font-size:13px;
-    margin-top:5px;
+    display: block;
+    color: #64748b;
+    font-size: 12.5px;
+    margin-top: 3px;
 }
  
 .steps{
@@ -804,13 +1534,18 @@ body.page-loading{
 </style>
  </head>
  <body class="page-loading">
+  <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-3" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-4" aria-hidden="true"></div>
+ 
   <div class="container">
    <div class="header">
     <div class="brand">
-     <div class="logo">∑</div>
+     <div class="logo">🎓</div>
      <div class="brand-text">
-      <h1>آزمون آنلاین </h1>
-      <span>یادگیری، سنجش و پیشرفت</span>
+      <h1>آزمون مَث</h1>
+      <span>آمادگی بیشتر، موفقیت بزرگ‌تر...</span>
      </div>
     </div>
     <div class="steps hidden" id="steps"></div>
@@ -820,45 +1555,44 @@ body.page-loading{
         <div class="hero-badge">
             مسیر موفقیت از اینجا شروع می‌شود
         </div>
-
-        <h2>آمادگی بیشتر، نتیجه بهتر</h2>
-
+ 
+        <h2>آزمون‌های آنلاین</h2>
+ 
         <p>
-            آزمون‌های متنوع را انتخاب کن، دانش خودت را بسنج
-            و با شناخت نقاط قوت و ضعف، پیشرفت کن.
+            آمادگی بیشتر، موفقیت بزرگ‌تر... آزمون موردنظر خود را انتخاب کن و دانش خودت را بسنج.
         </p>
-
+ 
         <button type="button" class="hero-cta"
             onclick="document.getElementById('examCatalogCard').scrollIntoView({behavior:'smooth',block:'start'})">
             مشاهده آزمون‌ها
             <span>←</span>
         </button>
     </div>
-
+ 
     <div class="hero-visual" aria-hidden="true">
         <div class="hero-circle"></div>
-
+ 
         <div class="hero-paper">
             <div class="paper-top"></div>
             <div class="paper-line"></div>
             <div class="paper-line short"></div>
-
+ 
             <div class="paper-check">
                 <span>✓</span>
                 <i></i>
             </div>
-
+ 
             <div class="paper-check">
                 <span>✓</span>
                 <i></i>
             </div>
-
+ 
             <div class="paper-check">
                 <span>✓</span>
                 <i></i>
             </div>
         </div>
-
+ 
         <div class="hero-star">✦</div>
         <div class="hero-dot"></div>
     </div>
@@ -867,49 +1601,71 @@ body.page-loading{
    <div class="card hidden" id="examCatalogCard">
     <div class="card-title">
      <div class="card-title-icon">📚</div>
-     <h2>آزمون‌های در دسترس</h2>
+     <h2>آزمون‌های آنلاین</h2>
     </div>
-    <p class="subtitle">آزمون موردنظر خود را انتخاب کنید.</p>
+    <p class="subtitle">آمادگی بیشتر، موفقیت بزرگ‌تر... آزمون موردنظر خود را انتخاب کنید.</p>
     <div id="examCatalogList"><div class="loading">در حال دریافت فهرست آزمون‌ها...</div></div>
     <div id="examCatalogError"></div>
    </div>
-   <!-- شروع آزمون -->
-   <div class="card" id="startCard">
-    <div class="card-title">
-     <div class="card-title-icon">👤</div>
-     <h2 id="startExamTitle">آزمون ریاضی</h2>
+   <!-- ورود -->
+   <div class="card start-card-modern" id="startCard">
+    <div class="start-hero-banner">
+      <div class="start-hero-icon">📝</div>
+      <div class="start-hero-text">
+        <h2 id="startExamTitle">آزمون ریاضی</h2>
+        <p class="subtitle" id="startExamSubtitle">برای شرکت در آزمون، اطلاعات خود را وارد کنید. سپس به صفحه پرداخت امن منتقل می‌شوید.</p>
+      </div>
     </div>
-    <p class="subtitle" id="startExamSubtitle">برای شرکت در آزمون، اطلاعات خود را وارد کنید. سپس به صفحه پرداخت امن منتقل می‌شوید.</p>
-    <div id="examInfo">
+ 
+    <div id="examInfo" class="exam-info-modern">
      <div class="loading">در حال دریافت اطلاعات آزمون...</div>
     </div>
-    <div class="field">
-     <label>نام و نام خانوادگی</label>
-     <div class="input-wrap">
-      <span class="input-icon">👤</span> <input id="nameInput" type="text" placeholder="مثلاً حسین خراسانی" autocomplete="name">
-     </div>
+ 
+    <div class="form-section">
+      <div class="form-section-title">📋 اطلاعات دانش‌آموز</div>
+      <div class="field">
+       <label>نام و نام خانوادگی</label>
+       <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input id="nameInput" type="text" placeholder="مثلاً حسین خراسانی" autocomplete="name">
+       </div>
+      </div>
+      <div class="field">
+       <label>شماره موبایل</label>
+       <div class="input-wrap">
+        <span class="input-icon">📱</span>
+        <input id="phoneInput" type="tel" placeholder="مثلاً ۰۹۱۲۱۲۳۴۵۶۷" autocomplete="tel" inputmode="tel" dir="ltr" maxlength="11">
+       </div>
+       <span class="hint">شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود.</span>
+      </div>
+      <div class="field-row">
+        <div class="field">
+         <label for="schoolNameInput">نام مدرسه</label>
+         <div class="input-wrap">
+          <span class="input-icon">🏫</span>
+          <input id="schoolNameInput" type="text" placeholder="نام مدرسه" autocomplete="organization" maxlength="120" required>
+         </div>
+        </div>
+        <div class="field">
+         <label for="gradeInput">پایه تحصیلی</label>
+         <div class="input-wrap">
+          <span class="input-icon">🎓</span>
+          <input id="gradeInput" type="text" placeholder="مثلاً دهم" maxlength="40" required>
+         </div>
+        </div>
+      </div>
+      <div class="field">
+       <label for="academicTrackInput">رشته تحصیلی</label>
+       <div class="input-wrap">
+        <span class="input-icon">📚</span>
+        <input id="academicTrackInput" type="text" placeholder="مثلاً ریاضی‌فیزیک، تجربی یا انسانی" maxlength="80" required>
+       </div>
+      </div>
     </div>
-    <div class="field">
-     <label>شماره موبایل</label>
-     <div class="input-wrap">
-      <span class="input-icon">📱</span> <input id="phoneInput" type="tel" placeholder="مثلاً ۰۹۱۲۱۲۳۴۵۶۷" autocomplete="tel" inputmode="tel" dir="ltr" maxlength="11">
-     </div>
-     <span class="hint"> شماره موبایل فقط برای ثبت سفارش و نمایش اطلاعات شرکت‌کننده استفاده می‌شود. </span>
-    </div>
-    <div class="field">
-     <label for="schoolNameInput">نام مدرسه</label>
-     <div class="input-wrap"><span class="input-icon">🏫</span> <input id="schoolNameInput" type="text" placeholder="نام مدرسه" autocomplete="organization" maxlength="120" required></div>
-    </div>
-    <div class="field">
-     <label for="gradeInput">پایه تحصیلی</label>
-     <div class="input-wrap"><span class="input-icon">🎓</span> <input id="gradeInput" type="text" placeholder="مثلاً دهم، یازدهم یا دوازدهم" maxlength="40" required></div>
-    </div>
-    <div class="field">
-     <label for="academicTrackInput">رشته تحصیلی</label>
-     <div class="input-wrap"><span class="input-icon">📚</span> <input id="academicTrackInput" type="text" placeholder="مثلاً ریاضی‌فیزیک، تجربی یا انسانی" maxlength="80" required></div>
-    </div>
+ 
     <div id="startError"></div>
-    <button id="startPaymentButton" class="primary-btn" disabled>در حال دریافت اطلاعات آزمون...</button>
+    <button id="startPaymentButton" class="primary-btn start-cta-btn" disabled>در حال دریافت اطلاعات آزمون...</button>
+    <p class="start-secure-note">🔒 اطلاعات شما محفوظ است و فقط برای برگزاری آزمون استفاده می‌شود</p>
    </div>
    <!-- پرداخت -->
    <div class="card hidden" id="paymentCard">
@@ -2113,8 +2869,8 @@ async function loadExam(){
         renderExamInfo();
         button.disabled = false;
         button.textContent = Number(data.pricing?.finalPrice ?? data.pricing?.final_price ?? data.exam?.finalPrice ?? data.exam?.final_price ?? data.exam?.price ?? 0) === 0
-            ? "ثبت‌نام رایگان و شروع آزمون"
-            : "پرداخت و شروع آزمون";
+            ? "ثبت‌نام رایگان و ورود"
+            : "پرداخت و ورود";
     } catch (error) {
         console.error("[AZMOON_LOAD_DIAG] exam load failed", error);
         info.innerHTML = `
@@ -2394,7 +3150,7 @@ async function createOrderAndPay(){
                 rulesError.innerHTML = `<div class="success">ثبت‌نام رایگان با موفقیت انجام شد. اکنون می‌توانید آزمون را شروع کنید.</div>`;
             }
             $("startPaymentButton").disabled = false;
-            $("startPaymentButton").textContent = "ثبت‌نام رایگان و شروع آزمون";
+            $("startPaymentButton").textContent = "ثبت‌نام رایگان و ورود";
             return;
         }
  
@@ -2476,7 +3232,7 @@ async function createOrderAndPay(){
  
  
         $("startPaymentButton").textContent =
-            "پرداخت و شروع آزمون";
+            "پرداخت و ورود";
  
     }
  
@@ -2758,8 +3514,7 @@ async function handlePaymentReturn(query){
                         onclick="recheckPaymentStatus()">بررسی دوباره پرداخت</button>
                     <button type="button" class="primary-btn" style="margin-top:8px"
                         onclick="document.getElementById('beginExamButton').click()">
-                        تلاش برای شروع آزمون
-                    </button>
+                        تلاش برای شروع آزمون</button>
                 `;
             }
         }
@@ -3721,8 +4476,7 @@ function renderResult(data){
             <div class="result-time">
  
                 <span>
-                    زمان شروع آزمون
-                </span>
+                    زمان شروع آزمون</span>
  
                 <strong>
                     ${escapeHtml(
@@ -4474,19 +5228,74 @@ async function loadExamCatalog() {
         }
         list.innerHTML = exams.map(exam => {
             const id = Number(exam.id);
-            const price = Number(exam.finalPrice ?? exam.price ?? 0);
-            const duration = Math.max(0, Number(exam.durationSeconds || 0));
-            const durationText = duration >= 3600
-                ? `${toPersianNumber(Math.floor(duration / 3600))} ساعت و ${toPersianNumber(Math.floor((duration % 3600) / 60))} دقیقه`
-                : `${toPersianNumber(Math.ceil(duration / 60))} دقیقه`;
-            return `<div class="exam-catalog-item" style="border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin:12px 0;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
-                <div style="flex:1;min-width:170px">
-                    <div style="font-weight:800;font-size:16px">${escapeHtml(exam.title || "آزمون ریاضی")}</div>
-                    <div class="subtitle" style="margin:6px 0 0">مدت: ${durationText} · ${price === 0 ? "رایگان" : `هزینه: ${toPersianNumber(price.toLocaleString("en-US"))} تومان`}</div>
-                </div>
-                <button type="button" class="primary-btn" data-exam-id="${id}">انتخاب و ورود</button>
-            </div>`;
+            const basePrice = Number(
+                exam.basePrice ?? exam.base_price ?? exam.originalPrice ?? exam.original_price ?? exam.price ?? 0
+            );
+            const finalPrice = Number(
+                exam.finalPrice ?? exam.final_price ?? exam.discountedPrice ?? exam.discounted_price ?? exam.price ?? basePrice
+            );
+            let discountPercent = Number(
+                exam.discountPercent ?? exam.discount_percent ?? exam.discount ?? 0
+            );
+            // اگر درصد نیامده ولی قیمت‌ها متفاوت است، درصد را حساب کن
+            if (discountPercent <= 0 && basePrice > finalPrice && basePrice > 0) {
+                discountPercent = Math.round(((basePrice - finalPrice) / basePrice) * 100);
+            }
+            // شرط بازتر: اگر قیمت نهایی کمتر از قیمت اصلی باشد یا درصد تخفیف وجود داشته باشد
+            const hasDiscount = (basePrice > finalPrice) || (discountPercent > 0);
+            const title = escapeHtml(exam.title || "آزمون ریاضی");
+ 
+            if (hasDiscount) {
+                const endAt = (typeof getDiscountEndAt === "function")
+                    ? getDiscountEndAt(exam)
+                    : (exam.discountEndAt ?? exam.discount_end_at ?? exam.discountEnd ?? exam.discount_end ?? null);
+                let countdownHtml = "";
+                if (endAt) {
+                    const endTime = Date.parse(endAt);
+                    const now = (typeof nowMs === "function" ? nowMs() : Date.now());
+                    if (!Number.isNaN(endTime) && endTime > now) {
+                        const rem = (typeof formatCountdown === "function")
+                            ? formatCountdown(endTime - now)
+                            : {hours:"۰۰",minutes:"۰۰",seconds:"۰۰"};
+                        countdownHtml = `
+                            <div class="countdown-box" data-catalog-countdown="${id}" data-end="${endAt}">
+                                <span>زمان باقی‌مانده تخفیف</span>
+                                <strong>${rem.hours}:${rem.minutes}:${rem.seconds}</strong>
+                            </div>`;
+                    }
+                }
+                return `
+                <div class="exam-catalog-item has-discount">
+                    <div class="discount-badge">${toPersianNumber(discountPercent || 0)}٪ تخفیف ویژه</div>
+                    <div class="exam-info-side">
+                        <div class="exam-title">${title}</div>
+                        <div class="price-row">
+                            <span class="old-price-box">${basePrice.toLocaleString("fa-IR")} تومان</span>
+                            <span class="final-price-box">${finalPrice.toLocaleString("fa-IR")} تومان</span>
+                        </div>
+                        ${countdownHtml}
+                        <div class="discount-hint">⚡ فقط تا پایان فرصت تخفیف</div>
+                    </div>
+                    <button type="button" class="start-btn" data-exam-id="${id}">ورود</button>
+                </div>`;
+            }
+ 
+            // کارت عادی
+            const priceText = finalPrice === 0
+                ? "رایگان"
+                : `${finalPrice.toLocaleString("fa-IR")} تومان`;
+            return `
+                <div class="exam-catalog-item">
+                    <div class="exam-info-side">
+                        <div class="exam-title">${title}</div>
+                        <div class="exam-meta">
+                            <span class="price-tag">💰 ${priceText}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="start-btn" data-exam-id="${id}">ورود</button>
+                </div>`;
         }).join("");
+ 
         list.querySelectorAll("button[data-exam-id]").forEach(button => {
             button.addEventListener("click", () => {
                 const id = Number(button.dataset.examId);
@@ -4498,10 +5307,35 @@ async function loadExamCatalog() {
                 window.location.href = target.toString();
             });
         });
+ 
+        startCatalogCountdowns();
     } catch (error) {
         if (list) list.innerHTML = "";
         if (errorBox) errorBox.innerHTML = `<div class="error">${escapeHtml(error.message)}<br><button type="button" class="secondary-btn" onclick="loadExamCatalog()">تلاش دوباره</button></div>`;
     }
+}
+ 
+/* شمارنده تخفیف در لیست کاتالوگ */
+let catalogCountdownInterval = null;
+function startCatalogCountdowns() {
+    if (catalogCountdownInterval) clearInterval(catalogCountdownInterval);
+    function tick() {
+        document.querySelectorAll("[data-catalog-countdown]").forEach(el => {
+            const endAt = el.getAttribute("data-end");
+            if (!endAt) return;
+            const endTime = Date.parse(endAt);
+            if (Number.isNaN(endTime)) return;
+            const remaining = endTime - (typeof nowMs === "function" ? nowMs() : Date.now());
+            if (remaining <= 0) {
+                el.innerHTML = "<span>تخفیف به پایان رسید</span>";
+                return;
+            }
+            const c = (typeof formatCountdown === "function") ? formatCountdown(remaining) : {hours:"۰۰",minutes:"۰۰",seconds:"۰۰"};
+            el.innerHTML = `<span>زمان باقی‌مانده تخفیف</span><strong>${c.hours}:${c.minutes}:${c.seconds}</strong>`;
+        });
+    }
+    tick();
+    catalogCountdownInterval = setInterval(tick, 1000);
 }
  
 /* =========================
@@ -4509,7 +5343,7 @@ async function loadExamCatalog() {
 ========================= */
  
 async function initializePage(){
- 
+    hide("studentHero");
     hide("startCard");
     hide("paymentCard");
     hide("rulesCard");
@@ -4553,11 +5387,13 @@ async function initializePage(){
         hide("rulesCard");
         hide("examCard");
         hide("resultCard");
+        show("studentHero");
         show("examCatalogCard");
         await loadExamCatalog();
         document.body.classList.remove("page-loading");
         return;
     }
+    hide("studentHero");
     hide("examCatalogCard");
     if (!hasPaymentQuery && !hasSavedFlow) {
         show("startCard");
