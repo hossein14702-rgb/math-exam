@@ -249,6 +249,24 @@ tr:hover td{background:#fafafa}
 .modal-box{width:100%;margin:10px auto;padding:15px}
 .date-time-row{grid-template-columns:1fr 105px}
 }
+ /* AI question generator */
+ .ai-agent-box{background:#fff;border:1px solid #c7d2fe;border-radius:16px;padding:18px;margin:14px 0 20px;box-shadow:0 4px 18px rgba(0,0,0,.05)}
+ .ai-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .ai-agent-box input,.ai-agent-box select,.ai-agent-box textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;font-family:inherit;font-size:14px}
+ .ai-agent-box textarea{min-height:110px;resize:vertical}
+ .ai-full{grid-column:1/-1}
+ .ai-message{padding:10px 12px;border-radius:9px;margin:10px 0;display:none;white-space:pre-wrap;font-size:13px}
+ .ai-message.show{display:block}.ai-message.info{background:#e0f2fe;color:#075985}.ai-message.error{background:#fee2e2;color:#991b1b}.ai-message.success{background:#dcfce7;color:#166534}
+ .ai-review-list{display:grid;gap:12px;margin-top:15px}
+ .ai-review-card{border:1px solid #e2e8f0;border-radius:12px;padding:13px;background:#f8fafc}
+ .ai-review-card.approved{border-color:#86efac;background:#f0fdf4}.ai-review-card.rejected{opacity:.7;border-color:#fca5a5}
+ .ai-card-head{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px}
+ .ai-card-head strong{font-size:14px}.ai-card-controls{display:flex;gap:5px;flex-wrap:wrap}
+ .ai-review-card textarea{margin:5px 0;min-height:72px}.ai-options{display:grid;gap:6px}
+ .ai-answer-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;font-size:13px}
+ .ai-answer-row select{width:auto;min-width:100px}.ai-explanation{background:#eff6ff;border-radius:8px;padding:10px;margin-top:8px;font-size:13px;white-space:pre-wrap}
+ .ai-bulk-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+ @media(max-width:600px){.ai-grid{grid-template-columns:1fr}.ai-agent-box{padding:13px}.ai-full{grid-column:auto}}
 </style>
  </head>
  <body>
@@ -358,6 +376,27 @@ tr:hover td{background:#fafafa}
     </div>
      </div>
     </details>
+     <!-- AI agent: generated drafts are local until teacher approval -->
+     <details class="accordion-card" style="margin:14px 0" id="aiQuestionAgent">
+      <summary>✨ عامل هوشمند تولید سؤال <span class="accordion-subtitle">تولید، بازبینی و تأیید قبل از ذخیره</span></summary>
+      <div class="accordion-content"><div class="ai-agent-box">
+       <h2 class="section-title">✨ تولید سؤال با هوش مصنوعی</h2>
+       <div class="section-description">سؤال‌ها ابتدا فقط در پیش‌نمایش هستند. هیچ تغییری در بانک ایجاد نمی‌شود مگر پس از تأیید و ذخیره نهایی شما.</div>
+       <div id="aiAgentMessage" class="ai-message"></div>
+       <div class="ai-grid">
+        <div class="form-group"><label>روش تولید</label><select id="aiMode" onchange="toggleAIMode()"><option value="topic">تولید از مبحث و محدوده</option><option value="examples">تولید نمونه‌های مشابه از سؤال نمونه</option></select></div>
+        <div class="form-group"><label>تعداد سؤال (۱ تا ۲۰)</label><input id="aiCount" type="number" min="1" max="20" value="5"></div>
+        <div class="form-group"><label>نوع سؤال</label><select id="aiType"><option value="four">چهارگزینه‌ای</option><option value="two">دو گزینه‌ای</option><option value="tf">صحیح / غلط</option><option value="mixed">ترکیبی</option></select></div>
+        <div class="form-group"><label>سطح دشواری</label><select id="aiDifficulty"><option value="easy">آسان</option><option value="medium" selected>متوسط</option><option value="hard">سخت</option><option value="mixed">ترکیبی</option></select></div>
+        <div class="form-group"><label>نام پوشه (اختیاری)</label><input id="aiFolderName" placeholder="مثلاً معادله درجه دوم" maxlength="80"></div>
+        <div class="form-group"><label>زمان پیشنهادی هر سؤال (ثانیه)</label><input id="aiDuration" type="number" min="10" max="3600" value="90"></div>
+        <div class="form-group ai-full" id="aiTopicGroup"><label>مبحث و محدوده تولید</label><textarea id="aiTopic" placeholder="مثلاً معادله درجه دوم؛ ریشه‌ها، مجموع و حاصل‌ضرب ریشه‌ها؛ از فرمول‌های پایه تا کاربرد ساده. سطح کتاب درسی..."></textarea></div>
+        <div class="form-group ai-full" id="aiExamplesGroup" style="display:none"><label>سؤال نمونه (می‌توانید چند سؤال را با خط خالی جدا کنید)</label><textarea id="aiExamples" placeholder="سؤال نمونه را با گزینه‌ها و پاسخ در صورت وجود وارد کنید. عامل روش حل را استخراج و نمونه‌های تازه بسازد."></textarea><label style="margin-top:7px">قاعده تغییر نمونه</label><select id="aiVariationRule"><option value="method">روش حل حفظ شود، اعداد و صورت تغییر کنند</option><option value="structure">ساختار کلی حفظ شود، صورت و اعداد تغییر کنند</option><option value="free">تنوع بیشتر؛ مهارت مشابه حفظ شود</option></select></div>
+       </div>
+       <div class="ai-bulk-actions"><button class="primary-btn" id="aiGenerateBtn" onclick="generateAIQuestions()">✨ تولید سؤال‌ها</button><button class="gray-btn" onclick="clearAIReview()">پاک‌کردن پیش‌نمایش</button></div>
+       <div id="aiReviewArea"></div>
+      </div></div>
+     </details>
     <!-- بانک سؤال -->
     <details class="accordion-card question-bank-outer">
      <summary>📚 بانک سؤال <span class="accordion-subtitle">آمار، پوشه‌ها، سؤال‌ها و تنظیم انتخاب سؤال‌های آزمون</span></summary>
@@ -2209,6 +2248,20 @@ async function uploadQuestionImageFiles() {
 }
  
  
+/* ===== AI question drafts: client-only preview until approval ===== */
+let aiDraftQuestions=[];
+function toggleAIMode(){const ex=document.getElementById('aiMode').value==='examples';document.getElementById('aiTopicGroup').style.display=ex?'none':'block';document.getElementById('aiExamplesGroup').style.display=ex?'block':'none';}
+function showAIMessage(msg,type='info'){const el=document.getElementById('aiAgentMessage');el.textContent=msg;el.className='ai-message show '+type;}
+function clearAIReview(){aiDraftQuestions=[];document.getElementById('aiReviewArea').innerHTML='';showAIMessage('پیش‌نمایش پاک شد؛ سؤال ذخیره نشده است.','info');}
+function normalizeAIDraft(q,i){q=q||{};let opts=Array.isArray(q.options)?q.options.map(x=>String(x??'').trim()):[];let n=Math.max(2,Math.min(4,Number(q.optionCount)||opts.length||4));opts=opts.slice(0,n);while(opts.length<n)opts.push('');let ci=Number(q.correctIndex);if(!Number.isInteger(ci)||ci<0||ci>=n)ci=0;return{id:'ai-'+Date.now()+'-'+i,questionText:String(q.questionText||q.question||''),options:opts,optionCount:n,correctIndex:ci,durationSeconds:Math.max(10,Math.min(3600,Number(q.durationSeconds)||Number(document.getElementById('aiDuration').value)||90)),explanation:String(q.explanation||q.solution||''),qa:String(q.qa||q.review||''),reviewPass:q.reviewPass!==false,approved:false,rejected:false,saved:false,folderName:String(q.folderName||document.getElementById('aiFolderName').value||'').trim()};}
+function renderAIReview(){const area=document.getElementById('aiReviewArea');if(!aiDraftQuestions.length){area.innerHTML='';return;}let html='<div class="ai-review-list">';const letters=['الف','ب','ج','د'];aiDraftQuestions.forEach((q,i)=>{html+=`<div class="ai-review-card ${q.saved?'approved':q.approved?'approved':''} ${q.rejected?'rejected':''}" id="aiCard_${i}"><div class="ai-card-head"><strong>سؤال ${faNumber(i+1)} ${q.saved?'— ذخیره شده':q.approved?'— تأیید شده':q.rejected?'— رد شده':'— در انتظار بررسی'}</strong><div class="ai-card-controls"><button class="success-btn small-btn" ${q.saved?"disabled":""} onclick="approveAIDraft(${i})">تأیید</button><button class="warning-btn small-btn" ${q.saved?"disabled":""} onclick="regenerateAIDraft(${i})">تولید مجدد</button><button class="danger-btn small-btn" ${q.saved?"disabled":""} onclick="rejectAIDraft(${i})">رد</button></div></div><label>صورت سؤال</label><textarea oninput="aiDraftQuestions[${i}].questionText=this.value">${escapeHtml(q.questionText)}</textarea><div class="ai-options">`;q.options.forEach((o,j)=>{html+=`<div><label style="display:flex;gap:6px;align-items:center;font-size:12px"><input type="radio" name="aiCorrect_${i}" value="${j}" ${q.correctIndex===j?'checked':''} onchange="aiDraftQuestions[${i}].correctIndex=${j}" style="width:auto"> ${letters[j]}</label><textarea oninput="aiDraftQuestions[${i}].options[${j}]=this.value">${escapeHtml(o)}</textarea></div>`;});html+=`</div><div class="ai-answer-row"><label>زمان (ثانیه)</label><input type="number" min="10" max="3600" value="${q.durationSeconds}" onchange="aiDraftQuestions[${i}].durationSeconds=Math.max(10,Math.min(3600,Number(this.value)||90))" style="max-width:100px"><label>پوشه</label><input value="${escapeHtml(q.folderName)}" maxlength="80" onchange="aiDraftQuestions[${i}].folderName=this.value" placeholder="نام پوشه" style="max-width:200px"></div><label>پاسخ تشریحی / راه‌حل (در بانک فعلی ذخیره نمی‌شود)</label><textarea oninput="aiDraftQuestions[${i}].e ... [۵۵۲ characters more on this line: see the Edit tab]
+async function generateAIQuestions(){const btn=document.getElementById('aiGenerateBtn'),mode=document.getElementById('aiMode').value,count=Number(document.getElementById('aiCount').value),topic=document.getElementById('aiTopic').value.trim(),examples=document.getElementById('aiExamples').value.trim();if(!Number.isInteger(count)||count<1||count>20){showAIMessage('تعداد سؤال باید بین ۱ تا ۲۰ باشد.','error');return;}if(mode==='topic'&&!topic){showAIMessage('مبحث و محدوده را وارد کنید.','error');return;}if(mode==='examples'&&!examples){showAIMessage('سؤال نمونه وارد کنید.','error');return;}btn.disabled=true;btn.textContent='⏳ در حال تولید...';showAIMessage('در حال تولید سؤال، گزینه‌ها، راه‌حل و بررسی اولیه...','info');try{const data=await postJson('/api/teacher/ai-questions',{examId:EXAM_ID,mode,count,questionType:document.getElementById('aiType').value,difficulty:document.getElementById('aiDifficulty').value,topic,examples,variationRule:document.getElementById('aiVariationRule').value,folderName:document.getElementById('aiFolderName').value.trim(),durationSeconds:Number(document.getElementById('aiDuration').value)||90});const arr=(data.questions||[]).map(normalizeAIDraft);if(!arr.length)throw new Error('پاسخ هوش مصنوعی سؤال قابل استفاده نداشت.');aiDraftQuestions=arr;renderAIReview();showAIMessage(`${faNumber(arr.length)} سؤال آماده پیش‌نمایش است؛ هنوز ذخیره نشده‌اند. حتماً بررسی کنید.`,'success');}catch(e){showAIMessage('تولید ناموفق: '+e.message,'error');}finally{btn.disabled=false;btn.textContent='✨ تولید سؤال‌ها';}}
+function rejectAIDraft(i){const q=aiDraftQuestions[i];if(!q)return;q.approved=false;q.rejected=true;renderAIReview();}
+function approveAIDraft(i){const q=aiDraftQuestions[i];if(!q||q.saved)return;if(!q.questionText.trim()||q.options.slice(0,q.optionCount).some(x=>!x.trim())){showAIMessage(`سؤال ${faNumber(i+1)} ناقص است؛ متن و گزینه‌ها را تکمیل کنید.`,'error');return;}q.rejected=false;q.approved=true;renderAIReview();}
+async function regenerateAIDraft(i){const q=aiDraftQuestions[i];if(!q)return;try{showAIMessage(`در حال تولید مجدد سؤال ${faNumber(i+1)}...`,'info');const d=await postJson('/api/teacher/ai-questions',{examId:EXAM_ID,mode:'regenerate',count:1,questionType:document.getElementById('aiType').value,difficulty:document.getElementById('aiDifficulty').value,topic:document.getElementById('aiTopic').value,examples:document.getElementById('aiExamples').value,variationRule:document.getElementById('aiVariationRule').value,folderName:q.folderName,durationSeconds:q.durationSeconds,previousQuestion:q});const fresh=normalizeAIDraft(d.questions?.[0],i);if(!fresh.questionText)throw new Error('سؤال جدید دریافت نشد.');aiDraftQuestions[i]=fresh;renderAIReview();showAIMessage('سؤال جایگزین شد؛ دوباره بررسی کنید.','success');}catch(e){showAIMessage('تولید مجدد ناموفق: '+e.message,'error');}}
+async function regenerateRejectedAIDrafts(){const ids=aiDraftQuestions.map((q,i)=>q.rejected?i:-1).filter(i=>i>=0);if(!ids.length){showAIMessage('سؤال ردشده‌ای برای تولید مجدد نیست.','info');return;}for(const i of ids)await regenerateAIDraft(i);}
+async function approveAllAIDrafts(){const selected=aiDraftQuestions.filter(q=>q.approved&&!q.rejected&&!q.saved);if(!selected.length){showAIMessage('ابتدا سؤال‌ها را تأیید کنید.','error');return;}if(!confirm(`فقط ${selected.length} سؤال تأییدشده در بانک آزمون جاری ذخیره شوند؟`))return;let saved=0;showAIMessage('در حال ذخیره سؤال‌های تأییدشده...','info');const folderCache=new Map(folders.map(f=>[String(f.name).trim().toLowerCase(),Number(f.id)]));try{for(const q of selected){let folderId=null;const folderName=(q.folderName||'').trim()||({four:'سؤالات تولیدشده با هوش مصنوعی ـ چهارگزینه‌ای',two:'سؤالات تولیدشده با هوش مصنوعی ـ دو گزینه‌ای',tf:'سؤالات تولیدشده با هوش مصنوعی ـ صحیح و غلط',mixed:'سؤالات تولیدشده با هوش مصنوعی ـ ترکیبی'}[document.getElementById('aiType').value]||'سؤالات تولیدشده با هوش مصنوعی');if(folderName){const key=folderName.toLowerCase();if(folderCache.has(key))folderId=folderCache.get(key);else{const r=await postJson('/api/teacher/folders',{action:'create',examId:EXAM_ID,name:folderName});folderId=Number(r.folder?.id||r.id||r.folderId||0);if(!folderId){await loadFolders();folderId=Number(folders.find(f=>String(f.name).trim().toLowerCase()===key)?.id||0);}if(!folderId)throw new Error('ساخت پوشه '+folderName+' تأیید نشد');folderCache.set(key,folderId);}}else folderId=Number(folders.find(f=>f.active)?.id||folders[0]?.id||0)||null;const n=q.optionCount;await postJson('/api/teacher/questions',{action:'create',examId:EXAM_ID,questionText:q.questionText,optionCount:n,optionA:q.options[0]||'',optionB:q.options[1]||'',optionC:n>=3?q.options[2]:'',optionD:n>=4?q.options[3]:'',correctIndex:q.correctIndex,durationSeconds:q.durationSeconds,folderId});saved++;q.approved=false;q.rejected=false;q.saved=true;}await loadFolders();await loadQuestionBank();renderAIReview();showAIMessage(`${faNumber(saved)} سؤال ذخیره شد. پاسخ‌های تشریحی در بانک فعلی ذخیره نمی‌شوند.`,'success');}catch(e){await loadFolders().catch(()=>{});await loadQuestionBank().catch(()=>{});showAIMess ... [۱۱۲ characters more on this line: see the Edit tab]
+ 
 async function saveQuestion() {
     const text = document.getElementById("questionText").value.trim();
     const optionCount = Number(document.getElementById("optionCount").value);
@@ -3376,4 +3429,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
-       </html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             </html>
