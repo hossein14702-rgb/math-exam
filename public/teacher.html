@@ -3409,12 +3409,24 @@ document.addEventListener("click", event => {
 });
  
  
-
-/* ===== اجرای اولیه پنل دبیر ===== */
-
+/* ===== اجرای اولیه: ورود اجباری در هر بار باز شدن صفحه ===== */
+ 
 (async function init() {
+    // حتی اگر نشست قبلی هنوز معتبر باشد، برای هر بار باز شدن teacher.html
+    // ابتدا آن نشست را با Worker باطل می‌کنیم تا نام کاربری و رمز عبور
+    // دوباره درخواست شود.
+    try {
+        await fetch(API_BASE + "/api/teacher/logout", {
+            method: "POST",
+            credentials: "include"
+        });
+    } catch (e) {
+        // اگر logout به هر دلیل در دسترس نبود، صفحه همچنان باید ورود بخواهد.
+    }
+ 
     showLogin();
 })();
+ 
 </script>
-</body>
-</html>
+ </body>
+                                                                    </html>
