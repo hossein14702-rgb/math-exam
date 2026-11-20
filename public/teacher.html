@@ -637,8 +637,25 @@ tr:hover td{background:#fafafa}
   <!-- end #panelSection -->
   <script>
 const API_BASE = window.location.origin;
+const TEACHER_TOKEN_KEY = "azmoon_teacher_token";
 let EXAM_ID = Number(new URLSearchParams(location.search).get("examId")) || 1;
 let exams = [];
+ 
+function getTeacherToken() {
+    try { return sessionStorage.getItem(TEACHER_TOKEN_KEY) || ""; } catch (e) { return ""; }
+}
+function setTeacherToken(token) {
+    try {
+        if (token) sessionStorage.setItem(TEACHER_TOKEN_KEY, token);
+        else sessionStorage.removeItem(TEACHER_TOKEN_KEY);
+    } catch (e) {}
+}
+function authHeaders(extra = {}) {
+    const headers = { ...(extra || {}) };
+    const token = getTeacherToken();
+    if (token) headers["Authorization"] = "Bearer " + token;
+    return headers;
+}
  
 let folders = [];
 let questions = [];
@@ -838,6 +855,10 @@ async function handleLogin(event) {
             throw new Error(data.error || "ورود ناموفق بود");
         }
  
+        if (data.token) {
+            setTeacherToken(data.token);
+        }
+ 
         document.getElementById("loginPassword").value = "";
         showLoginMessage("");
         showPanel();
@@ -868,10 +889,12 @@ async function handleLogout() {
     try {
         await fetch(API_BASE + "/api/teacher/logout", {
             method: "POST",
-            credentials: "include"
+            credentials: "include",
+            headers: authHeaders()
         });
     } catch (e) {}
  
+    setTeacherToken("");
     showLogin();
     document.getElementById("loginUsername").value = "";
     document.getElementById("loginPassword").value = "";
@@ -885,12 +908,13 @@ async function apiRequest(url, options = {}) {
     const opts = {
         ...options,
         credentials: "include",
-        headers: { ...(options.headers || {}) }
+        headers: authHeaders(options.headers || {})
     };
  
     const response = await fetch(API_BASE + url, opts);
  
     if (response.status === 401) {
+        setTeacherToken("");
         showLogin();
         throw new Error("نشست شما منقضی شده. لطفاً دوباره وارد شوید.");
     }
@@ -3428,13 +3452,16 @@ document.addEventListener("click", event => {
     try {
         const response = await fetch(API_BASE + "/api/teacher/exams?_=" + Date.now(), {
             method: "GET",
-            credentials: "include"
+            credentials: "include",
+            headers: authHeaders()
         });
         if (response.ok) {
             showPanel();
             await loadAll();
             return;
         }
+        // نشست نامعتبر
+        setTeacherToken("");
     } catch (e) {
         // نشست معتبر نیست یا خطای شبکه
     }
