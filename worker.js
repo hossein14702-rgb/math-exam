@@ -84,6 +84,7 @@ export default {
           JSON.stringify({
             ok: true,
             message: "ورود با موفقیت انجام شد",
+            token: token,
           }),
           {
             status: 200,
@@ -5783,11 +5784,14 @@ const ALLOWED_ORIGINS = [
 function getCorsHeaders(origin) {
   const headers = {
     "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Credentials": "true",
   };
  
   if (ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  } else if (origin && /^https:\/\/[a-z0-9.-]+\.(workers\.dev|azmoonmath\.ir)$/i.test(origin)) {
+    // ساب‌دامین‌های workers.dev و دامنه اصلی هم اجازه داشته باشند
     headers["Access-Control-Allow-Origin"] = origin;
   }
  
@@ -5825,7 +5829,15 @@ function clearSessionCookie() {
 }
  
 async function getValidTeacherSession(request, env) {
-  const token = getCookie(request, "teacher_session");
+  let token = getCookie(request, "teacher_session");
+ 
+  // پشتیبانی از Authorization: Bearer برای مواقعی که کوکی ست/ارسال نمی‌شود
+  if (!token) {
+    const auth = request.headers.get("Authorization") || "";
+    const m = auth.match(/^Bearer\s+(.+)$/i);
+    if (m) token = m[1].trim();
+  }
+ 
   if (!token) return null;
  
   const tokenHash = await hashToken(token);
