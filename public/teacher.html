@@ -841,7 +841,20 @@ async function handleLogin(event) {
         document.getElementById("loginPassword").value = "";
         showLoginMessage("");
         showPanel();
-        await loadAll();
+        try {
+            await loadAll();
+        } catch (loadError) {
+            // ورود موفق بوده؛ خطاهای بارگذاری پنل را روی خود پنل نشان بده
+            // فقط اگر واقعاً نشست نامعتبر بود، apiRequest خودش showLogin را صدا زده
+            console.error("loadAll after login:", loadError);
+            const errBox = document.getElementById("errorBox");
+            if (errBox && document.getElementById("panelSection").style.display !== "none") {
+                errBox.textContent = "ورود موفق بود ولی بارگذاری داده با خطا مواجه شد: " + (loadError.message || "خطا");
+                errBox.style.display = "block";
+            } else if (document.getElementById("loginSection").style.display !== "none") {
+                showLoginMessage(loadError.message || "نشست برقرار نشد. دوباره تلاش کنید.");
+            }
+        }
  
     } catch (error) {
         showLoginMessage(error.message || "خطا در ورود");
@@ -3409,24 +3422,25 @@ document.addEventListener("click", event => {
 });
  
  
-/* ===== اجرای اولیه: ورود اجباری در هر بار باز شدن صفحه ===== */
+/* ===== اجرای اولیه: اگر نشست معتبر باشد پنل باز شود، وگرنه ورود ===== */
  
 (async function init() {
-    // حتی اگر نشست قبلی هنوز معتبر باشد، برای هر بار باز شدن teacher.html
-    // ابتدا آن نشست را با Worker باطل می‌کنیم تا نام کاربری و رمز عبور
-    // دوباره درخواست شود.
     try {
-        await fetch(API_BASE + "/api/teacher/logout", {
-            method: "POST",
+        const response = await fetch(API_BASE + "/api/teacher/exams?_=" + Date.now(), {
+            method: "GET",
             credentials: "include"
         });
+        if (response.ok) {
+            showPanel();
+            await loadAll();
+            return;
+        }
     } catch (e) {
-        // اگر logout به هر دلیل در دسترس نبود، صفحه همچنان باید ورود بخواهد.
+        // نشست معتبر نیست یا خطای شبکه
     }
- 
     showLogin();
 })();
  
 </script>
  </body>
-      </html>
+       </html>
