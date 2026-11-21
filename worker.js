@@ -27,18 +27,35 @@ export default {
         const expectedUser = String(env.TEACHER_USERNAME || "");
         const expectedPass = String(env.TEACHER_PASSWORD || "");
  
-        if (
-          !expectedUser ||
-          !expectedPass ||
-          username !== expectedUser ||
-          password !== expectedPass
-        ) {
+        if (!expectedUser || !expectedPass) {
+          return json(
+            {
+              ok: false,
+              error: "پیکربندی ورود ناقص است: TEACHER_USERNAME یا TEACHER_PASSWORD در Worker تنظیم نشده است.",
+            },
+            503,
+            cors
+          );
+        }
+ 
+        if (username !== expectedUser || password !== expectedPass) {
           return json(
             {
               ok: false,
               error: "نام کاربری یا رمز عبور اشتباه است",
             },
             401,
+            cors
+          );
+        }
+ 
+        if (!env.DB) {
+          return json(
+            {
+              ok: false,
+              error: "دیتابیس (D1) به Worker متصل نیست.",
+            },
+            503,
             cors
           );
         }
@@ -57,23 +74,35 @@ export default {
         ).toISOString();
         const sessionId = crypto.randomUUID();
  
-        await env.DB
-          .prepare(`
-            INSERT INTO teacher_sessions (
-              id,
-              token_hash,
-              expires_at,
-              created_at
+        try {
+          await env.DB
+            .prepare(`
+              INSERT INTO teacher_sessions (
+                id,
+                token_hash,
+                expires_at,
+                created_at
+              )
+              VALUES (?, ?, ?, ?)
+            `)
+            .bind(
+              sessionId,
+              tokenHash,
+              expiresAt,
+              now.toISOString()
             )
-            VALUES (?, ?, ?, ?)
-          `)
-          .bind(
-            sessionId,
-            tokenHash,
-            expiresAt,
-            now.toISOString()
-          )
-          .run();
+            .run();
+        } catch (dbErr) {
+          console.error("teacher login insert session failed:", dbErr);
+          return json(
+            {
+              ok: false,
+              error: "ثبت نشست ورود در دیتابیس ناموفق بود. جدول teacher_sessions را بررسی کنید. " + (dbErr?.message || ""),
+            },
+            500,
+            cors
+          );
+        }
  
         const headers = {
           ...cors,
