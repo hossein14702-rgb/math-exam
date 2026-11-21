@@ -820,65 +820,109 @@ function showPanel() {
  
 function showLoginMessage(text, type = "error") {
     const box = document.getElementById("loginMessage");
-    box.textContent = text;
-    box.className = text ? "login-message " + type : "login-message";
+    if (!box) {
+        alert(text || "خطا");
+        return;
+    }
+    box.textContent = text || "";
+    box.className = text ? ("login-message " + type) : "login-message";
+    box.style.display = text ? "block" : "none";
 }
  
 async function handleLogin(event) {
-    event.preventDefault();
+    if (event && event.preventDefault) event.preventDefault();
  
     const username = document.getElementById("loginUsername").value.trim();
     const password = document.getElementById("loginPassword").value;
     const btn = document.getElementById("loginBtn");
  
     if (!username || !password) {
-        showLoginMessage("نام کاربری و رمز عبور را وارد کنید.");
+        showLoginMessage("نام کاربری و رمز عبور را وارد کنید.", "error");
         return;
     }
  
     btn.disabled = true;
     btn.textContent = "⏳ در حال ورود...";
-    showLoginMessage("");
+    showLoginMessage("در حال ارسال درخواست ورود...", "success");
+ 
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
  
     try {
-        const response = await fetch(API_BASE + "/api/teacher/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ username, password })
-        });
- 
-        let data = {};
-        try { data = await response.json(); } catch (e) {}
- 
-        if (!response.ok || data.ok === false) {
-            throw new Error(data.error || "ورود ناموفق بود");
+        let response;
+        try {
+            response = await fetch(API_BASE + "/api/teacher/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ username, password }),
+                signal: controller.signal
+            });
+        } catch (netErr) {
+            if (netErr && netErr.name === "AbortError") {
+                throw new Error("پاسخ سرور طول کشید (تایم‌اوت). اتصال یا Worker را بررسی کنید.");
+            }
+            throw new Error("ارتباط با سرور برقرار نشد: " + (netErr.message || "خطای شبکه") + " | آدرس: " + API_BASE + "/api/teacher/login");
+        } finally {
+            clearTimeout(timer);
         }
  
-        if (data.token) {
-            setTeacherToken(data.token);
+        let data = {};
+        const rawText = await response.text();
+        try { data = JSON.parse(rawText || "{}"); } catch (e) {
+            throw new Error("پاسخ سرور JSON نبود (کد " + response.status + "): " + String(rawText).slice(0, 180));
+        }
+ 
+        if (!response.ok || data.ok === false) {
+            throw new Error(data.error || ("ورود ناموفق بود (کد " + response.status + ")"));
+        }
+ 
+        if (!data.token) {
+            throw new Error("سرور توکن ورود برنگرداند. نسخه Worker را به‌روز کنید و دوباره دیپلوی کنید.");
+        }
+ 
+        setTeacherToken(data.token);
+        showLoginMessage("ورود موفق. در حال بررسی نشست...", "success");
+ 
+        // تأیید نشست با همان توکن قبل از باز کردن پنل
+        let check;
+        try {
+            check = await fetch(API_BASE + "/api/teacher/exams?_=" + Date.now(), {
+                method: "GET",
+                credentials: "include",
+                headers: authHeaders()
+            });
+        } catch (e) {
+            throw new Error("ورود ثبت شد ولی بررسی نشست ناموفق بود: " + (e.message || "خطای شبکه"));
+        }
+ 
+        if (!check.ok) {
+            let checkData = {};
+            try { checkData = await check.json(); } catch (e) {}
+            setTeacherToken("");
+            throw new Error(checkData.error || ("نشست بعد از ورود معتبر نشد (کد " + check.status + "). احتمالاً Worker قدیمی است یا جدول teacher_sessions مشکل دارد."));
         }
  
         document.getElementById("loginPassword").value = "";
-        showLoginMessage("");
+        showLoginMessage("ورود موفق. در حال بارگذاری پنل...", "success");
         showPanel();
+ 
         try {
             await loadAll();
         } catch (loadError) {
-            // ورود موفق بوده؛ خطاهای بارگذاری پنل را روی خود پنل نشان بده
-            // فقط اگر واقعاً نشست نامعتبر بود، apiRequest خودش showLogin را صدا زده
             console.error("loadAll after login:", loadError);
             const errBox = document.getElementById("errorBox");
             if (errBox && document.getElementById("panelSection").style.display !== "none") {
-                errBox.textContent = "ورود موفق بود ولی بارگذاری داده با خطا مواجه شد: " + (loadError.message || "خطا");
+                errBox.textContent = "ورود موفق بود ولی بارگذاری داده خطا داد: " + (loadError.message || "خطا");
                 errBox.style.display = "block";
-            } else if (document.getElementById("loginSection").style.display !== "none") {
-                showLoginMessage(loadError.message || "نشست برقرار نشد. دوباره تلاش کنید.");
+            } else {
+                showLoginMessage(loadError.message || "بارگذاری پنل ناموفق بود.", "error");
             }
         }
  
     } catch (error) {
-        showLoginMessage(error.message || "خطا در ورود");
+        console.error("handleLogin:", error);
+        showLoginMessage(error.message || "خطا در ورود", "error");
     } finally {
         btn.disabled = false;
         btn.textContent = "ورود";
@@ -3470,4 +3514,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
-       </html>
+ </html>
