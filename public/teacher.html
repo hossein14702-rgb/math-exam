@@ -274,16 +274,16 @@ tr:hover td{background:#fafafa}
   <div id="loginSection" class="login-wrapper">
    <div class="login-box">
     <h1>ورود به پنل معلم</h1>
-    <p>برای دسترسی به پنل مدیریت آزمون وارد شوید</p>
+    <p>برای دسترسی به پنل مدیریت آزمون وارد شوید<br><small id="loginBuildTag" style="color:#94a3b8">build: login-fix-v3</small></p>
     <div id="loginMessage" class="login-message"></div>
-    <form class="login-form" onsubmit="handleLogin(event)">
+    <form class="login-form" id="loginForm" action="javascript:void(0)" method="post" onsubmit="event.preventDefault(); handleLogin(event); return false;">
      <div class="form-group">
       <label for="loginUsername">نام کاربری</label> <input id="loginUsername" type="text" autocomplete="username" required placeholder="نام کاربری">
      </div>
      <div class="form-group">
       <label for="loginPassword">رمز عبور</label> <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="رمز عبور">
      </div>
-     <button type="submit" class="login-btn" id="loginBtn">ورود</button>
+     <button type="button" class="login-btn" id="loginBtn">ورود</button>
     </form>
    </div>
   </div>
@@ -830,20 +830,32 @@ function showLoginMessage(text, type = "error") {
 }
  
 async function handleLogin(event) {
-    if (event && event.preventDefault) event.preventDefault();
+    try {
+        if (event) {
+            if (event.preventDefault) event.preventDefault();
+            if (event.stopPropagation) event.stopPropagation();
+        }
+    } catch (e) {}
  
-    const username = document.getElementById("loginUsername").value.trim();
-    const password = document.getElementById("loginPassword").value;
+    const usernameEl = document.getElementById("loginUsername");
+    const passwordEl = document.getElementById("loginPassword");
     const btn = document.getElementById("loginBtn");
+    const username = (usernameEl && usernameEl.value || "").trim();
+    const password = (passwordEl && passwordEl.value) || "";
+ 
+    // پیام فوری تا اگر بعداً خطا شد کاربر چیزی دیده باشد
+    showLoginMessage("در حال پردازش ورود...", "success");
  
     if (!username || !password) {
         showLoginMessage("نام کاربری و رمز عبور را وارد کنید.", "error");
         return;
     }
  
-    btn.disabled = true;
-    btn.textContent = "⏳ در حال ورود...";
-    showLoginMessage("در حال ارسال درخواست ورود...", "success");
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "⏳ در حال ورود...";
+    }
+    showLoginMessage("در حال ارسال درخواست ورود به " + API_BASE + " ...", "success");
  
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
@@ -3493,6 +3505,29 @@ document.addEventListener("click", event => {
 /* ===== اجرای اولیه: اگر نشست معتبر باشد پنل باز شود، وگرنه ورود ===== */
  
 (async function init() {
+    // اتصال مطمئن رویداد ورود (حتی اگر onclick/onsubmit از کار بیفتد)
+    try {
+        const form = document.getElementById("loginForm");
+        const btn = document.getElementById("loginBtn");
+        if (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleLogin(e);
+                return false;
+            });
+        }
+        if (btn) {
+            btn.addEventListener("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleLogin(e);
+            });
+        }
+    } catch (bindErr) {
+        console.error("login bind error:", bindErr);
+    }
+ 
     try {
         const response = await fetch(API_BASE + "/api/teacher/exams?_=" + Date.now(), {
             method: "GET",
@@ -3504,7 +3539,6 @@ document.addEventListener("click", event => {
             await loadAll();
             return;
         }
-        // نشست نامعتبر
         setTeacherToken("");
     } catch (e) {
         // نشست معتبر نیست یا خطای شبکه
@@ -3514,4 +3548,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
- </html>
+                                                                      </html>
