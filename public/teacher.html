@@ -274,7 +274,7 @@ tr:hover td{background:#fafafa}
   <div id="loginSection" class="login-wrapper">
    <div class="login-box">
     <h1>ورود به پنل معلم</h1>
-    <p>برای دسترسی به پنل مدیریت آزمون وارد شوید<br><small id="loginBuildTag" style="color:#94a3b8">build: login-fix-v3</small></p>
+    <p>برای دسترسی به پنل مدیریت آزمون وارد شوید<br><small id="loginBuildTag" style="color:#94a3b8">build: login-fix-v4</small></p>
     <div id="loginMessage" class="login-message"></div>
     <form class="login-form" id="loginForm" action="javascript:void(0)" method="post" onsubmit="event.preventDefault(); handleLogin(event); return false;">
      <div class="form-group">
@@ -283,7 +283,7 @@ tr:hover td{background:#fafafa}
      <div class="form-group">
       <label for="loginPassword">رمز عبور</label> <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="رمز عبور">
      </div>
-     <button type="button" class="login-btn" id="loginBtn">ورود</button>
+     <button type="button" class="login-btn" id="loginBtn" onclick="handleLogin(event); return false;">ورود</button>
     </form>
    </div>
   </div>
@@ -829,6 +829,7 @@ function showLoginMessage(text, type = "error") {
     box.style.display = text ? "block" : "none";
 }
  
+let __loginInFlight = false;
 async function handleLogin(event) {
     try {
         if (event) {
@@ -836,6 +837,9 @@ async function handleLogin(event) {
             if (event.stopPropagation) event.stopPropagation();
         }
     } catch (e) {}
+ 
+    if (__loginInFlight) return;
+    __loginInFlight = true;
  
     const usernameEl = document.getElementById("loginUsername");
     const passwordEl = document.getElementById("loginPassword");
@@ -848,6 +852,7 @@ async function handleLogin(event) {
  
     if (!username || !password) {
         showLoginMessage("نام کاربری و رمز عبور را وارد کنید.", "error");
+        __loginInFlight = false;
         return;
     }
  
@@ -936,10 +941,41 @@ async function handleLogin(event) {
         console.error("handleLogin:", error);
         showLoginMessage(error.message || "خطا در ورود", "error");
     } finally {
-        btn.disabled = false;
-        btn.textContent = "ورود";
+        __loginInFlight = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "ورود";
+        }
     }
 }
+ 
+// اتصال فوری دکمه/فرم ورود (قبل از بقیه کدهای صفحه)
+(function bindLoginControls() {
+    try {
+        const form = document.getElementById("loginForm");
+        const btn = document.getElementById("loginBtn");
+        if (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleLogin(e);
+                return false;
+            });
+        }
+        if (btn) {
+            btn.addEventListener("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleLogin(e);
+            });
+        }
+        const tag = document.getElementById("loginBuildTag");
+        if (tag) tag.textContent = "build: login-fix-v4 · script-ok";
+    } catch (e) {
+        console.error("bindLoginControls:", e);
+        try { alert("خطا در اتصال دکمه ورود: " + e.message); } catch (e2) {}
+    }
+})();
  
 async function handleLogout() {
     try {
@@ -3475,31 +3511,37 @@ async function loadAll() {
  
 /* ===== رویدادهای صفحه ===== */
  
-document.getElementById("discountStart").addEventListener("click", event => {
-    event.stopPropagation();
-    closeAllDatePickers();
-    openJalaliPicker("start");
-});
- 
-document.getElementById("discountEnd").addEventListener("click", event => {
-    event.stopPropagation();
-    closeAllDatePickers();
-    openJalaliPicker("end");
-});
- 
-["discountStartTime", "discountEndTime"].forEach(id => {
-    document.getElementById(id).addEventListener("input", calculateDiscountPreview);
-});
- 
-["basePrice", "discountPercent"].forEach(id => {
-    document.getElementById(id).addEventListener("input", calculateDiscountPreview);
-});
- 
-document.addEventListener("click", event => {
-    if (!event.target.closest(".jalali-date-wrapper")) {
-        closeAllDatePickers();
+(function bindPanelEvents() {
+    try {
+        const discountStart = document.getElementById("discountStart");
+        if (discountStart) {
+            discountStart.addEventListener("click", event => {
+                event.stopPropagation();
+                closeAllDatePickers();
+                openJalaliPicker("start");
+            });
+        }
+        const discountEnd = document.getElementById("discountEnd");
+        if (discountEnd) {
+            discountEnd.addEventListener("click", event => {
+                event.stopPropagation();
+                closeAllDatePickers();
+                openJalaliPicker("end");
+            });
+        }
+        ["discountStartTime", "discountEndTime", "basePrice", "discountPercent"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener("input", calculateDiscountPreview);
+        });
+        document.addEventListener("click", event => {
+            if (!event.target.closest(".jalali-date-wrapper")) {
+                closeAllDatePickers();
+            }
+        });
+    } catch (e) {
+        console.error("bindPanelEvents:", e);
     }
-});
+})();
  
  
 /* ===== اجرای اولیه: اگر نشست معتبر باشد پنل باز شود، وگرنه ورود ===== */
@@ -3548,4 +3590,4 @@ document.addEventListener("click", event => {
  
 </script>
  </body>
-                                                                      </html>
+          </html>
