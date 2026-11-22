@@ -635,23 +635,7 @@ tr:hover td{background:#fafafa}
    </div>
   </div>
   <!-- end #panelSection -->
-  <!-- Login diagnostic script: isolated before the main teacher script -->
-<script>
-(function(){
-  var tag = document.getElementById("loginBuildTag");
-  function mark(text){ if(tag) tag.textContent = "build: login-diagnostic-v1 · " + text; }
-  mark("script-start");
-  window.addEventListener("error", function(e){
-    mark("js-error: " + String(e.message || "unknown").slice(0,100));
-  });
-  window.addEventListener("unhandledrejection", function(e){
-    var reason = e.reason && (e.reason.message || e.reason);
-    mark("promise-error: " + String(reason || "unknown").slice(0,100));
-  });
-  mark("script-ok");
-})();
-</script>
-<script>
+  <script>
 const API_BASE = window.location.origin;
 const TEACHER_TOKEN_KEY = "azmoon_teacher_token";
 let EXAM_ID = Number(new URLSearchParams(location.search).get("examId")) || 1;
@@ -2399,14 +2383,102 @@ function toggleAIMode(){const ex=document.getElementById('aiMode').value==='exam
 function showAIMessage(msg,type='info'){const el=document.getElementById('aiAgentMessage');el.textContent=msg;el.className='ai-message show '+type;}
 function clearAIReview(){aiDraftQuestions=[];document.getElementById('aiReviewArea').innerHTML='';showAIMessage('پیش‌نمایش پاک شد؛ سؤال ذخیره نشده است.','info');}
 function normalizeAIDraft(q,i){q=q||{};let opts=Array.isArray(q.options)?q.options.map(x=>String(x??'').trim()):[];let n=Math.max(2,Math.min(4,Number(q.optionCount)||opts.length||4));opts=opts.slice(0,n);while(opts.length<n)opts.push('');let ci=Number(q.correctIndex);if(!Number.isInteger(ci)||ci<0||ci>=n)ci=0;return{id:'ai-'+Date.now()+'-'+i,questionText:String(q.questionText||q.question||''),options:opts,optionCount:n,correctIndex:ci,durationSeconds:Math.max(10,Math.min(3600,Number(q.durationSeconds)||Number(document.getElementById('aiDuration').value)||90)),explanation:String(q.explanation||q.solution||''),qa:String(q.qa||q.review||''),reviewPass:q.reviewPass!==false,approved:false,rejected:false,saved:false,folderName:String(q.folderName||document.getElementById('aiFolderName').value||'').trim()};}
-function renderAIReview(){const area=document.getElementById('aiReviewArea');if(!aiDraftQuestions.length){area.innerHTML='';return;}let html='<div class="ai-review-list">';const letters=['الف','ب','ج','د'];aiDraftQuestions.forEach((q,i)=>{html+=`<div class="ai-review-card ${q.saved?'approved':q.approved?'approved':''} ${q.rejected?'rejected':''}" id="aiCard_${i}"><div class="ai-card-head"><strong>سؤال ${faNumber(i+1)} ${q.saved?'— ذخیره شده':q.approved?'— تأیید شده':q.rejected?'— رد شده':'— در انتظار بررسی'}</strong><div class="ai-card-controls"><button class="success-btn small-btn" ${q.saved?"disabled":""} onclick="approveAIDraft(${i})">تأیید</button><button class="warning-btn small-btn" ${q.saved?"disabled":""} onclick="regenerateAIDraft(${i})">تولید مجدد</button><button class="danger-btn small-btn" ${q.saved?"disabled":""} onclick="rejectAIDraft(${i})">رد</button></div></div><label>صورت سؤال</label><textarea oninput="aiDraftQuestions[${i}].questionText=this.value">${escapeHtml(q.questionText)}</textarea><div class="ai-options">`;q.options.forEach((o,j)=>{html+=`<div><label style="display:flex;gap:6px;align-items:center;font-size:12px"><input type="radio" name="aiCorrect_${i}" value="${j}" ${q.correctIndex===j?'checked':''} onchange="aiDraftQuestions[${i}].correctIndex=${j}" style="width:auto"> ${letters[j]}</label><textarea oninput="aiDraftQuestions[${i}].options[${j}]=this.value">${escapeHtml(o)}</textarea></div>`;});html+=`</div><div class="ai-answer-row"><label>زمان (ثانیه)</label><input type="number" min="10" max="3600" value="${q.durationSeconds}" onchange="aiDraftQuestions[${i}].durationSeconds=Math.max(10,Math.min(3600,Number(this.value)||90))" style="max-width:100px"><label>پوشه</label><input value="${escapeHtml(q.folderName)}" maxlength="80" onchange="aiDraftQuestions[${i}].folderName=this.value" placeholder="نام پوشه" style="max-width:200px"></div><label>پاسخ تشریحی / راه‌حل (در بانک فعلی ذخیره نمی‌شود)</label><textarea oninput="aiDraftQuestions[${i}].e ... [۵۷ characters more on this line: see the Edit tab]
+function renderAIReview(){
+  const area=document.getElementById('aiReviewArea');
+  if(!aiDraftQuestions.length){area.innerHTML='';return;}
+  let html='<div class="ai-review-list">';
+  const letters=['الف','ب','ج','د'];
+  aiDraftQuestions.forEach((q,i)=>{
+    const status=q.saved?'— ذخیره شده':q.approved?'— تأیید شده':q.rejected?'— رد شده':'— در انتظار بررسی';
+    const cardClass=(q.saved||q.approved?'approved ':'')+(q.rejected?'rejected':'');
+    html+=`<div class="ai-review-card ${cardClass}" id="aiCard_${i}">
+      <div class="ai-card-head"><strong>سؤال ${faNumber(i+1)} ${status}</strong>
+      <div class="ai-card-controls">
+        <button class="success-btn small-btn" ${q.saved?'disabled':''} onclick="approveAIDraft(${i})">تأیید</button>
+        <button class="warning-btn small-btn" ${q.saved?'disabled':''} onclick="regenerateAIDraft(${i})">تولید مجدد</button>
+        <button class="danger-btn small-btn" ${q.saved?'disabled':''} onclick="rejectAIDraft(${i})">رد</button>
+      </div></div>
+      <label>صورت سؤال</label>
+      <textarea ${q.saved?'disabled':''} oninput="aiDraftQuestions[${i}].questionText=this.value">${escapeHtml(q.questionText)}</textarea>
+      <div class="ai-options">`;
+    q.options.slice(0,q.optionCount).forEach((o,j)=>{
+      html+=`<div><label style="display:flex;gap:6px;align-items:center;font-size:12px">
+        <input type="radio" name="aiCorrect_${i}" value="${j}" ${q.correctIndex===j?'checked':''} ${q.saved?'disabled':''} onchange="aiDraftQuestions[${i}].correctIndex=${j}" style="width:auto"> ${letters[j]||faNumber(j+1)}</label>
+        <textarea ${q.saved?'disabled':''} oninput="aiDraftQuestions[${i}].options[${j}]=this.value">${escapeHtml(o)}</textarea></div>`;
+    });
+    html+=`</div><div class="ai-answer-row">
+      <label>زمان (ثانیه)</label>
+      <input type="number" min="10" max="3600" value="${q.durationSeconds}" ${q.saved?'disabled':''} onchange="aiDraftQuestions[${i}].durationSeconds=Math.max(10,Math.min(3600,Number(this.value)||90))" style="max-width:100px">
+      <label>پوشه</label>
+      <input value="${escapeHtml(q.folderName)}" maxlength="80" ${q.saved?'disabled':''} onchange="aiDraftQuestions[${i}].folderName=this.value" placeholder="نام پوشه" style="max-width:200px">
+      </div><label>پاسخ تشریحی / راه‌حل</label>
+      <textarea ${q.saved?'disabled':''} oninput="aiDraftQuestions[${i}].explanation=this.value">${escapeHtml(q.explanation||'')}</textarea>
+      <label>یادداشت بررسی</label>
+      <textarea ${q.saved?'disabled':''} oninput="aiDraftQuestions[${i}].qa=this.value">${escapeHtml(q.qa||'')}</textarea>
+      </div>`;
+  });
+  html+='</div>';
+  area.innerHTML=html;
+}
 async function generateAIQuestions(){const btn=document.getElementById('aiGenerateBtn'),mode=document.getElementById('aiMode').value,count=Number(document.getElementById('aiCount').value),topic=document.getElementById('aiTopic').value.trim(),examples=document.getElementById('aiExamples').value.trim();if(!Number.isInteger(count)||count<1||count>20){showAIMessage('تعداد سؤال باید بین ۱ تا ۲۰ باشد.','error');return;}if(mode==='topic'&&!topic){showAIMessage('مبحث و محدوده را وارد کنید.','error');return;}if(mode==='examples'&&!examples){showAIMessage('سؤال نمونه وارد کنید.','error');return;}btn.disabled=true;btn.textContent='⏳ در حال تولید...';showAIMessage('در حال تولید سؤال، گزینه‌ها، راه‌حل و بررسی اولیه...','info');try{const data=await postJson('/api/teacher/ai-questions',{examId:EXAM_ID,mode,count,questionType:document.getElementById('aiType').value,difficulty:document.getElementById('aiDifficulty').value,topic,examples,variationRule:document.getElementById('aiVariationRule').value,folderName:document.getElementById('aiFolderName').value.trim(),durationSeconds:Number(document.getElementById('aiDuration').value)||90});const arr=(data.questions||[]).map(normalizeAIDraft);if(!arr.length)throw new Error('پاسخ هوش مصنوعی سؤال قابل استفاده نداشت.');aiDraftQuestions=arr;renderAIReview();showAIMessage(`${faNumber(arr.length)} سؤال آماده پیش‌نمایش است؛ هنوز ذخیره نشده‌اند. حتماً بررسی کنید.`,'success');}catch(e){showAIMessage('تولید ناموفق: '+e.message,'error');}finally{btn.disabled=false;btn.textContent='✨ تولید سؤال‌ها';}}
 function rejectAIDraft(i){const q=aiDraftQuestions[i];if(!q)return;q.approved=false;q.rejected=true;renderAIReview();}
 function approveAIDraft(i){const q=aiDraftQuestions[i];if(!q||q.saved)return;if(!q.questionText.trim()||q.options.slice(0,q.optionCount).some(x=>!x.trim())){showAIMessage(`سؤال ${faNumber(i+1)} ناقص است؛ متن و گزینه‌ها را تکمیل کنید.`,'error');return;}q.rejected=false;q.approved=true;renderAIReview();}
 async function regenerateAIDraft(i){const q=aiDraftQuestions[i];if(!q)return;try{showAIMessage(`در حال تولید مجدد سؤال ${faNumber(i+1)}...`,'info');const d=await postJson('/api/teacher/ai-questions',{examId:EXAM_ID,mode:'regenerate',count:1,questionType:document.getElementById('aiType').value,difficulty:document.getElementById('aiDifficulty').value,topic:document.getElementById('aiTopic').value,examples:document.getElementById('aiExamples').value,variationRule:document.getElementById('aiVariationRule').value,folderName:q.folderName,durationSeconds:q.durationSeconds,previousQuestion:q});const fresh=normalizeAIDraft(d.questions?.[0],i);if(!fresh.questionText)throw new Error('سؤال جدید دریافت نشد.');aiDraftQuestions[i]=fresh;renderAIReview();showAIMessage('سؤال جایگزین شد؛ دوباره بررسی کنید.','success');}catch(e){showAIMessage('تولید مجدد ناموفق: '+e.message,'error');}}
 async function regenerateRejectedAIDrafts(){const ids=aiDraftQuestions.map((q,i)=>q.rejected?i:-1).filter(i=>i>=0);if(!ids.length){showAIMessage('سؤال ردشده‌ای برای تولید مجدد نیست.','info');return;}for(const i of ids)await regenerateAIDraft(i);}
-async function approveAllAIDrafts(){const selected=aiDraftQuestions.filter(q=>q.approved&&!q.rejected&&!q.saved);if(!selected.length){showAIMessage('ابتدا سؤال‌ها را تأیید کنید.','error');return;}if(!confirm(`فقط ${selected.length} سؤال تأییدشده در بانک آزمون جاری ذخیره شوند؟`))return;let saved=0;showAIMessage('در حال ذخیره سؤال‌های تأییدشده...','info');const folderCache=new Map(folders.map(f=>[String(f.name).trim().toLowerCase(),Number(f.id)]));try{for(const q of selected){let folderId=null;const folderName=(q.folderName||'').trim()||({four:'سؤالات تولیدشده با هوش مصنوعی ـ چهارگزینه‌ای',two:'سؤالات تولیدشده با هوش مصنوعی ـ دو گزینه‌ای',tf:'سؤالات تولیدشده با هوش مصنوعی ـ صحیح و غلط',mixed:'سؤالات تولیدشده با هوش مصنوعی ـ ترکیبی'}[document.getElementById('aiType').value]||'سؤالات تولیدشده با هوش مصنوعی');if(folderName){const key=folderName.toLowerCase();if(folderCache.has(key))folderId=folderCache.get(key);else{const r=await postJson('/api/teacher/folders',{action:'create',examId:EXAM_ID,name:folderName});folderId=Number(r.folder?.id||r.id||r.folderId||0);if(!folderId){await loadFolders();folderId=Number(folders.find(f=>String(f.name).trim().toLowerCase()===key)?.id||0);}if(!folderId)throw new Error('ساخت پوشه '+folderName+' تأیید نشد');folderCache.set(key,folderId);}}else folderId=Number(folders.find(f=>f.active)?.id||folders[0]?.id||0)||null;const n=q.optionCount;await postJson('/api/teacher/questions',{action:'create',examId:EXAM_ID,questionText:q.questionText,optionCount:n,optionA:q.options[0]||'',optionB:q.options[1]||'',optionC:n>=3?q.options[2]:'',optionD:n>=4?q.options[3]:'',correctIndex:q.correctIndex,durationSeconds:q.durationSeconds,folderId});saved++;q.approved=false;q.rejected=false;q.saved=true;}await loadFolders();await loadQuestionBank();renderAIReview();showAIMessage(`${faNumber(saved)} سؤال ذخیره شد. پاسخ‌های تشریحی در بانک فعلی ذخیره نمی‌شوند.`,'success');}catch(e){await loadFolders().catch(()=>{});await loadQuestionBank().catch(()=>{});showAIMess ... [۵۷ characters more on this line: see the Edit tab]
- 
+async function approveAllAIDrafts(){
+  const selected=aiDraftQuestions.filter(q=>q.approved&&!q.rejected&&!q.saved);
+  if(!selected.length){showAIMessage('ابتدا سؤال‌ها را تأیید کنید.','error');return;}
+  if(!confirm(`فقط ${selected.length} سؤال تأییدشده در بانک آزمون جاری ذخیره شوند؟`))return;
+  let saved=0;
+  showAIMessage('در حال ذخیره سؤال‌های تأییدشده...','info');
+  const folderCache=new Map(folders.map(f=>[String(f.name).trim().toLowerCase(),Number(f.id)]));
+  try{
+    for(const q of selected){
+      let folderId=null;
+      const typeFolder={
+        four:'سؤالات تولیدشده با هوش مصنوعی ـ چهارگزینه‌ای',
+        two:'سؤالات تولیدشده با هوش مصنوعی ـ دو گزینه‌ای',
+        tf:'سؤالات تولیدشده با هوش مصنوعی ـ صحیح و غلط',
+        mixed:'سؤالات تولیدشده با هوش مصنوعی ـ ترکیبی'
+      }[document.getElementById('aiType').value]||'سؤالات تولیدشده با هوش مصنوعی';
+      const folderName=(q.folderName||'').trim()||typeFolder;
+      if(folderName){
+        const key=folderName.toLowerCase();
+        if(folderCache.has(key))folderId=folderCache.get(key);
+        else{
+          const r=await postJson('/api/teacher/folders',{action:'create',examId:EXAM_ID,name:folderName});
+          folderId=Number(r.folder?.id||r.id||r.folderId||0);
+          if(!folderId){
+            await loadFolders();
+            folderId=Number(folders.find(f=>String(f.name).trim().toLowerCase()===key)?.id||0);
+          }
+          if(!folderId)throw new Error('ساخت پوشه '+folderName+' تأیید نشد');
+          folderCache.set(key,folderId);
+        }
+      }else{
+        folderId=Number(folders.find(f=>f.active)?.id||folders[0]?.id||0)||null;
+      }
+      const n=q.optionCount;
+      await postJson('/api/teacher/questions',{
+        action:'create',examId:EXAM_ID,questionText:q.questionText,optionCount:n,
+        optionA:q.options[0]||'',optionB:q.options[1]||'',
+        optionC:n>=3?q.options[2]:'',optionD:n>=4?q.options[3]:'',
+        correctIndex:q.correctIndex,durationSeconds:q.durationSeconds,folderId
+      });
+      saved++;
+      q.approved=false;q.rejected=false;q.saved=true;
+    }
+    await loadFolders();
+    await loadQuestionBank();
+    renderAIReview();
+    showAIMessage(`${faNumber(saved)} سؤال ذخیره شد. پاسخ‌های تشریحی در بانک فعلی ذخیره نمی‌شوند.`,'success');
+  }catch(e){
+    await loadFolders().catch(()=>{});
+    await loadQuestionBank().catch(()=>{});
+    renderAIReview();
+    showAIMessage(`${faNumber(saved)} سؤال ذخیره شد؛ ذخیره ادامه کار با خطا متوقف شد: ${e.message}`,'error');
+  }
+}
 async function saveQuestion() {
     const text = document.getElementById("questionText").value.trim();
     const optionCount = Number(document.getElementById("optionCount").value);
@@ -3606,4 +3678,4 @@ async function loadAll() {
  
 </script>
  </body>
- </html>
+        </html>
