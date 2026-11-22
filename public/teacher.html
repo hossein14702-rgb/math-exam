@@ -1727,7 +1727,17 @@ function getAIFolderChoices() {
         .map(x => x.trim())
         .filter(Boolean);
 
-    return [...new Set([...existing, ...added])];
+    const unique = new Map();
+
+    [...existing, ...added].forEach(name => {
+        const clean = name.trim();
+        if (clean) {
+            const key = clean.toLowerCase();
+            if (!unique.has(key)) unique.set(key, clean);
+        }
+    });
+
+    return [...unique.values()];
 }
  
 function renderFolders() {
