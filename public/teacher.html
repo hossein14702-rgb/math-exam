@@ -402,6 +402,12 @@ tr:hover td{background:#fafafa}
         <div class="form-group ai-full" id="aiExamplesGroup" style="display:none"><label>سؤال نمونه (می‌توانید چند سؤال را با خط خالی جدا کنید)</label><textarea id="aiExamples" placeholder="سؤال نمونه را با گزینه‌ها و پاسخ در صورت وجود وارد کنید. عامل روش حل را استخراج و نمونه‌های تازه بسازد."></textarea><label style="margin-top:7px">قاعده تغییر نمونه</label><select id="aiVariationRule"><option value="method">روش حل حفظ شود، اعداد و صورت تغییر کنند</option><option value="structure">ساختار کلی حفظ شود، صورت و اعداد تغییر کنند</option><option value="free">تنوع بیشتر؛ مهارت مشابه حفظ شود</option></select></div>
        </div>
        <div class="ai-bulk-actions"><button class="primary-btn" id="aiGenerateBtn" onclick="generateAIQuestions()">✨ تولید سؤال‌ها</button><button class="gray-btn" onclick="clearAIReview()">پاک‌کردن پیش‌نمایش</button></div>
+     <div id="aiCountdown" style="display:none;align-items:center;gap:12px;margin:12px 0;padding:12px;background:#f1f5ff;border-radius:12px">
+  <span class="ai-spinner">✨</span>
+  <strong>زمان باقی‌مانده تولید:</strong>
+  <span id="aiTimer" style="font-size:22px;font-weight:bold">01:00</span>
+  <span id="aiTimerStatus">در حال تولید سؤال...</span>
+     </div>
        <div id="aiReviewArea"></div>
       </div></div>
      </details>
