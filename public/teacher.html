@@ -2485,8 +2485,111 @@ const folderOptions = folderChoices.length
   });
   html+='</div>';
   area.innerHTML=html;
+ async function generateAIQuestions() {
+    const btn = document.getElementById('aiGenerateBtn');
+    const timerBox = document.getElementById('aiCountdown');
+    const timerText = document.getElementById('aiTimer');
+    const timerStatus = document.getElementById('aiTimerStatus');
+
+    const mode = document.getElementById('aiMode').value;
+    const count = Number(document.getElementById('aiCount').value);
+    const topic = document.getElementById('aiTopic').value.trim();
+    const examples = document.getElementById('aiExamples').value.trim();
+
+    if (!Number.isInteger(count) || count < 1 || count > 20) {
+        showAIMessage('تعداد سؤال باید بین ۱ تا ۲۰ باشد.', 'error');
+        return;
+    }
+
+    if (mode === 'topic' && !topic) {
+        showAIMessage('مبحث و محدوده را وارد کنید.', 'error');
+        return;
+    }
+
+    if (mode === 'examples' && !examples) {
+        showAIMessage('سؤال نمونه وارد کنید.', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ در حال تولید...';
+    timerBox.style.display = 'flex';
+
+    let remaining = 60;
+
+    function updateTimer() {
+        const m = Math.floor(remaining / 60);
+        const s = remaining % 60;
+
+        timerText.textContent =
+            String(m).padStart(2, '0') + ':' +
+            String(s).padStart(2, '0');
+    }
+
+    updateTimer();
+    timerStatus.textContent = 'هوش مصنوعی در حال تولید سؤال...';
+
+    const timerInterval = setInterval(() => {
+        if (remaining > 0) {
+            remaining--;
+            updateTimer();
+        }
+
+        if (remaining === 0) {
+            clearInterval(timerInterval);
+            timerStatus.textContent = 'زمان تخمینی تمام شد؛ منتظر پاسخ هستیم...';
+        }
+    }, 1000);
+
+    showAIMessage(
+        'در حال تولید سؤال، گزینه‌ها، راه‌حل و بررسی اولیه...',
+        'info'
+    );
+
+    try {
+        const data = await postJson('/api/teacher/ai-questions', {
+            examId: EXAM_ID,
+            mode,
+            count,
+            questionType: document.getElementById('aiType').value,
+            difficulty: document.getElementById('aiDifficulty').value,
+            topic,
+            examples,
+            variationRule: document.getElementById('aiVariationRule').value,
+            folderName: document.getElementById('aiFolderName').value.trim(),
+            durationSeconds:
+                Number(document.getElementById('aiDuration').value) || 90
+        });
+
+        const arr = (data.questions || []).map(normalizeAIDraft);
+
+        if (!arr.length) {
+            throw new Error('پاسخ هوش مصنوعی سؤال قابل استفاده نداشت.');
+        }
+
+        aiDraftQuestions = arr;
+        renderAIReview();
+
+        showAIMessage(
+            `${faNumber(arr.length)} سؤال آماده پیش‌نمایش است؛ هنوز ذخیره نشده‌اند. حتماً بررسی کنید.`,
+            'success'
+        );
+
+        timerStatus.textContent = 'تولید با موفقیت انجام شد!';
+
+    } catch (e) {
+        showAIMessage('تولید ناموفق: ' + e.message, 'error');
+        timerStatus.textContent = 'تولید ناموفق بود.';
+    } finally {
+        clearInterval(timerInterval);
+        btn.disabled = false;
+        btn.textContent = '✨ تولید سؤال‌ها';
+
+        setTimeout(() => {
+            timerBox.style.display = 'none';
+        }, 3000);
+    }
 }
-async function generateAIQuestions(){const btn=document.getElementById('aiGenerateBtn'),mode=document.getElementById('aiMode').value,count=Number(document.getElementById('aiCount').value),topic=document.getElementById('aiTopic').value.trim(),examples=document.getElementById('aiExamples').value.trim();if(!Number.isInteger(count)||count<1||count>20){showAIMessage('تعداد سؤال باید بین ۱ تا ۲۰ باشد.','error');return;}if(mode==='topic'&&!topic){showAIMessage('مبحث و محدوده را وارد کنید.','error');return;}if(mode==='examples'&&!examples){showAIMessage('سؤال نمونه وارد کنید.','error');return;}btn.disabled=true;btn.textContent='⏳ در حال تولید...';showAIMessage('در حال تولید سؤال، گزینه‌ها، راه‌حل و بررسی اولیه...','info');try{const data=await postJson('/api/teacher/ai-questions',{examId:EXAM_ID,mode,count,questionType:document.getElementById('aiType').value,difficulty:document.getElementById('aiDifficulty').value,topic,examples,variationRule:document.getElementById('aiVariationRule').value,folderName:document.getElementById('aiFolderName').value.trim(),durationSeconds:Number(document.getElementById('aiDuration').value)||90});const arr=(data.questions||[]).map(normalizeAIDraft);if(!arr.length)throw new Error('پاسخ هوش مصنوعی سؤال قابل استفاده نداشت.');aiDraftQuestions=arr;renderAIReview();showAIMessage(`${faNumber(arr.length)} سؤال آماده پیش‌نمایش است؛ هنوز ذخیره نشده‌اند. حتماً بررسی کنید.`,'success');}catch(e){showAIMessage('تولید ناموفق: '+e.message,'error');}finally{btn.disabled=false;btn.textContent='✨ تولید سؤال‌ها';}}
 function rejectAIDraft(i){const q=aiDraftQuestions[i];if(!q)return;q.approved=false;q.rejected=true;renderAIReview();}
 function approveAIDraft(i){const q=aiDraftQuestions[i];if(!q||q.saved)return;if(!q.questionText.trim()||q.options.slice(0,q.optionCount).some(x=>!x.trim())){showAIMessage(`سؤال ${faNumber(i+1)} ناقص است؛ متن و گزینه‌ها را تکمیل کنید.`,'error');return;}q.rejected=false;q.approved=true;renderAIReview();}
 async function regenerateAIDraft(i){const q=aiDraftQuestions[i];if(!q)return;try{showAIMessage(`در حال تولید مجدد سؤال ${faNumber(i+1)}...`,'info');const d=await postJson('/api/teacher/ai-questions',{examId:EXAM_ID,mode:'regenerate',count:1,questionType:document.getElementById('aiType').value,difficulty:document.getElementById('aiDifficulty').value,topic:document.getElementById('aiTopic').value,examples:document.getElementById('aiExamples').value,variationRule:document.getElementById('aiVariationRule').value,folderName:q.folderName,durationSeconds:q.durationSeconds,previousQuestion:q});const fresh=normalizeAIDraft(d.questions?.[0],i);if(!fresh.questionText)throw new Error('سؤال جدید دریافت نشد.');aiDraftQuestions[i]=fresh;renderAIReview();showAIMessage('سؤال جایگزین شد؛ دوباره بررسی کنید.','success');}catch(e){showAIMessage('تولید مجدد ناموفق: '+e.message,'error');}}
