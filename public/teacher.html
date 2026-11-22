@@ -2463,6 +2463,16 @@ html += `
   ${faNumber(approvedCount)} سؤال آماده ذخیره |
   ${faNumber(rejectedCount)} سؤال رد شده
 </div>`;
+ if (approvedCount > 0) {
+  html += `
+  <div style="margin:12px 0;text-align:center">
+    <button class="success-btn"
+            onclick="approveAllAIDrafts()"
+            style="width:100%;padding:14px">
+      💾 ذخیره سؤال‌های تأییدشده در بانک سؤال
+    </button>
+  </div>`;
+   }
   const letters=['الف','ب','ج','د'];
   aiDraftQuestions.forEach((q,i)=>{
    const folderChoices = getAIFolderChoices();
