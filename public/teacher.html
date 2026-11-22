@@ -267,7 +267,18 @@ tr:hover td{background:#fafafa}
  .ai-answer-row select{width:auto;min-width:100px}.ai-explanation{background:#eff6ff;border-radius:8px;padding:10px;margin-top:8px;font-size:13px;white-space:pre-wrap}
  .ai-bulk-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
  @media(max-width:600px){.ai-grid{grid-template-columns:1fr}.ai-agent-box{padding:13px}.ai-full{grid-column:auto}}
-</style>
+.ai-spinner {
+  display: inline-block;
+  font-size: 24px;
+  animation: aiPulse 1s infinite ease-in-out;
+}
+
+@keyframes aiPulse {
+  0% { transform: scale(1); opacity: .6; }
+  50% { transform: scale(1.35); opacity: 1; }
+  100% { transform: scale(1); opacity: .6; }
+}
+  </style>
  </head>
  <body>
   <!-- ===================== صفحه ورود ===================== -->
