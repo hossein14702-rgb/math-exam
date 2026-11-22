@@ -389,6 +389,14 @@ tr:hover td{background:#fafafa}
         <div class="form-group"><label>نوع سؤال</label><select id="aiType"><option value="four">چهارگزینه‌ای</option><option value="two">دو گزینه‌ای</option><option value="tf">صحیح / غلط</option><option value="mixed">ترکیبی</option></select></div>
         <div class="form-group"><label>سطح دشواری</label><select id="aiDifficulty"><option value="easy">آسان</option><option value="medium" selected>متوسط</option><option value="hard">سخت</option><option value="mixed">ترکیبی</option></select></div>
         <div class="form-group"><label>نام پوشه (اختیاری)</label><input id="aiFolderName" placeholder="مثلاً معادله درجه دوم" maxlength="80"></div>
+        <div class="form-group ai-full">
+  <label>پوشه‌های مقصد (می‌توانید چند پوشه انتخاب کنید)</label>
+  <div id="aiFolderTargets" style="display:flex;flex-wrap:wrap;gap:10px;padding:10px;border:1px solid #ddd;border-radius:10px"></div>
+  <label>ساخت پوشه‌های جدید (نام‌ها را با ویرگول جدا کنید)</label>
+  <input id="aiNewFolderTargets"
+         placeholder="مثلاً معادله، تابع، هندسه"
+         oninput="renderAIReview()">
+</div>
         <div class="form-group"><label>زمان پیشنهادی هر سؤال (ثانیه)</label><input id="aiDuration" type="number" min="10" max="3600" value="90"></div>
         <div class="form-group ai-full" id="aiTopicGroup"><label>مبحث و محدوده تولید</label><textarea id="aiTopic" placeholder="مثلاً معادله درجه دوم؛ ریشه‌ها، مجموع و حاصل‌ضرب ریشه‌ها؛ از فرمول‌های پایه تا کاربرد ساده. سطح کتاب درسی..."></textarea></div>
         <div class="form-group ai-full" id="aiExamplesGroup" style="display:none"><label>سؤال نمونه (می‌توانید چند سؤال را با خط خالی جدا کنید)</label><textarea id="aiExamples" placeholder="سؤال نمونه را با گزینه‌ها و پاسخ در صورت وجود وارد کنید. عامل روش حل را استخراج و نمونه‌های تازه بسازد."></textarea><label style="margin-top:7px">قاعده تغییر نمونه</label><select id="aiVariationRule"><option value="method">روش حل حفظ شود، اعداد و صورت تغییر کنند</option><option value="structure">ساختار کلی حفظ شود، صورت و اعداد تغییر کنند</option><option value="free">تنوع بیشتر؛ مهارت مشابه حفظ شود</option></select></div>
