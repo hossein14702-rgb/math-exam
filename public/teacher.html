@@ -894,11 +894,7 @@ async function handleLogin(event) {
             throw new Error(data.error || ("ورود ناموفق بود (کد " + response.status + ")"));
         }
  
-        if (!data.token) {
-            throw new Error("سرور توکن ورود برنگرداند. نسخه Worker را به‌روز کنید و دوباره دیپلوی کنید.");
-        }
- 
-        setTeacherToken(data.token);
+        setTeacherToken(data.token || "");
         showLoginMessage("ورود موفق. در حال بررسی نشست...", "success");
  
         // تأیید نشست با همان توکن قبل از باز کردن پنل
