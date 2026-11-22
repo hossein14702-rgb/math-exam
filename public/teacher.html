@@ -1675,11 +1675,38 @@ function showBankMessage(message, type = "success") {
  
 async function loadFolders() {
     const data = await apiRequest(`/api/teacher/folders?examId=${EXAM_ID}&_=${Date.now()}`);
- 
     folders = data.folders || [];
- 
     renderFolders();
     populateFolderSelects();
+    renderAIFolderTargets();
+}
+
+function renderAIFolderTargets() {
+    const box = document.getElementById('aiFolderTargets');
+    if (!box) return;
+
+    box.innerHTML = folders.map(f => `
+        <label style="display:flex;align-items:center;gap:5px">
+            <input type="checkbox"
+                   value="${escapeHtml(f.name)}"
+                   onchange="renderAIReview()"
+                   style="width:auto">
+            ${escapeHtml(f.name)}
+        </label>
+    `).join('') || 'هنوز پوشه‌ای ساخته نشده است.';
+}
+
+function getAIFolderChoices() {
+    const existing = [...document.querySelectorAll(
+        '#aiFolderTargets input[type="checkbox"]:checked'
+    )].map(x => x.value.trim());
+
+    const added = (document.getElementById('aiNewFolderTargets')?.value || '')
+        .split(/[,،\n]+/)
+        .map(x => x.trim())
+        .filter(Boolean);
+
+    return [...new Set([...existing, ...added])];
 }
  
 function renderFolders() {
