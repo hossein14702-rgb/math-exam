@@ -13,5 +13,8 @@
       "database_name": "math_exam_staging",
       "database_id": "39f716cd-cdb1-45fc-8263-ff344924415c"
     }
-  ]
+  ],
+  "ai": {
+    "binding": "AI"
+  }
 }
