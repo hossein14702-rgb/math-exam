@@ -469,12 +469,30 @@ tr:hover td{background:#fafafa}
   📚 ورود به بانک سؤال
        </button>
        </div>
-     <div id="aiCountdown" style="display:none;align-items:center;gap:12px;margin:12px 0;padding:12px;background:#f1f5ff;border-radius:12px">
-  <span class="ai-spinner">✨</span>
-  <strong>زمان باقی‌مانده تولید:</strong>
-  <span id="aiTimer" style="font-size:22px;font-weight:bold">01:00</span>
-  <span id="aiTimerStatus">در حال تولید سؤال...</span>
-     </div>
+     
+<div id="aiCountdown" class="ai-writing-panel" style="display:none;margin:12px 0">
+  <div class="ai-robot-image-wrap">
+    <img
+      class="ai-robot-image"
+      src="/images/ai-question-robot.webp"
+      alt="ربات هوشمند در حال نوشتن سؤال"
+      loading="eager">
+  </div>
+
+  <div class="ai-writing-info">
+    <div class="ai-writing-title">
+      هوش مصنوعی در حال نوشتن سؤال
+      <span class="ai-writing-dots"></span>
+    </div>
+
+    <strong>زمان باقی‌مانده:</strong>
+    <span id="aiTimer" class="ai-writing-timer">01:00</span>
+    <span id="aiTimerStatus" class="ai-writing-status">
+      در حال تولید سؤال...
+    </span>
+  </div>
+</div>
+
        <div id="aiReviewArea"></div>
       </div></div>
      </details>
