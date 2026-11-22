@@ -2449,8 +2449,17 @@ const folderOptions = folderChoices.length
     html+=`</div><div class="ai-answer-row">
       <label>زمان (ثانیه)</label>
       <input type="number" min="10" max="3600" value="${q.durationSeconds}" ${q.saved?'disabled':''} onchange="aiDraftQuestions[${i}].durationSeconds=Math.max(10,Math.min(3600,Number(this.value)||90))" style="max-width:100px">
-      <label>پوشه</label>
-      <input value="${escapeHtml(q.folderName)}" maxlength="80" ${q.saved?'disabled':''} onchange="aiDraftQuestions[${i}].folderName=this.value" placeholder="نام پوشه" style="max-width:200px">
+<label>پوشه این سؤال</label>
+<select ${q.saved?'disabled':''}
+        onchange="aiDraftQuestions[${i}].folderName=this.value"
+        style="max-width:220px">
+    ${folderOptions.map(name => `
+        <option value="${escapeHtml(name)}"
+                ${q.folderName===name?'selected':''}>
+            ${escapeHtml(name || 'پوشه پیش‌فرض')}
+        </option>
+    `).join('')}
+</select>
       </div><label>پاسخ تشریحی / راه‌حل</label>
       <textarea ${q.saved?'disabled':''} oninput="aiDraftQuestions[${i}].explanation=this.value">${escapeHtml(q.explanation||'')}</textarea>
       <label>یادداشت بررسی</label>
