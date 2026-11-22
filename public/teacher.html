@@ -2420,6 +2420,15 @@ function renderAIReview(){
   let html='<div class="ai-review-list">';
   const letters=['الف','ب','ج','د'];
   aiDraftQuestions.forEach((q,i)=>{
+   const folderChoices = getAIFolderChoices();
+
+if (folderChoices.length && !folderChoices.includes(q.folderName)) {
+    q.folderName = folderChoices[0];
+}
+
+const folderOptions = folderChoices.length
+    ? folderChoices
+    : [q.folderName || ''];
     const status=q.saved?'— ذخیره شده':q.approved?'— تأیید شده':q.rejected?'— رد شده':'— در انتظار بررسی';
     const cardClass=(q.saved||q.approved?'approved ':'')+(q.rejected?'rejected':'');
     html+=`<div class="ai-review-card ${cardClass}" id="aiCard_${i}">
