@@ -2676,6 +2676,19 @@ async function approveAllAIDrafts(){
     showAIMessage(`${faNumber(saved)} سؤال ذخیره شد؛ ذخیره ادامه کار با خطا متوقف شد: ${e.message}`,'error');
   }
 }
+   function openQuestionBank() {
+    const bank = document.getElementById('questionBankSection');
+    if (!bank) return;
+
+    bank.open = true;
+
+    setTimeout(() => {
+        bank.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+   }
 async function saveQuestion() {
     const text = document.getElementById("questionText").value.trim();
     const optionCount = Number(document.getElementById("optionCount").value);
