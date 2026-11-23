@@ -267,29 +267,33 @@ tr:hover td{background:#fafafa}
  .ai-answer-row select{width:auto;min-width:100px}.ai-explanation{background:#eff6ff;border-radius:8px;padding:10px;margin-top:8px;font-size:13px;white-space:pre-wrap}
  .ai-bulk-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
  @media(max-width:600px){.ai-grid{grid-template-columns:1fr}.ai-agent-box{padding:13px}.ai-full{grid-column:auto}}
-
-.ai-spinner { display:none; }
-
+ 
+ 
+.ai-spinner{display:none}
 .ai-writing-panel{
-  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
-  width:100%;padding:14px;border:1px solid #bfdbfe;border-radius:16px;
-  background:linear-gradient(135deg,#eff6ff,#f8fafc 65%,#eef2ff);
-  box-shadow:0 8px 24px rgba(37,99,235,.08)
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  width:100%;padding:14px;background:#fff;
+  border:1px solid #e5efff;border-radius:16px;
+  box-shadow:0 4px 22px rgba(59,130,246,.045)
 }
-.ai-robot-image-wrap{
-  position:relative;flex:0 0 150px;width:150px;height:150px;
-  display:grid;place-items:center;overflow:hidden;
-  border-radius:14px;background:#e0edff
+.ai-orbit-wrap{
+  width:100px;height:100px;flex:0 0 100px;
+  position:relative;display:grid;place-items:center
 }
-.ai-robot-image{
-  width:100%;height:100%;object-fit:contain;
-  animation:robotWriting 1.8s ease-in-out infinite;
-  transform-origin:55% 78%
+.ai-glowing-text{
+  font-family:Arial,sans-serif;font-weight:900;font-size:34px;
+  letter-spacing:-2px;direction:ltr;color:#3b82f6;
+  animation:aiGlow 2.8s ease-in-out infinite;
+  text-shadow:0 0 7px rgba(59,130,246,.35)
 }
-.ai-robot-image-wrap:after{
-  content:"";position:absolute;inset:auto 18% 9% 18%;height:8px;
-  border-radius:50%;background:rgba(37,99,235,.16);
-  filter:blur(5px);animation:robotShadow 1.8s ease-in-out infinite
+.ai-orbit{
+  position:absolute;inset:7px;border:1px solid rgba(96,165,250,.35);
+  border-radius:50%;animation:aiOrbit 7s linear infinite
+}
+.ai-orbit-ball{
+  position:absolute;width:8px;height:8px;top:-4px;left:50%;
+  transform:translateX(-50%);border-radius:50%;background:#38bdf8;
+  box-shadow:0 0 5px #60a5fa,0 0 12px #3b82f6,0 0 20px rgba(59,130,246,.45)
 }
 .ai-writing-info{
   flex:1;min-width:190px;display:flex;
@@ -303,18 +307,14 @@ tr:hover td{background:#fafafa}
   animation:writingDots 1.3s steps(4,end) infinite
 }
 .ai-writing-timer{
-  font-size:22px;font-weight:800;color:#1d4ed8;
+  font-size:22px;font-weight:800;color:#2563eb;
   font-variant-numeric:tabular-nums
 }
-.ai-writing-status{font-size:13px;color:#475569}
-
-@keyframes robotWriting{
-  0%,100%{transform:translateY(0) rotate(-.4deg)}
-  50%{transform:translateY(-3px) rotate(.6deg)}
-}
-@keyframes robotShadow{
-  0%,100%{transform:scaleX(1);opacity:.7}
-  50%{transform:scaleX(.86);opacity:.4}
+.ai-writing-status{font-size:13px;color:#64748b}
+@keyframes aiOrbit{to{transform:rotate(360deg)}}
+@keyframes aiGlow{
+  0%,100%{color:#3b82f6;opacity:.85;text-shadow:0 0 5px rgba(59,130,246,.25),0 0 12px rgba(59,130,246,.12)}
+  50%{color:#0ea5e9;opacity:1;text-shadow:0 0 8px rgba(56,189,248,.65),0 0 22px rgba(59,130,246,.4),0 0 34px rgba(96,165,250,.18)}
 }
 @keyframes writingDots{
   0%{content:""}
@@ -323,14 +323,13 @@ tr:hover td{background:#fafafa}
   75%,100%{content:"..."}
 }
 @media(max-width:520px){
-  .ai-writing-panel{gap:12px;padding:10px}
-  .ai-robot-image-wrap{
-    flex-basis:112px;width:112px;height:112px
-  }
+  .ai-writing-panel{gap:10px;padding:10px}
+  .ai-orbit-wrap{width:82px;height:82px;flex-basis:82px}
+  .ai-orbit{inset:5px}
+  .ai-glowing-text{font-size:29px}
   .ai-writing-info{min-width:140px}
 }
-
-  </style>
+</style>
  </head>
  <body>
   <!-- ===================== صفحه ورود ===================== -->
@@ -471,28 +470,23 @@ tr:hover td{background:#fafafa}
        </div>
      
 <div id="aiCountdown" class="ai-writing-panel" style="display:none;margin:12px 0">
-  <div class="ai-robot-image-wrap">
-    <img
-      class="ai-robot-image"
-      src="/Image/ai-question-robot.webp"
-      alt="ربات هوشمند در حال نوشتن سؤال"
-      loading="eager">
+  <div class="ai-orbit-wrap">
+    <div class="ai-glowing-text">AI</div>
+    <div class="ai-orbit">
+      <div class="ai-orbit-ball"></div>
+    </div>
   </div>
-
   <div class="ai-writing-info">
     <div class="ai-writing-title">
       هوش مصنوعی در حال نوشتن سؤال
       <span class="ai-writing-dots"></span>
     </div>
-
     <strong>زمان باقی‌مانده:</strong>
     <span id="aiTimer" class="ai-writing-timer">01:00</span>
-    <span id="aiTimerStatus" class="ai-writing-status">
-      در حال تولید سؤال...
-    </span>
+    <span id="aiTimerStatus" class="ai-writing-status">در حال تولید سؤال...</span>
   </div>
 </div>
-
+ 
        <div id="aiReviewArea"></div>
       </div></div>
      </details>
@@ -1771,11 +1765,11 @@ async function loadFolders() {
     populateFolderSelects();
     renderAIFolderTargets();
 }
-
+ 
 function renderAIFolderTargets() {
     const box = document.getElementById('aiFolderTargets');
     if (!box) return;
-
+ 
     box.innerHTML = folders.map(f => `
         <label style="display:flex;align-items:center;gap:5px">
             <input type="checkbox"
@@ -1786,19 +1780,19 @@ function renderAIFolderTargets() {
         </label>
     `).join('') || 'هنوز پوشه‌ای ساخته نشده است.';
 }
-
+ 
 function getAIFolderChoices() {
     const existing = [...document.querySelectorAll(
         '#aiFolderTargets input[type="checkbox"]:checked'
     )].map(x => x.value.trim());
-
+ 
     const added = (document.getElementById('aiNewFolderTargets')?.value || '')
         .split(/[,،\n]+/)
         .map(x => x.trim())
         .filter(Boolean);
-
+ 
     const unique = new Map();
-
+ 
     [...existing, ...added].forEach(name => {
         const clean = name.trim();
         if (clean) {
@@ -1806,7 +1800,7 @@ function getAIFolderChoices() {
             if (!unique.has(key)) unique.set(key, clean);
         }
     });
-
+ 
     return [...unique.values()];
 }
  
@@ -2522,11 +2516,11 @@ function renderAIReview(){
  const approvedCount = aiDraftQuestions.filter(
     q => q.approved && !q.rejected && !q.saved
 ).length;
-
+ 
 const rejectedCount = aiDraftQuestions.filter(
     q => q.rejected && !q.saved
 ).length;
-
+ 
 html += `
 <div style="padding:10px;background:#f5f7fa;border-radius:10px;margin-bottom:12px">
   <strong>وضعیت بررسی:</strong>
@@ -2546,11 +2540,11 @@ html += `
   const letters=['الف','ب','ج','د'];
   aiDraftQuestions.forEach((q,i)=>{
    const folderChoices = getAIFolderChoices();
-
+ 
 if (folderChoices.length && !folderChoices.includes(q.folderName)) {
     q.folderName = folderChoices[0];
 }
-
+ 
 const folderOptions = folderChoices.length
     ? folderChoices
     : [q.folderName || ''];
@@ -2598,62 +2592,62 @@ const folderOptions = folderChoices.length
     const timerBox = document.getElementById('aiCountdown');
     const timerText = document.getElementById('aiTimer');
     const timerStatus = document.getElementById('aiTimerStatus');
-
+ 
     const mode = document.getElementById('aiMode').value;
     const count = Number(document.getElementById('aiCount').value);
     const topic = document.getElementById('aiTopic').value.trim();
     const examples = document.getElementById('aiExamples').value.trim();
-
+ 
     if (!Number.isInteger(count) || count < 1 || count > 20) {
         showAIMessage('تعداد سؤال باید بین ۱ تا ۲۰ باشد.', 'error');
         return;
     }
-
+ 
     if (mode === 'topic' && !topic) {
         showAIMessage('مبحث و محدوده را وارد کنید.', 'error');
         return;
     }
-
+ 
     if (mode === 'examples' && !examples) {
         showAIMessage('سؤال نمونه وارد کنید.', 'error');
         return;
     }
-
+ 
     btn.disabled = true;
     btn.textContent = '⏳ در حال تولید...';
     timerBox.style.display = 'flex';
-
+ 
     let remaining = 60;
-
+ 
     function updateTimer() {
         const m = Math.floor(remaining / 60);
         const s = remaining % 60;
-
+ 
         timerText.textContent =
             String(m).padStart(2, '0') + ':' +
             String(s).padStart(2, '0');
     }
-
+ 
     updateTimer();
     timerStatus.textContent = 'هوش مصنوعی در حال تولید سؤال...';
-
+ 
     const timerInterval = setInterval(() => {
         if (remaining > 0) {
             remaining--;
             updateTimer();
         }
-
+ 
         if (remaining === 0) {
             clearInterval(timerInterval);
             timerStatus.textContent = 'زمان تخمینی تمام شد؛ منتظر پاسخ هستیم...';
         }
     }, 1000);
-
+ 
     showAIMessage(
         'در حال تولید سؤال، گزینه‌ها، راه‌حل و بررسی اولیه...',
         'info'
     );
-
+ 
     try {
         const data = await postJson('/api/teacher/ai-questions', {
             examId: EXAM_ID,
@@ -2668,23 +2662,23 @@ const folderOptions = folderChoices.length
             durationSeconds:
                 Number(document.getElementById('aiDuration').value) || 90
         });
-
+ 
         const arr = (data.questions || []).map(normalizeAIDraft);
-
+ 
         if (!arr.length) {
             throw new Error('پاسخ هوش مصنوعی سؤال قابل استفاده نداشت.');
         }
-
+ 
         aiDraftQuestions = arr;
         renderAIReview();
-
+ 
         showAIMessage(
             `${faNumber(arr.length)} سؤال آماده پیش‌نمایش است؛ هنوز ذخیره نشده‌اند. حتماً بررسی کنید.`,
             'success'
         );
-
+ 
         timerStatus.textContent = 'تولید با موفقیت انجام شد!';
-
+ 
     } catch (e) {
         showAIMessage('تولید ناموفق: ' + e.message, 'error');
         timerStatus.textContent = 'تولید ناموفق بود.';
@@ -2692,7 +2686,7 @@ const folderOptions = folderChoices.length
         clearInterval(timerInterval);
         btn.disabled = false;
         btn.textContent = '✨ تولید سؤال‌ها';
-
+ 
         setTimeout(() => {
             timerBox.style.display = 'none';
         }, 3000);
@@ -2759,9 +2753,9 @@ async function approveAllAIDrafts(){
    function openQuestionBank() {
     const bank = document.getElementById('questionBankSection');
     if (!bank) return;
-
+ 
     bank.open = true;
-
+ 
     setTimeout(() => {
         bank.scrollIntoView({
             behavior: 'smooth',
@@ -3968,4 +3962,4 @@ async function loadAll() {
  
 </script>
  </body>
-        </html>
+ </html>
