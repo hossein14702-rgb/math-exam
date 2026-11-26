@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مدیریت معلم هوشمند | آزمون ریاضی</title>
+<style>
+:root{font-family:Tahoma,Arial,sans-serif;color:#172033;background:#f4f6fb}
+*{box-sizing:border-box}
+body{margin:0;padding:18px}
+.wrap{max-width:1050px;margin:auto}
+.top,.card{background:#fff;border:1px solid #e7eaf2;border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 5px 20px #1720330a}
+.top{background:linear-gradient(135deg,#20134d,#4c1d95);color:#fff}
+.top h1{margin:0 0 8px;font-size:23px}.top p{margin:0;color:#e9ddff;line-height:1.9;font-size:13px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1}
+h2{font-size:17px;margin:0 0 14px;color:#312e81}
+h3{font-size:14px;margin:0 0 10px}
+label{display:block;font-size:13px;font-weight:bold;margin:12px 0 7px}
+input,select,textarea{width:100%;border:1px solid #d6dbea;border-radius:10px;padding:11px;font:inherit;font-size:13px;background:#fff;color:#172033}
+textarea{min-height:92px;resize:vertical;line-height:1.9}
+button,.link{border:0;border-radius:10px;padding:11px 15px;font:inherit;font-size:13px;font-weight:bold;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.primary{background:#5b21b6;color:white}.soft{background:#f1edff;color:#4c1d95}.gray{background:#eef1f6;color:#334155}
+.status{padding:10px 12px;border-radius:10px;background:#fff7ed;color:#9a3412;font-size:12px;line-height:1.9;margin-top:12px}
+.info{padding:12px;border-radius:10px;background:#f5f3ff;color:#4c1d95;font-size:12px;line-height:1.9}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.pill{display:inline-block;background:#ede9fe;color:#5b21b6;border-radius:20px;padding:5px 9px;font-size:11px}
+.item{border:1px solid #e5e7eb;border-radius:13px;padding:14px;margin-top:10px}
+.item-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.step{background:#f8fafc;border:1px solid #e2e8f0;padding:12px;border-radius:12px;font-size:12px;line-height:1.8}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+small{color:#64748b;line-height:1.8}
+@media(max-width:700px){body{padding:10px}.grid{grid-template-columns:1fr}.steps{grid-template-columns:1fr 1fr}.top,.card{padding:15px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <header class="top">
+  <h1>🤖 مدیریت معلم هوشمند</h1>
+  <p>تنظیم روش تدریس، لحن پاسخ‌ها و دستورهای اختصاصی هر پایه و مبحث. این صفحه فعلاً پیش‌نمایش رابط مدیریتی است و هنوز به ذخیره‌سازی سرور متصل نشده است.</p>
+  <div class="actions">
+   <a class="link soft" href="teacher.html">بازگشت به پنل معلم</a>
+   <span class="pill">نسخه آزمایشی رابط کاربری</span>
+  </div>
+ </header>
+ 
+ <section class="card">
+  <h2>۱. رفتار پیش‌فرض معلم هوشمند</h2>
+  <div class="info">حالت انتخاب‌شده: ترکیبی و هوشمند؛ ابتدا راهنمایی مرحله‌ای، سپس بررسی فهم دانش‌آموز و در صورت نیاز توضیح کامل.</div>
+  <label>روش تدریس</label>
+  <select id="method">
+   <option value="adaptive" selected>ترکیبی و هوشمند (پیشنهادی)</option>
+   <option value="hint">راهنمایی با سؤال و راهنمایی کوتاه</option>
+   <option value="step">حل مرحله‌به‌مرحله</option>
+   <option value="direct">پاسخ مستقیم همراه توضیح</option>
+  </select>
+  <div class="steps" style="margin-top:13px">
+   <div class="step"><b>۱. راهنمایی</b><br>یک نکته یا سؤال کوچک برای شروع</div>
+   <div class="step"><b>۲. سنجش فهم</b><br>بررسی پاسخ دانش‌آموز</div>
+   <div class="step"><b>۳. ساده‌سازی</b><br>مثال ساده‌تر در صورت نیاز</div>
+   <div class="step"><b>۴. توضیح کامل</b><br>راه‌حل کامل در صورت درخواست یا نیاز</div>
+  </div>
+  <div class="grid">
+   <div><label>لحن پاسخ</label><select id="tone"><option>دوستانه و صمیمی</option><option>رسمی و آموزشی</option><option>انگیزشی و پرانرژی</option></select></div>
+   <div><label>میزان جزئیات</label><select id="detail"><option>متناسب با سطح دانش‌آموز</option><option>کوتاه و خلاصه</option><option>مفصل و تشریحی</option></select></div>
+  </div>
+  <label>دستورهای عمومی معلم</label>
+  <textarea id="globalRules" placeholder="مثلاً از اصطلاحات ساده استفاده کن؛ هر مرحله را جداگانه توضیح بده؛ در پایان مطمئن شو دانش‌آموز مفهوم را فهمیده است."></textarea>
+ </section>
+ 
+ <section class="card">
+  <h2>۲. قوانین اختصاصی پایه و مبحث</h2>
+  <p><small>قانون اختصاصی می‌تواند روش حل مجاز، فرمول‌های مورد تأیید، سطح دشواری، خطاهای رایج و ترتیب آموزش را مشخص کند.</small></p>
+  <div class="grid">
+   <div><label>پایه تحصیلی</label><select id="grade"><option>همه پایه‌ها</option><option>هفتم</option><option>هشتم</option><option>نهم</option><option>دهم</option><option>یازدهم</option><option>دوازدهم</option></select></div>
+   <div><label>مبحث</label><input id="topic" placeholder="مثلاً معادله درجه دوم"></div>
+  </div>
+  <label>دستور اختصاصی این مبحث</label>
+  <textarea id="topicRules" placeholder="روش آموزش، فرمول‌های مجاز، روش‌های ممنوع، ترتیب حل و نکات مهم را بنویسید."></textarea>
+  <div class="actions"><button class="soft" type="button" onclick="addRulePreview()">افزودن به فهرست پیش‌نمایش</button></div>
+  <div id="rulesList"></div>
+ </section>
+ 
+ <section class="card">
+  <h2>۳. محدوده‌ها و خط قرمزها</h2>
+  <div class="grid">
+   <div><label>در آزمون زمان‌دار</label><select id="examPolicy"><option value="block" selected>پاسخ نهایی و حل سؤال نمایش داده نشود</option><option value="hint">فقط راهنمایی عمومی بدون حل سؤال</option></select></div>
+   <div><label>پس از پایان آزمون</label><select id="afterExam"><option>آموزش و حل تشریحی مجاز باشد</option><option>فقط بررسی پاسخ و رفع اشکال</option></select></div>
+  </div>
+  <label>موارد ممنوع یا حساس</label>
+  <textarea id="boundaries" placeholder="مثلاً خارج از درس ریاضی پاسخ تخصصی نده؛ اگر از درستی پاسخ مطمئن نیستی، با قطعیت پاسخ نده."></textarea>
+ </section>
+ 
+ <section class="card">
+  <h2>۴. آزمایش پاسخ معلم هوشمند</h2>
+  <p><small>این بخش در نسخه فعلی فقط برای ثبت سناریوی آزمایشی در همین صفحه است؛ هنوز درخواست واقعی به هوش مصنوعی ارسال نمی‌کند.</small></p>
+  <label>سؤال یا پیام آزمایشی دانش‌آموز</label>
+  <textarea id="testPrompt" placeholder="مثلاً من نمی‌فهمم چطور معادله ۲x+۳=۱۱ را حل کنم."></textarea>
+  <div class="actions"><button class="primary" type="button" onclick="showTestNotice()">آماده‌سازی سناریوی آزمایش</button></div>
+  <div id="testResult" class="info" style="display:none;margin-top:12px"></div>
+ </section>
+ 
+ <section class="card">
+  <h2>۵. ذخیره و انتشار</h2>
+  <div class="status">اتصال به سرور هنوز انجام نشده است. دکمه زیر فقط تنظیمات نوشته‌شده را به‌صورت فایل JSON روی دستگاه شما دریافت می‌کند؛ این فایل به معنی ذخیره‌شدن تنظیمات در سایت نیست.</div>
+  <div class="actions">
+   <button class="primary" type="button" onclick="downloadDraft()">دریافت فایل تنظیمات آزمایشی</button>
+   <button class="gray" type="button" onclick="location.href='teacher.html'">بازگشت به پنل آزمون</button>
+  </div>
+ </section>
+</div>
+<script>
+const rules=[];
+function addRulePreview(){
+ const grade=document.getElementById('grade').value;
+ const topic=document.getElementById('topic').value.trim();
+ const instruction=document.getElementById('topicRules').value.trim();
+ if(!topic||!instruction){alert('لطفاً مبحث و دستور اختصاصی را وارد کنید.');return;}
+ rules.push({grade,topic,instruction});
+ renderRules();
+ document.getElementById('topic').value='';
+ document.getElementById('topicRules').value='';
+}
+function renderRules(){
+ document.getElementById('rulesList').innerHTML=rules.map((r,i)=>`<div class="item"><div class="item-head"><b>${escapeHtml(r.topic)}</b><span class="pill">${escapeHtml(r.grade)}</span></div><p style="font-size:12px;line-height:1.9">${escapeHtml(r.instruction)}</p><button class="gray" onclick="removeRule(${i})">حذف از پیش‌نمایش</button></div>`).join('');
+}
+function removeRule(i){rules.splice(i,1);renderRules();}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function collect(){
+ return {
+  version:1,mode:document.getElementById('method').value,
+  tone:document.getElementById('tone').value,detail:document.getElementById('detail').value,
+  globalRules:document.getElementById('globalRules').value,
+  topicRules:rules.slice(),
+  examPolicy:document.getElementById('examPolicy').value,
+  afterExam:document.getElementById('afterExam').value,
+  boundaries:document.getElementById('boundaries').value
+ };
+}
+function downloadDraft(){
+ const blob=new Blob([JSON.stringify(collect(),null,2)],{type:'application/json;charset=utf-8'});
+ const url=URL.createObjectURL(blob);const a=document.createElement('a');
+ a.href=url;a.download='ai-teacher-rules-draft.json';a.click();URL.revokeObjectURL(url);
+}
+function showTestNotice(){
+ const prompt=document.getElementById('testPrompt').value.trim();
+ const box=document.getElementById('testResult');
+ if(!prompt){alert('ابتدا پیام آزمایشی را وارد کنید.');return;}
+ box.style.display='block';
+ box.textContent='سناریو ثبت شد. در نسخه متصل به سرور، این پیام همراه با قوانین عمومی، قوانین پایه/مبحث و محدودیت آزمون برای ارزیابی به موتور معلم هوشمند ارسال می‌شود. هنوز پاسخی از هوش مصنوعی تولید نشده است.';
+}
+</script>
+</body>
+</html>
