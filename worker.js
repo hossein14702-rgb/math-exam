@@ -155,6 +155,43 @@ export default {
       }
  
  
+      // تنظیمات پایدار معلم هوشمند؛ فقط برای معلم واردشده
+      if (url.pathname === "/api/teacher/ai-teacher-settings" && request.method === "GET") {
+        try {
+          const row = await env.DB.prepare("SELECT config_json, version, updated_at FROM ai_teacher_config WHERE id = 1").first();
+          const defaults = { version:1, mode:"adaptive", tone:"دوستانه و صمیمی", detail:"متناسب با سطح دانش‌آموز", globalRules:"", topicRules:[], examPolicy:"block", afterExam:"آموزش و حل تشریحی مجاز باشد", boundaries:"" };
+          let config = defaults;
+          if (row && row.config_json) {
+            try { const parsed = JSON.parse(row.config_json); if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) config = { ...defaults, ...parsed }; }
+            catch (_) { return json({ok:false,error:"تنظیمات ذخیره‌شده قابل خواندن نیست؛ ابتدا از نسخه پشتیبان استفاده کنید."},500,cors); }
+          }
+          return json({ok:true, config, version:row?.version || 1, updatedAt:row?.updated_at || null},200,cors);
+        } catch (error) {
+          return json({ok:false,error:"جدول تنظیمات معلم هوشمند آماده نیست. ابتدا فایل مهاجرت SQL را روی پایگاه داده آزمایشی اجرا کنید.",detail:String(error?.message||error).slice(0,300)},503,cors);
+        }
+      }
+      if (url.pathname === "/api/teacher/ai-teacher-settings" && request.method === "PUT") {
+        const length = Number(request.headers.get("Content-Length") || 0);
+        if (length > 30000) return json({ok:false,error:"حجم تنظیمات بیش از حد مجاز است."},413,cors);
+        const body = await request.json().catch(() => null);
+        const raw = body?.config;
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) return json({ok:false,error:"ساختار تنظیمات معتبر نیست."},400,cors);
+        const cleanText = (v,max) => typeof v === "string" ? v.trim().slice(0,max) : "";
+        const mode = ["adaptive","hint","step","direct"].includes(raw.mode) ? raw.mode : "adaptive";
+        const topicRules = Array.isArray(raw.topicRules) ? raw.topicRules.slice(0,100).map(r => ({grade:cleanText(r?.grade,40),topic:cleanText(r?.topic,160),instruction:cleanText(r?.instruction,3000)})).filter(r => r.topic && r.instruction) : [];
+        const config = {version:1,mode,tone:cleanText(raw.tone,80) || "دوستانه و صمیمی",detail:cleanText(raw.detail,80) || "متناسب با سطح دانش‌آموز",globalRules:cleanText(raw.globalRules,6000),topicRules,examPolicy:["block","hint"].includes(raw.examPolicy)?raw.examPolicy:"block",afterExam:cleanText(raw.afterExam,100),boundaries:cleanText(raw.boundaries,4000)};
+        const serialized = JSON.stringify(config);
+        if (serialized.length > 24000) return json({ok:false,error:"حجم نهایی تنظیمات بیش از حد مجاز است."},413,cors);
+        const updatedAt = new Date().toISOString();
+        try {
+          await env.DB.prepare("INSERT INTO ai_teacher_config (id, config_json, version, updated_at) VALUES (1, ?, 1, ?) ON CONFLICT(id) DO UPDATE SET config_json=excluded.config_json, version=ai_teacher_config.version+1, updated_at=excluded.updated_at").bind(serialized,updatedAt).run();
+          const row = await env.DB.prepare("SELECT version FROM ai_teacher_config WHERE id = 1").first();
+          return json({ok:true,message:"تنظیمات با موفقیت در پایگاه داده آزمایشی ذخیره شد.",version:row?.version || 1,updatedAt},200,cors);
+        } catch (error) {
+          return json({ok:false,error:"ذخیره انجام نشد. مطمئن شوید مهاجرت SQL روی پایگاه داده آزمایشی اجرا شده است.",detail:String(error?.message||error).slice(0,300)},503,cors);
+        }
+      }
+ 
       // AI question generation endpoint (teacher session protected by the route guard above)
       if (request.method === "POST" && url.pathname === "/api/teacher/ai-questions") {
         if (!env.AI) return json({ok:false,error:"Binding هوش مصنوعی Workers AI با نام AI تنظیم نشده است."},503,cors);
@@ -816,7 +853,7 @@ export default {
       // =========================================================
       const BACKUP_TABLES = [
         "exams", "question_folders", "questions", "exam_folder_rules",
-        "exam_manual_questions", "orders", "attempts", "attempt_questions", "attempt_answers", "exam_feedback"
+        "exam_manual_questions", "orders", "attempts", "attempt_questions", "attempt_answers", "exam_feedback", "ai_teacher_config"
       ];
       if (url.pathname === "/api/teacher/backup" && request.method === "GET") {
         const tables = {};
@@ -848,17 +885,18 @@ export default {
           attempts:["id","order_id","started_at","finished_at","score","correct_count","wrong_count","empty_count","current_question","question_started_at"],
           attempt_questions:["id","attempt_id","question_id","question_order","question_text_snapshot","option_a_snapshot","option_b_snapshot","option_c_snapshot","option_d_snapshot","correct_index_snapshot","duration_seconds_snapshot","selected_index","started_at","answered_at","elapsed_seconds","is_correct","images_json_snapshot"],
           attempt_answers:["id","attempt_id","question_index","selected_index","answered_at"],
-          exam_feedback:["id","attempt_id","order_id","exam_id","rating","comment","created_at"]
+          exam_feedback:["id","attempt_id","order_id","exam_id","rating","comment","created_at"],
+          ai_teacher_config:["id","config_json","version","updated_at"]
         };
         let rowCount = 0;
         for (const table of BACKUP_TABLES) {
-          if (table === "exam_feedback" && body.tables[table] === undefined) body.tables[table] = [];
+          if ((table === "exam_feedback" || table === "ai_teacher_config") && body.tables[table] === undefined) body.tables[table] = [];
           if (!Array.isArray(body.tables[table])) return json({ ok:false, error:`بخش ${table} در فایل پشتیبان وجود ندارد` }, 400, cors);
           rowCount += body.tables[table].length;
         }
         if (rowCount > 700) return json({ ok:false, error:"تعداد رکوردهای این فایل از سقف بازیابی امن این نسخه بیشتر است؛ فایل را به پشتیبانی فنی بدهید تا بازیابی مرحله‌ای انجام شود" }, 413, cors);
         // پاک‌سازی از وابسته‌ترین جدول به اصلی‌ترین جدول
-        const deleteOrder = ["exam_feedback","attempt_answers","attempt_questions","attempts","orders","exam_manual_questions","exam_folder_rules","questions","question_folders","exams"];
+        const deleteOrder = ["ai_teacher_config","exam_feedback","attempt_answers","attempt_questions","attempts","orders","exam_manual_questions","exam_folder_rules","questions","question_folders","exams"];
         const statements = [];
         for (const table of deleteOrder) statements.push(env.DB.prepare(`DELETE FROM ${table}`));
         // درج از جداول اصلی به وابسته؛ فقط ستون‌های whitelist شده پذیرفته می‌شوند.
@@ -5808,7 +5846,7 @@ const ALLOWED_ORIGINS = [
  
 function getCorsHeaders(origin) {
   const headers = {
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Credentials": "true",
   };
