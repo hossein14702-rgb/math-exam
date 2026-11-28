@@ -1532,6 +1532,33 @@ body.page-loading{
 .feedback-submit-btn:disabled{opacity:.6;cursor:wait}
 @media(max-width:480px){.exam-feedback-card{padding:14px}.feedback-star{font-size:34px;min-width:36px}}
 </style>
+ 
+<style>
+.student-tabs{display:flex;gap:10px;margin:0 0 18px;padding:7px;border:1px solid #dbeafe;border-radius:16px;background:#fff;box-shadow:0 5px 18px rgba(37,99,235,.06);position:relative;z-index:2}
+.student-tab{flex:1;min-height:48px;border:0;border-radius:11px;background:transparent;color:#475569;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;transition:.2s}
+.student-tab.active{background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;box-shadow:0 5px 13px rgba(37,99,235,.22)}
+.student-tab-panel[hidden]{display:none!important}
+.ai-teacher-card{background:#fff;border:1px solid #dbeafe;border-radius:20px;padding:18px;box-shadow:0 8px 28px rgba(37,99,235,.07);min-height:420px}
+.ai-teacher-heading{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.ai-teacher-avatar{width:48px;height:48px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:15px;background:linear-gradient(145deg,#dbeafe,#bfdbfe);font-size:25px}
+.ai-teacher-heading h2{margin:0;color:#1e3a8a;font-size:18px}
+.ai-teacher-heading p{margin:4px 0 0;color:#64748b;font-size:12px;line-height:1.8}
+.ai-teacher-status{margin:14px 0;padding:10px 12px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.9}
+.ai-teacher-status.disabled{border-color:#fecaca;background:#fef2f2;color:#b91c1c}
+.ai-chat-messages{display:flex;flex-direction:column;gap:10px;min-height:210px;max-height:52vh;overflow-y:auto;padding:12px;margin:12px 0;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc}
+.ai-chat-empty{text-align:center;color:#64748b;font-size:13px;line-height:2;padding:48px 12px}
+.ai-chat-message{max-width:88%;padding:11px 13px;border-radius:14px;font-size:13px;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere}
+.ai-chat-message.user{align-self:flex-start;background:#dbeafe;color:#1e3a8a;border-bottom-right-radius:4px}
+.ai-chat-message.assistant{align-self:flex-end;background:#fff;border:1px solid #e2e8f0;color:#1f2937;border-bottom-left-radius:4px}
+.ai-chat-compose{display:flex;align-items:flex-end;gap:9px}
+.ai-chat-compose textarea{flex:1;min-width:0;min-height:48px;max-height:130px;resize:vertical;border:1px solid #cbd5e1;border-radius:12px;padding:12px;font:inherit;font-size:13px;line-height:1.8;outline:none}
+.ai-chat-compose textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.ai-chat-send{flex:none;min-width:82px;height:48px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-family:inherit;font-weight:800;cursor:pointer}
+.ai-chat-send:disabled,.ai-chat-compose textarea:disabled{opacity:.55;cursor:not-allowed}
+.ai-chat-note{margin:10px 2px 0;color:#94a3b8;font-size:11px;line-height:1.8}
+@media(max-width:480px){.student-tabs{gap:6px;padding:5px}.student-tab{font-size:13px;min-height:45px}.ai-teacher-card{padding:14px}.ai-chat-send{min-width:70px}}
+</style>
+ 
  </head>
  <body class="page-loading">
   <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
@@ -1550,6 +1577,11 @@ body.page-loading{
     </div>
     <div class="steps hidden" id="steps"></div>
    </div>
+   <nav class="student-tabs" role="tablist" aria-label="بخش‌های دانش‌آموز">
+    <button type="button" class="student-tab active" id="examTabButton" role="tab" aria-selected="true" aria-controls="examTabPanel">📝 آزمون</button>
+    <button type="button" class="student-tab" id="aiTeacherTabButton" role="tab" aria-selected="false" aria-controls="aiTeacherTabPanel">🤖 معلم هوشمند</button>
+   </nav>
+   <div id="examTabPanel" class="student-tab-panel">
    <section id="studentHero" class="student-hero hidden">
     <div class="hero-content">
         <div class="hero-badge">
@@ -1768,6 +1800,27 @@ body.page-loading{
     </div>
     <div id="printArea" aria-hidden="true"></div>
    </div>
+   </div><!-- پایان تب آزمون -->
+   <section id="aiTeacherTabPanel" class="student-tab-panel" role="tabpanel" aria-labelledby="aiTeacherTabButton" hidden>
+    <div class="ai-teacher-card">
+     <div class="ai-teacher-heading">
+      <div class="ai-teacher-avatar">🤖</div>
+      <div>
+       <h2>معلم هوشمند</h2>
+       <p>سؤالت را بپرس؛ قدم‌به‌قدم راهنمایی‌ات می‌کنم.</p>
+      </div>
+     </div>
+     <div id="aiTeacherStatus" class="ai-teacher-status" role="status">برای شروع گفتگو، ابتدا یک آزمون را انتخاب و شروع کن.</div>
+     <div id="aiTeacherMessages" class="ai-chat-messages" aria-live="polite">
+      <div class="ai-chat-empty">اینجا می‌توانی درباره درس و سؤال‌هایت گفتگو کنی.</div>
+     </div>
+     <div class="ai-chat-compose">
+      <textarea id="aiTeacherInput" rows="2" maxlength="4000" placeholder="سؤالت را اینجا بنویس..." disabled></textarea>
+      <button type="button" id="aiTeacherSend" class="ai-chat-send" disabled>ارسال</button>
+     </div>
+     <p class="ai-chat-note">گفتگو بر اساس تنظیمات آموزشی معلم انجام می‌شود.</p>
+    </div>
+   </section>
   </div>
   <script>
 // همیشه از همان مبدأیی استفاده می‌کنیم که صفحه از آن باز شده است.
@@ -5466,9 +5519,147 @@ async function initializePage(){
  
  
 /* =========================
+   تب آزمون و معلم هوشمند
+========================= */
+let aiTeacherHistory = [];
+let aiTeacherBusy = false;
+let aiTeacherUnavailable = false;
+ 
+function activateStudentTab(tabName) {
+    const examActive = tabName !== "ai";
+    const examButton = $("examTabButton");
+    const aiButton = $("aiTeacherTabButton");
+    const examPanel = $("examTabPanel");
+    const aiPanel = $("aiTeacherTabPanel");
+    if (!examButton || !aiButton || !examPanel || !aiPanel) return;
+    examButton.classList.toggle("active", examActive);
+    aiButton.classList.toggle("active", !examActive);
+    examButton.setAttribute("aria-selected", examActive ? "true" : "false");
+    aiButton.setAttribute("aria-selected", examActive ? "false" : "true");
+    examPanel.hidden = !examActive;
+    aiPanel.hidden = examActive;
+    if (!examActive) refreshAiTeacherAvailability();
+}
+function getCurrentAiAttemptId() {
+    return attemptId || localStorage.getItem("math_exam_attempt_id") || null;
+}
+function aiTeacherHistoryKey(id) {
+    return "math_exam_ai_teacher_history_" + String(id || "no-attempt");
+}
+function renderAiTeacherHistory() {
+    const box = $("aiTeacherMessages");
+    if (!box) return;
+    if (!aiTeacherHistory.length) {
+        box.innerHTML = '<div class="ai-chat-empty">اینجا می‌توانی درباره درس و سؤال‌هایت گفتگو کنی.</div>';
+        return;
+    }
+    box.innerHTML = aiTeacherHistory.map(item => {
+        const role = item.role === "user" ? "user" : "assistant";
+        return `<div class="ai-chat-message ${role}">${escapeHtml(item.content || item.message || "")}</div>`;
+    }).join("");
+    box.scrollTop = box.scrollHeight;
+}
+function setAiTeacherStatus(message, disabled = false) {
+    const status = $("aiTeacherStatus");
+    const input = $("aiTeacherInput");
+    const send = $("aiTeacherSend");
+    if (status) {
+        status.textContent = message;
+        status.classList.toggle("disabled", Boolean(disabled));
+    }
+    if (input) input.disabled = Boolean(disabled) || aiTeacherBusy;
+    if (send) send.disabled = Boolean(disabled) || aiTeacherBusy;
+}
+function refreshAiTeacherAvailability() {
+    const id = getCurrentAiAttemptId();
+    if (!id) {
+        aiTeacherUnavailable = true;
+        aiTeacherHistory = [];
+        renderAiTeacherHistory();
+        setAiTeacherStatus("برای استفاده از معلم هوشمند، ابتدا از تب «آزمون» یک آزمون را انتخاب و شروع کن.", true);
+        return;
+    }
+    aiTeacherUnavailable = false;
+    try {
+        const saved = localStorage.getItem(aiTeacherHistoryKey(id));
+        const parsed = saved ? JSON.parse(saved) : [];
+        aiTeacherHistory = Array.isArray(parsed) ? parsed.slice(-30) : [];
+    } catch (e) { aiTeacherHistory = []; }
+    renderAiTeacherHistory();
+    setAiTeacherStatus("آماده پاسخ‌گویی هستم. سؤالت را بنویس.", false);
+}
+async function sendAiTeacherMessage() {
+    const input = $("aiTeacherInput");
+    const send = $("aiTeacherSend");
+    const message = String(input?.value || "").trim();
+    const id = getCurrentAiAttemptId();
+    if (!message || aiTeacherBusy) return;
+    if (!id) {
+        setAiTeacherStatus("برای شروع گفتگو، ابتدا یک آزمون را انتخاب و شروع کن.", true);
+        return;
+    }
+    const priorHistory = aiTeacherHistory.slice(-8);
+    aiTeacherHistory.push({ role: "user", content: message });
+    renderAiTeacherHistory();
+    input.value = "";
+    aiTeacherBusy = true;
+    if (input) input.disabled = true;
+    if (send) { send.disabled = true; send.textContent = "ارسال..."; }
+    setAiTeacherStatus("در حال آماده‌کردن پاسخ...", false);
+    try {
+        const response = await fetch(`${API}/api/student/ai-teacher-chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ attemptId: id, message, history: priorHistory })
+        });
+        const data = await readApiJson(response);
+        if (!response.ok || data.ok !== true) {
+            const errorText = String(data.error || data.message || "دریافت پاسخ از معلم هوشمند ناموفق بود.");
+            if (/غیرفعال|disabled|not enabled|پاسخ.?گویی/i.test(errorText)) {
+                aiTeacherUnavailable = true;
+                aiTeacherHistory.pop();
+                renderAiTeacherHistory();
+                setAiTeacherStatus("پاسخ‌گویی معلم هوشمند در حال حاضر توسط مدیر غیرفعال شده است. لطفاً بعداً مراجعه کن.", true);
+                return;
+            }
+            throw new Error(errorText);
+        }
+        const answer = String(data.answer || data.reply || data.response || "").trim();
+        if (!answer) throw new Error("پاسخی از معلم هوشمند دریافت نشد.");
+        aiTeacherHistory.push({ role: "assistant", content: answer });
+        aiTeacherHistory = aiTeacherHistory.slice(-30);
+        try { localStorage.setItem(aiTeacherHistoryKey(id), JSON.stringify(aiTeacherHistory)); } catch (e) {}
+        renderAiTeacherHistory();
+        setAiTeacherStatus("پاسخ دریافت شد. اگر هنوز ابهامی داری، بپرس.", false);
+    } catch (error) {
+        aiTeacherHistory.pop();
+        renderAiTeacherHistory();
+        setAiTeacherStatus(error.message || "ارتباط با معلم هوشمند برقرار نشد. دوباره تلاش کن.", true);
+    } finally {
+        aiTeacherBusy = false;
+        if (send) send.textContent = "ارسال";
+        if (!aiTeacherUnavailable && getCurrentAiAttemptId()) {
+            if (input) input.disabled = false;
+            if (send) send.disabled = false;
+        }
+    }
+}
+$("examTabButton")?.addEventListener("click", () => activateStudentTab("exam"));
+$("aiTeacherTabButton")?.addEventListener("click", () => activateStudentTab("ai"));
+$("aiTeacherSend")?.addEventListener("click", sendAiTeacherMessage);
+$("aiTeacherInput")?.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendAiTeacherMessage();
+    }
+});
+ 
+/* =========================
    اجرای صفحه
 ========================= */
  
+activateStudentTab("exam");
+activateStudentTab("exam");
 initializePage().catch(error => {
  
     console.error(
@@ -5511,4 +5702,4 @@ initializePage().catch(error => {
    <p class="footer-copy">© تمامی حقوق محفوظ است</p>
   </footer>
  </body>
-    </html>
+ </html>
